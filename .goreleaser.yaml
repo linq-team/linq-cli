@@ -1,0 +1,60 @@
+version: 2
+
+project_name: linq
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - main: .
+    binary: linq
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/linq-team/linq-cli/cmd.version={{.Version}}
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+brews:
+  - repository:
+      owner: linq-team
+      name: homebrew-tap
+    homepage: "https://linq.ai"
+    description: "Linq CLI - messaging from your terminal"
+    install: |
+      bin.install "linq"
+
+scoops:
+  - repository:
+      owner: linq-team
+      name: scoop-bucket
+    homepage: "https://linq.ai"
+    description: "Linq CLI - messaging from your terminal"
+
+release:
+  github:
+    owner: linq-team
+    name: linq-cli

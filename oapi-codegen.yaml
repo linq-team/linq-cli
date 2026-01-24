@@ -1,0 +1,12 @@
+package: apiv3
+output: internal/apiv3/types.gen.go
+generate:
+  models: true
+  chi-server: false
+  echo-server: false
+  gin-server: false
+  gorilla-server: false
+  strict-server: false
+  client: false
+output-options:
+  skip-prune: true
