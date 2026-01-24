@@ -7,6 +7,6 @@ generate:
   gin-server: false
   gorilla-server: false
   strict-server: false
-  client: false
+  client: true
 output-options:
   skip-prune: true

@@ -1,0 +1,3979 @@
+openapi: 3.1.0
+info:
+  title: Linq Partner API
+  version: 1.0.0
+  description: |
+    The Linq Partner API enables you to send and receive iMessages programmatically at scale. Build powerful messaging experiences, automate conversations, and integrate iMessage infrastructure directly into your applications.
+
+    Messages are sent through Apple's iMessage protocol using real devices, ensuring full compatibility with all iMessage features including read receipts, typing indicators, reactions, and rich media attachments.
+
+    ## Getting Started
+
+    All API requests require authentication via the `Authorization: Bearer` header. Your bearer token determines which phone numbers you can send from and which data you can access.
+
+    ```bash
+    curl https://api.linqapp.com/api/partner/v3/chats \
+      -H "Authorization: Bearer your_token_here"
+    ```
+
+    ## Key Concepts
+
+    - **Chats**: Conversation threads with one or more participants
+    - **Messages**: Individual messages within a chat, supporting text, attachments, effects, and reactions
+    - **Participants**: Phone numbers or email addresses involved in a conversation
+    - **Attachments**: Files (images, videos, documents, audio) sent with messages
+    - **Webhooks**: Real-time notifications for incoming messages, reactions, and events
+
+    ## Trace Context (OpenTelemetry)
+
+    The Linq API supports [W3C Trace Context](https://www.w3.org/TR/trace-context/) for distributed tracing. All API responses include a `trace_id` field that can be used for debugging and support requests.
+
+    Linq generates a new trace context for each incoming request. Any standardized `traceparent` or `tracestate` headers you provide will be ignored and replaced with a server-generated trace ID. This is by design per the W3C specification's security recommendations for public APIs acting as trust boundaries.
+    If you need to correlate multiple API requests on your end, we recommend:
+      - Using our `trace_id` returned in each API response
+      - Maintaining your own correlation ID and storing a mapping to our trace IDs
+      - Add your own custom headers as needed
+  contact:
+    name: Linq API Support
+    email: support@linq.com
+servers:
+  - url: https://api.linqapp.com/api/partner
+    description: Production server
+security:
+  - BearerAuth: []
+tags:
+  - name: Chats
+    x-page-title: Chats
+    x-page-icon: comments
+    description: |
+      A Chat is a conversation thread with one or more participants.
+
+      To begin a chat, you must create a Chat with at least one recipient handle.
+      Including multiple handles creates a group chat.
+
+      When creating a chat or sending messages, the `from` field specifies which of your
+      authorized phone numbers the message originates from. Your authentication token grants
+      access to one or more phone numbers, but the `from` field determines the actual sender.
+
+      **Handle Format:**
+      - Handles can be phone numbers or email addresses
+      - Phone numbers MUST be in E.164 format (starting with +)
+      - Phone format: `+[country code][subscriber number]`
+      - Example phone: `+12223334444` (US), `+442071234567` (UK), `+81312345678` (Japan)
+      - Example email: `user@example.com`
+      - No spaces, dashes, or parentheses in phone numbers
+  - name: Messages
+    x-page-title: Messages
+    x-page-icon: paper-plane
+    description: |
+      Messages are individual text or multimedia communications within a chat thread.
+
+      Messages can include text, attachments, special effects (like confetti or fireworks),
+      and reactions. All messages are associated with a specific chat and sent from a
+      phone number you own.
+
+      Messages support delivery status tracking, read receipts, and editing capabilities.
+  - name: Attachments
+    x-page-title: Attachments
+    x-page-icon: paperclip
+    description: |
+      Send files (images, videos, documents, audio) with messages by providing a URL in a media part.
+      Pre-uploading via `POST /v3/attachments` is **optional** and only needed for specific optimization scenarios.
+
+      ## Sending Media (Default)
+
+      Provide a publicly accessible HTTPS URL with a [supported media type](#supported-file-types) in the `url` field of a media part.
+
+      ```json
+      {
+        "parts": [
+          { "type": "media", "url": "https://your-cdn.com/images/photo.jpg" }
+        ]
+      }
+      ```
+
+      This works with any URL you already host — no pre-upload step required.
+
+      ## Pre-Upload
+
+      Use `POST /v3/attachments` only when you want to:
+      - **Send the same file to many recipients** — upload once, reuse the `attachment_id` without re-downloading each time
+      - **Reduce message send latency** — the file is already stored, so sending is faster
+      - **Upload large files separately** — keep your send-message request lightweight
+
+      **How it works:**
+      1. `POST /v3/attachments` with file metadata → returns a presigned `upload_url` (valid for **15 minutes**) and a permanent `attachment_id`
+      2. PUT the raw file bytes to the `upload_url` with the `required_headers` (no JSON or multipart — just the binary content)
+      3. Reference the `attachment_id` in your media part when sending messages (no expiration)
+
+      **Key difference:** When you provide an external `url`, we download and process the file on every send.
+      When you use a pre-uploaded `attachment_id`, the file is already stored — so repeated sends skip the download step entirely.
+
+      ## Supported File Types
+
+      - **Images:** JPEG, PNG, GIF, HEIC, HEIF, TIFF, BMP
+      - **Videos:** MP4, MOV, M4V
+      - **Audio:** M4A, AAC, MP3, WAV, AIFF, CAF, AMR
+      - **Documents:** PDF, TXT, RTF, CSV, Office formats, ZIP
+      - **Contact & Calendar:** VCF, ICS
+
+      **File Size Limit:** 100MB
+  - name: Phone Numbers
+    x-page-title: Phone Numbers
+    x-page-icon: phone
+    description: |
+      Phone Numbers represent the phone numbers assigned to your partner account.
+
+      Use the list phone numbers endpoint to discover which phone numbers are available
+      for sending messages. Each phone number has capabilities (SMS, MMS, voice) and
+      a status indicating whether it's ready for use.
+
+      When creating chats or sending messages, use one of your assigned phone numbers
+      in the `from` field.
+  - name: Webhooks
+    x-page-title: Webhooks
+    x-page-icon: bell
+    description: |
+      Webhook Subscriptions allow you to receive real-time notifications when events
+      occur on your account.
+
+      Configure webhook endpoints to receive events such as messages sent/received,
+      delivery status changes, reactions, typing indicators, and more.
+
+      Failed deliveries (5xx, 429, network errors) are retried up to 6 times with
+      exponential backoff: 2s, 4s, 8s, 16s, 30s. Each event includes a unique ID
+      for deduplication.
+
+      ## Webhook Headers
+
+      Each webhook request includes the following headers:
+
+      | Header | Description |
+      |--------|-------------|
+      | `X-Webhook-Event` | The event type (e.g., `message.sent`, `message.received`) |
+      | `X-Webhook-Subscription-ID` | Your webhook subscription ID |
+      | `X-Webhook-Timestamp` | Unix timestamp (seconds) when the webhook was sent |
+      | `X-Webhook-Signature` | HMAC-SHA256 signature for verification |
+
+      ## Verifying Webhook Signatures
+
+      All webhooks are signed using HMAC-SHA256. You should always verify the signature
+      to ensure the webhook originated from Linq and hasn't been tampered with.
+
+      **Signature Construction:**
+
+      The signature is computed over a concatenation of the timestamp and payload:
+
+      ```
+      {timestamp}.{payload}
+      ```
+
+      Where:
+      - `timestamp` is the value from the `X-Webhook-Timestamp` header
+      - `payload` is the raw JSON request body (exact bytes, not re-serialized)
+
+      **Verification Steps:**
+
+      1. Extract the `X-Webhook-Timestamp` and `X-Webhook-Signature` headers
+      2. Get the raw request body bytes (do not parse and re-serialize)
+      3. Concatenate: `"{timestamp}.{payload}"`
+      4. Compute HMAC-SHA256 using your signing secret as the key
+      5. Hex-encode the result and compare with `X-Webhook-Signature`
+      6. Use constant-time comparison to prevent timing attacks
+
+      **Example (Python):**
+
+      ```python
+      import hmac
+      import hashlib
+
+      def verify_webhook(signing_secret, payload, timestamp, signature):
+          message = f"{timestamp}.{payload.decode('utf-8')}"
+          expected = hmac.new(
+              signing_secret.encode('utf-8'),
+              message.encode('utf-8'),
+              hashlib.sha256
+          ).hexdigest()
+          return hmac.compare_digest(expected, signature)
+      ```
+
+      **Example (Node.js):**
+
+      ```javascript
+      const crypto = require('crypto');
+
+      function verifyWebhook(signingSecret, payload, timestamp, signature) {
+        const message = `${timestamp}.${payload}`;
+        const expected = crypto
+          .createHmac('sha256', signingSecret)
+          .update(message)
+          .digest('hex');
+        return crypto.timingSafeEqual(
+          Buffer.from(expected),
+          Buffer.from(signature)
+        );
+      }
+      ```
+
+      **Security Best Practices:**
+
+      - Reject webhooks with timestamps older than 5 minutes to prevent replay attacks
+      - Always use constant-time comparison for signature verification
+      - Store your signing secret securely (e.g., environment variable, secrets manager)
+      - Return a 2xx status code quickly, then process the webhook asynchronously
+  - name: Webhook Events
+    x-page-title: Webhook Events
+    x-page-icon: bolt
+    description: |
+      Webhook event payloads that Linq sends to your configured endpoint.
+
+      These are the actual webhook callbacks you receive when events occur.
+      All events are wrapped in a standard envelope with api_version, event_type,
+      event_id, created_at, and data fields.
+
+      Webhooks are signed with HMAC-SHA256 using your webhook signing secret.
+      Verify the signature in the X-Webhook-Signature header before processing.
+paths:
+  /v3/chats:
+    post:
+      operationId: createChat
+      summary: Create a new chat
+      description: |
+        Create a new chat with specified participants and send an initial message.
+        The initial message is required when creating a chat.
+
+        ## Message Effects
+
+        You can add iMessage effects to make your messages more expressive. Effects are
+        optional and can be either screen effects (full-screen animations) or bubble effects
+        (message bubble animations).
+
+        **Screen Effects:** `confetti`, `fireworks`, `lasers`, `sparkles`, `celebration`,
+        `hearts`, `love`, `balloons`, `happy_birthday`, `echo`, `spotlight`
+
+        **Bubble Effects:** `slam`, `loud`, `gentle`, `invisible`
+
+        Only one effect type can be applied per message.
+      tags:
+        - Chats
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChatRequest'
+            examples:
+              chatWithTextMessage:
+                summary: Text-only message
+                value:
+                  from: '+12052535597'
+                  to:
+                    - '+12052532136'
+                  message:
+                    parts:
+                      - type: text
+                        value: Hello! How can I help you today?
+              chatWithMediaUrl:
+                summary: Media via external URL (server downloads automatically)
+                value:
+                  from: '+12052535597'
+                  to:
+                    - '+12052532136'
+                  message:
+                    parts:
+                      - type: text
+                        value: Check out this image!
+                      - type: media
+                        url: https://images.dog.ceo/breeds/terrier-cairn/n02096177_13328.jpg
+              chatWithPreuploadedMedia:
+                summary: Media via pre-uploaded attachment (after POST /v3/attachments)
+                value:
+                  from: '+12052535597'
+                  to:
+                    - '+12052532136'
+                  message:
+                    parts:
+                      - type: media
+                        attachment_id: 550e8400-e29b-41d4-a716-446655440000
+              chatWithConfettiEffect:
+                summary: Message with confetti screen effect
+                value:
+                  from: '+12052535597'
+                  to:
+                    - '+12052532136'
+                  message:
+                    parts:
+                      - type: text
+                        value: Welcome aboard! 🎉
+                    effect:
+                      screen_effect: confetti
+              chatWithInvisibleInk:
+                summary: Message with invisible ink bubble effect
+                value:
+                  from: '+12052535597'
+                  to:
+                    - '+12052532136'
+                  message:
+                    parts:
+                      - type: text
+                        value: 'Here''s a secret code: ABC123'
+                    effect:
+                      bubble_effect: invisible
+      responses:
+        '201':
+          description: Chat created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateChatResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      operationId: listChats
+      summary: List all chats
+      description: |
+        Retrieves a paginated list of chats for the authenticated partner filtered by phone number.
+        Returns all chats involving the specified phone number with their participants and recent activity.
+
+        **Pagination:**
+        - Use `limit` to control page size (default: 20, max: 100)
+        - The response includes `next_cursor` for fetching the next page
+        - When `next_cursor` is `null`, there are no more results to fetch
+        - Pass the `next_cursor` value as the `cursor` parameter for the next request
+
+        **Example pagination flow:**
+        1. First request: `GET /v3/chats?from=%2B12223334444&limit=20`
+        2. Response includes `next_cursor: "20"` (more results exist)
+        3. Next request: `GET /v3/chats?from=%2B12223334444&limit=20&cursor=20`
+        4. Response includes `next_cursor: null` (no more results)
+      tags:
+        - Chats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: |
+            Phone number to filter chats by. Returns all chats made from this phone number.
+            Must be in E.164 format with the `+` sign URL-encoded as `%2B` (e.g., `%2B13343284472`).
+          schema:
+            type: string
+            pattern: ^\+?[1-9]\d{1,14}$
+            example: '%2B13343284472'
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of chats to return per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+        - name: cursor
+          in: query
+          required: false
+          description: |
+            Pagination cursor from the previous response's `next_cursor` field.
+            Omit this parameter for the first page of results.
+          schema:
+            type: string
+            example: '20'
+      responses:
+        '200':
+          description: List of chats retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListChatsResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/chats/{chatId}:
+    get:
+      operationId: getChat
+      summary: Get a chat by ID
+      description: Retrieve a chat by its unique identifier.
+      tags:
+        - Chats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: Unique identifier of the chat
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Chat found and returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chat'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      operationId: updateChat
+      summary: Update a chat
+      description: |
+        Update chat properties such as display name and group chat icon.
+      tags:
+        - Chats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: Unique identifier of the chat
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateChatRequest'
+            examples:
+              updateName:
+                summary: Update chat display name
+                value:
+                  display_name: Team Discussion
+              updateIcon:
+                summary: Update group chat icon
+                value:
+                  group_chat_icon: https://example.com/group-icon.png
+              updateBoth:
+                summary: Update both display name and icon
+                value:
+                  display_name: Team Discussion
+                  group_chat_icon: https://example.com/group-icon.png
+      responses:
+        '200':
+          description: Chat updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chat'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/chats/{chatId}/participants:
+    post:
+      operationId: addParticipant
+      summary: Add a participant to a chat
+      description: |
+        Add a new participant to an existing group chat.
+
+        **Requirements:**
+        - Group chats only (3+ existing participants)
+        - New participant must support the same messaging service as the group
+        - Cross-service additions not allowed (e.g., can't add RCS-only user to iMessage group)
+        - For cross-service scenarios, create a new chat instead
+      tags:
+        - Chats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: Unique identifier of the chat
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddParticipantRequest'
+            examples:
+              addUser:
+                summary: Add a participant
+                value:
+                  handle: '+12052499136'
+      responses:
+        '202':
+          description: Participant addition queued successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: accepted
+                  trace_id:
+                    type: string
+                  message:
+                    type: string
+                    example: Participant addition queued
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: removeParticipant
+      summary: Remove a participant from a chat
+      description: |
+        Remove a participant from an existing group chat.
+
+        **Requirements:**
+        - Group chats only
+        - Must have 3+ participants after removal
+      tags:
+        - Chats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: Unique identifier of the chat
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveParticipantRequest'
+            examples:
+              removeUser:
+                summary: Remove a participant
+                value:
+                  handle: '+12052499136'
+      responses:
+        '202':
+          description: Participant removal queued successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: accepted
+                  trace_id:
+                    type: string
+                  message:
+                    type: string
+                    example: Participant removal queued
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/chats/{chatId}/typing:
+    post:
+      operationId: startTyping
+      summary: Start typing indicator
+      description: |
+        Send a typing indicator to show that someone is typing in the chat.
+
+        **Note:** Group chat typing indicators are not currently supported.
+      tags:
+        - Chats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: Unique identifier of the chat
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '204':
+          description: Typing indicator started successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: stopTyping
+      summary: Stop typing indicator
+      description: |
+        Stop the typing indicator for the chat.
+
+        **Note:** Typing indicators are automatically stopped when a message is sent,
+        so calling this endpoint after sending a message is unnecessary.
+
+        **Note:** Group chat typing indicators are not currently supported.
+      tags:
+        - Chats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: Unique identifier of the chat
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '204':
+          description: Typing indicator stopped successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/chats/{chatId}/read:
+    post:
+      operationId: markChatAsRead
+      summary: Mark chat as read
+      description: |
+        Mark all messages in a chat as read.
+      tags:
+        - Chats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: Unique identifier of the chat
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Chat marked as read successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/chats/{chatId}/share_contact_card:
+    post:
+      operationId: shareContactWithChat
+      summary: Share your contact card with a chat
+      description: |
+        Share your contact information (Name and Photo Sharing) with a chat.
+      tags:
+        - Chats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: Unique identifier of the chat
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Contact shared successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/chats/{chatId}/messages:
+    post:
+      operationId: sendMessageToChat
+      summary: Send a message to an existing chat
+      description: |
+        Send a message to an existing chat. Use this endpoint when you already have
+        a chat ID and want to send additional messages to it.
+
+        ## Message Effects
+
+        You can add iMessage effects to make your messages more expressive. Effects are
+        optional and can be either screen effects (full-screen animations) or bubble effects
+        (message bubble animations).
+
+        **Screen Effects:** `confetti`, `fireworks`, `lasers`, `sparkles`, `celebration`,
+        `hearts`, `love`, `balloons`, `happy_birthday`, `echo`, `spotlight`
+
+        **Bubble Effects:** `slam`, `loud`, `gentle`, `invisible`
+
+        Only one effect type can be applied per message.
+      tags:
+        - Chats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: Unique identifier of the chat
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageToChatRequest'
+            examples:
+              simple_text:
+                summary: Simple text message
+                value:
+                  message:
+                    parts:
+                      - type: text
+                        value: Hello, world!
+              with_confetti:
+                summary: Message with confetti effect
+                value:
+                  message:
+                    parts:
+                      - type: text
+                        value: Congratulations! 🎉
+                    effect:
+                      screen_effect: confetti
+              with_slam:
+                summary: Message with slam bubble effect
+                value:
+                  message:
+                    parts:
+                      - type: text
+                        value: BOOM!
+                    effect:
+                      bubble_effect: slam
+              with_invisible_ink:
+                summary: Message with invisible ink effect
+                value:
+                  message:
+                    parts:
+                      - type: text
+                        value: This is a secret message
+                    effect:
+                      bubble_effect: invisible
+      responses:
+        '202':
+          description: Message accepted for delivery
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendMessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      operationId: getMessages
+      summary: Get messages from a chat
+      description: |
+        Retrieve messages from a specific chat with pagination support.
+      tags:
+        - Chats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: Unique identifier of the chat
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+        - name: cursor
+          in: query
+          description: Pagination cursor from previous next_cursor response
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of messages to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Messages retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMessagesResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/messages/{messageId}/thread:
+    get:
+      operationId: getMessageThread
+      summary: Get all messages in a thread
+      description: |
+        Retrieve all messages in a conversation thread. Given any message ID in the thread,
+        returns the originator message and all replies in chronological order.
+
+        If the message is not part of a thread, returns just that single message.
+
+        Supports pagination and configurable ordering.
+      tags:
+        - Messages
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          description: ID of any message in the thread (can be originator or any reply)
+          schema:
+            type: string
+            format: uuid
+            example: 69a37c7d-af4f-4b5e-af42-e28e98ce873a
+        - name: cursor
+          in: query
+          description: Pagination cursor from previous next_cursor response
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of messages to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: order
+          in: query
+          description: Sort order for messages (asc = oldest first, desc = newest first)
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+      responses:
+        '200':
+          description: Thread retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetThreadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/chats/{chatId}/voicememo:
+    post:
+      operationId: sendVoiceMemoToChat
+      summary: Send a voice memo to a chat
+      description: |
+        Send a voice memo to all participants in a chat. Voice memos MUST be sent alone without text
+        or other attachments.
+
+        **Supported audio formats:**
+        - MP3 (audio/mpeg)
+        - M4A (audio/x-m4a, audio/mp4)
+        - AAC (audio/aac)
+        - CAF (audio/x-caf) - Core Audio Format
+        - WAV (audio/wav)
+        - AIFF (audio/aiff, audio/x-aiff)
+        - AMR (audio/amr)
+      tags:
+        - Chats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          description: Unique identifier of the chat
+          schema:
+            type: string
+            format: uuid
+            example: f19ee7b8-8533-4c5c-83ec-4ef8d6d1ddbd
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendVoiceMemoToChatRequest'
+            example:
+              voice_memo_url: https://example.com/voice-memo.m4a
+      responses:
+        '202':
+          description: Voice memo accepted for delivery
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendVoiceMemoToChatResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          description: Voice memo file too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  status: 413
+                  code: 5001
+                  message: Voice memo file too large - maximum size is 10MB
+                success: false
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/messages/{messageId}:
+    get:
+      operationId: getMessage
+      summary: Get a message by ID
+      description: |
+        Retrieve a specific message by its ID. This endpoint returns the full message
+        details including text, attachments, reactions, and metadata.
+      tags:
+        - Messages
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          description: Unique identifier of the message to retrieve
+          schema:
+            type: string
+            format: uuid
+            example: 69a37c7d-af4f-4b5e-af42-e28e98ce873a
+      responses:
+        '200':
+          description: Message found and returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteMessage
+      summary: Delete a message from system
+      description: |
+        Deletes a message from the Linq API only. This does NOT unsend or remove the message
+        from the actual chat - recipients will still see the message.
+
+        Use this endpoint to remove messages from your records and prevent them from appearing
+        in API responses.
+      tags:
+        - Messages
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          description: Unique identifier of the message to delete
+          schema:
+            type: string
+            format: uuid
+            example: 69a37c7d-af4f-4b5e-af42-e28e98ce873a
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteMessageRequest'
+            examples:
+              deleteMessage:
+                summary: Delete a message
+                value:
+                  chat_id: 94c6bf33-31d9-40e3-a0e9-f94250ecedb9
+      responses:
+        '204':
+          description: Message deleted successfully (no content returned)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/messages/{messageId}/reactions:
+    post:
+      operationId: sendReaction
+      summary: Add or remove a reaction to a message
+      description: |
+        Add or remove emoji reactions to messages. Reactions let users express
+        their response to a message without sending a new message.
+
+        **Supported Reactions:**
+        - love ❤️
+        - like 👍
+        - dislike 👎
+        - laugh 😂
+        - emphasize ‼️
+        - question ❓
+        - custom - any emoji (use `custom_emoji` field to specify)
+      tags:
+        - Messages
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          description: Unique identifier of the message to react to
+          schema:
+            type: string
+            format: uuid
+            example: 69a37c7d-af4f-4b5e-af42-e28e98ce873a
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendReactionRequest'
+            examples:
+              addLove:
+                summary: Add a love reaction
+                value:
+                  operation: add
+                  type: love
+              removeLike:
+                summary: Remove a like reaction
+                value:
+                  operation: remove
+                  type: like
+              reactToMessagePart:
+                summary: React to a specific message part
+                value:
+                  operation: add
+                  type: laugh
+                  part_index: 1
+      responses:
+        '200':
+          description: Reaction added/removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reaction'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/attachments:
+    post:
+      operationId: requestUpload
+      summary: Pre-upload a file
+      description: |
+        **This endpoint is optional.** You can send media by simply providing a URL in your
+        message's media part — no pre-upload required. Use this endpoint only when you want
+        to upload a file ahead of time for reuse or latency optimization.
+
+        Returns a presigned upload URL and a permanent `attachment_id` you can reference
+        in future messages.
+
+        ## Step 1: Request an upload URL
+
+        Call this endpoint with file metadata:
+
+        ```json
+        POST /v3/attachments
+        {
+          "filename": "photo.jpg",
+          "content_type": "image/jpeg",
+          "size_bytes": 1024000
+        }
+        ```
+
+        The response includes an `upload_url` (valid for 15 minutes) and a permanent `attachment_id`.
+
+        ## Step 2: Upload the file
+
+        Make a PUT request to the `upload_url` with the raw file bytes as the request body.. Include the headers from `required_headers`.
+        The request body is the binary file content — **not** JSON, **not** multipart form data.
+
+        ```bash
+        curl -X PUT "<upload_url from step 1>" \
+          -H "Content-Type: image/jpeg" \
+          --data-binary @filebytes
+        ```
+
+        ## Step 3: Send a message with the attachment
+
+        Reference the `attachment_id` in a media part. The ID never expires — use it in as many messages as you want.
+
+        ```json
+        POST /v3/messages
+        {
+          "to": ["+15551234567"],
+          "from": "+15559876543",
+          "parts": [
+            { "type": "media", "attachment_id": "<attachment_id from step 1>" }
+          ]
+        }
+        ```
+
+        ## When to use this instead of a URL in the media part
+
+        - Sending the same file to multiple recipients (avoids re-downloading each time)
+        - Large files where you want to separate upload from message send
+        - Latency-sensitive sends where the file should already be stored
+
+        If you just need to send a file once, skip all of this and pass a `url` directly in the media part instead.
+
+        **File Size Limit:** 100MB
+
+        **Unsupported Types:** WebP, SVG, FLAC, OGG, and executable files are explicitly rejected.
+      tags:
+        - Attachments
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestUploadRequest'
+            examples:
+              imageUpload:
+                summary: Request upload for an image
+                value:
+                  filename: photo.jpg
+                  content_type: image/jpeg
+                  size_bytes: 1024000
+              videoUpload:
+                summary: Request upload for a video
+                value:
+                  filename: video.mp4
+                  content_type: video/mp4
+                  size_bytes: 50000000
+      responses:
+        '200':
+          description: Upload URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestUploadResult'
+              examples:
+                presignedUrlResponse:
+                  summary: Presigned upload URL ready
+                  value:
+                    attachment_id: 550e8400-e29b-41d4-a716-446655440000
+                    upload_url: https://uploads.linqapp.com/attachments/550e8400?X-Amz-Algorithm=AWS4-HMAC-SHA256&...
+                    download_url: https://cdn.linqapp.com/uploads/partner-id/550e8400/photo.jpg
+                    http_method: PUT
+                    expires_at: '2024-01-15T10:45:00Z'
+                    required_headers:
+                      Content-Type: image/jpeg
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/attachments/{attachmentId}:
+    get:
+      operationId: getAttachment
+      summary: Get attachment metadata
+      description: |
+        Retrieve metadata for a specific attachment including its status,
+        file information, and URLs for downloading.
+      tags:
+        - Attachments
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: attachmentId
+          in: path
+          required: true
+          description: Unique identifier of the attachment
+          schema:
+            type: string
+            format: uuid
+            example: abc12345-1234-5678-9abc-def012345678
+      responses:
+        '200':
+          description: Attachment found and returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attachment'
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                filename: photo.jpg
+                content_type: image/jpeg
+                size_bytes: 1024000
+                status: complete
+                download_url: https://cdn.example.com/attachments/550e8400-e29b-41d4-a716-446655440000/photo.jpg
+                created_at: '2024-01-15T10:30:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/phonenumbers:
+    get:
+      operationId: listPhoneNumbers
+      summary: List phone numbers
+      description: |
+        Returns all phone numbers assigned to the authenticated partner.
+        Use this endpoint to discover which phone numbers are available for
+        sending messages via the `from` field in create chat and send message requests.
+      tags:
+        - Phone Numbers
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Phone numbers retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPhoneNumbersResult'
+              example:
+                phone_numbers:
+                  - id: 550e8400-e29b-41d4-a716-446655440000
+                    phone_number: '+12025551234'
+                    status: ASSIGNED
+                    type: APPLE_ID
+                    country_code: US
+                    capabilities:
+                      sms: true
+                      mms: true
+                      voice: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/webhook-subscriptions:
+    post:
+      operationId: createWebhookSubscription
+      summary: Create a new webhook subscription
+      description: |
+        Create a new webhook subscription to receive events at a target URL.
+        Upon creation, a signing secret is generated for verifying webhook
+        authenticity. **Store this secret securely — it cannot be retrieved later.**
+
+        **Webhook Delivery:**
+        - Events are sent via HTTP POST to the target URL
+        - Each request includes `X-Webhook-Signature` and `X-Webhook-Timestamp` headers
+        - Signature is HMAC-SHA256 over `{timestamp}.{payload}` — see [Webhook Events](/docs/webhook-events) for verification details
+        - Failed deliveries (5xx, 429, network errors) are retried up to 6 times with exponential backoff: 2s, 4s, 8s, 16s, 30s
+        - Client errors (4xx except 429) are not retried
+      tags:
+        - Webhooks
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebhookSubscriptionRequest'
+            examples:
+              messageEvents:
+                summary: Subscribe to message events
+                value:
+                  target_url: https://webhooks.example.com/linq/events
+                  subscribed_events:
+                    - message.sent
+                    - message.delivered
+                    - message.read
+              allEvents:
+                summary: Subscribe to all events
+                value:
+                  target_url: https://webhooks.example.com/linq/events
+                  subscribed_events:
+                    - message.sent
+                    - message.delivered
+                    - message.read
+                    - message.failed
+                    - message.received
+                    - reaction.added
+                    - reaction.removed
+                    - participant.added
+                    - participant.removed
+      responses:
+        '201':
+          description: Webhook subscription created successfully. The signing_secret is only returned in this response - store it securely.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookSubscriptionCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      operationId: listWebhookSubscriptions
+      summary: List all webhook subscriptions
+      description: |
+        Retrieve all webhook subscriptions for the authenticated partner.
+        Returns a list of active and inactive subscriptions with their
+        configuration and status.
+      tags:
+        - Webhooks
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of webhook subscriptions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListWebhookSubscriptionsResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v3/webhook-subscriptions/{subscriptionId}:
+    get:
+      operationId: getWebhookSubscription
+      summary: Get a webhook subscription by ID
+      description: |
+        Retrieve details for a specific webhook subscription including its
+        target URL, subscribed events, and current status.
+      tags:
+        - Webhooks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          description: Unique identifier of the webhook subscription
+          schema:
+            type: string
+            example: b2c3d4e5-f6a7-8901-bcde-f23456789012
+      responses:
+        '200':
+          description: Webhook subscription found and returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookSubscriptionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      operationId: updateWebhookSubscription
+      summary: Update a webhook subscription
+      description: |
+        Update an existing webhook subscription. You can modify the target URL,
+        subscribed events, or activate/deactivate the subscription.
+
+        **Note:** The signing secret cannot be changed via this endpoint.
+      tags:
+        - Webhooks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          description: Unique identifier of the webhook subscription
+          schema:
+            type: string
+            example: b2c3d4e5-f6a7-8901-bcde-f23456789012
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWebhookSubscriptionRequest'
+            examples:
+              updateURL:
+                summary: Update target URL
+                value:
+                  target_url: https://webhooks.example.com/linq/events
+              updateEvents:
+                summary: Update subscribed events
+                value:
+                  subscribed_events:
+                    - message.sent
+                    - message.delivered
+              deactivate:
+                summary: Deactivate subscription
+                value:
+                  is_active: false
+      responses:
+        '200':
+          description: Webhook subscription updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookSubscriptionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteWebhookSubscription
+      summary: Delete a webhook subscription
+      description: Delete a webhook subscription.
+      tags:
+        - Webhooks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          description: Unique identifier of the webhook subscription
+          schema:
+            type: string
+            example: b2c3d4e5-f6a7-8901-bcde-f23456789012
+      responses:
+        '204':
+          description: Webhook subscription deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+webhooks:
+  message.sent:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookMessageSent
+      summary: Message sent
+      description: |
+        Triggered when a message has been successfully sent from your phone number.
+        This confirms the message has been sent, but potentially has not yet been delivered.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageSentWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  message.received:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookMessageReceived
+      summary: Message received
+      description: |
+        Triggered when an incoming message is received on your phone number.
+        Contains the full message content including any attachments.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageReceivedWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  message.read:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookMessageRead
+      summary: Message read
+      description: |
+        Triggered when a sent message has been read by the recipient.
+        Only available for iMessage conversations with read receipts enabled.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageReadWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  message.delivered:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookMessageDelivered
+      summary: Message delivered
+      description: |
+        Triggered when a sent message has been delivered to the recipient's device.
+        This confirms the message reached the recipient, but does not indicate it was read.
+        Only available for iMessage conversations with delivery receipts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageDeliveredWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  message.failed:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookMessageFailed
+      summary: Message delivery failed
+      description: |
+        Triggered when a message fails to be delivered. This can happen due to:
+        - Request timeout (message expired before being processed)
+        - Upstream service error (processing failed after retries)
+        - Request cancelled (message was explicitly cancelled)
+        - Service unavailable (no service available to process the request)
+
+        Note: The original message content may not be available if the message
+        expired before being consumed by a processor.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageFailedWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  reaction.added:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookReactionAdded
+      summary: Reaction added
+      description: |
+        Triggered when a reaction (tapback) is added to a message.
+        Includes standard reactions like "loved", "liked", "disliked", etc.
+        and custom emoji reactions.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReactionAddedWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  reaction.removed:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookReactionRemoved
+      summary: Reaction removed
+      description: |
+        Triggered when a reaction (tapback) is removed from a message.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReactionRemovedWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  participant.added:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookParticipantAdded
+      summary: Participant added
+      description: |
+        Triggered when a new participant is added to a group chat.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipantAddedWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  participant.removed:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookParticipantRemoved
+      summary: Participant removed
+      description: |
+        Triggered when a participant is removed from a group chat.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipantRemovedWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  chat.group_name_updated:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookChatGroupNameUpdated
+      summary: Group name updated
+      description: |
+        Triggered when a group chat's display name is updated.
+        A null `new_value` indicates the name was removed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatGroupNameUpdatedWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  chat.group_icon_updated:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookChatGroupIconUpdated
+      summary: Group icon updated
+      description: |
+        Triggered when a group chat's icon is updated.
+        A null `new_value` indicates the icon was removed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatGroupIconUpdatedWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  chat.group_name_update_failed:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookChatGroupNameUpdateFailed
+      summary: Group name update failed
+      description: Triggered when a group chat name update request fails.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatGroupNameUpdateFailedWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  chat.group_icon_update_failed:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookChatGroupIconUpdateFailed
+      summary: Group icon update failed
+      description: Triggered when a group chat icon update request fails.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatGroupIconUpdateFailedWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Bearer token authentication. Include your API token in the Authorization header.
+
+        Format: `Authorization: Bearer <your-token>`
+  responses:
+    BadRequest:
+      description: Invalid request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              status: 400
+              code: 1002
+              message: Phone number must be in E.164 format
+            success: false
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              status: 401
+              code: 2004
+              message: Unauthorized - missing or invalid authentication token
+            success: false
+    Forbidden:
+      description: Forbidden - no access to this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              status: 403
+              code: 2005
+              message: Access denied - insufficient permissions for this resource
+            success: false
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              status: 404
+              code: 2001
+              message: Resource not found
+            success: false
+    UnprocessableEntity:
+      description: Unprocessable Entity - request is valid but cannot be processed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              status: 422
+              code: 1003
+              message: Request is valid but cannot be processed
+            success: false
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              status: 500
+              code: 3006
+              message: Internal server error
+            success: false
+  schemas:
+    DeliveryStatus:
+      type: string
+      description: Current delivery status of a message
+      enum:
+        - pending
+        - queued
+        - sent
+        - delivered
+        - failed
+      example: pending
+    SentMessage:
+      type: object
+      description: A message that was sent (used in CreateChat and SendMessage responses)
+      required:
+        - id
+        - parts
+        - sent_at
+        - delivery_status
+        - is_read
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Message identifier (UUID)
+          example: 69a37c7d-af4f-4b5e-af42-e28e98ce873a
+        parts:
+          type: array
+          description: Message parts in order (text and media)
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/TextPartResponse'
+              - $ref: '#/components/schemas/MediaPartResponse'
+        sent_at:
+          type: string
+          format: date-time
+          description: When the message was sent
+          example: '2025-10-23T13:07:55.019-05:00'
+        delivered_at:
+          type: string
+          format: date-time
+          description: When the message was delivered
+          example: null
+          nullable: true
+        delivery_status:
+          $ref: '#/components/schemas/DeliveryStatus'
+        is_read:
+          type: boolean
+          description: Whether the message has been read
+          example: false
+        effect:
+          allOf:
+            - $ref: '#/components/schemas/MessageEffect'
+          nullable: true
+          description: iMessage effect applied to this message (screen or bubble effect)
+        reply_to:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ReplyTo'
+    ThreadMessage:
+      type: object
+      description: A message within a thread (includes reply_to field)
+      required:
+        - id
+        - parts
+        - sent_at
+        - delivery_status
+        - is_read
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Message identifier (UUID)
+          example: 69a37c7d-af4f-4b5e-af42-e28e98ce873a
+        parts:
+          type: array
+          description: Message parts in order (text and media)
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/TextPartResponse'
+              - $ref: '#/components/schemas/MediaPartResponse'
+        sent_at:
+          type: string
+          format: date-time
+          description: When the message was sent
+          example: '2025-10-23T13:07:55.019-05:00'
+        delivered_at:
+          type: string
+          format: date-time
+          description: When the message was delivered
+          example: null
+          nullable: true
+        delivery_status:
+          $ref: '#/components/schemas/DeliveryStatus'
+        is_read:
+          type: boolean
+          description: Whether the message has been read
+          example: false
+        effect:
+          allOf:
+            - $ref: '#/components/schemas/MessageEffect'
+          nullable: true
+          description: iMessage effect applied to this message (screen or bubble effect)
+        reply_to:
+          allOf:
+            - $ref: '#/components/schemas/ReplyTo'
+          nullable: true
+          description: Which message and part this is replying to (null for thread originator)
+    SendMessageResponse:
+      type: object
+      description: Response for sending a message to a chat
+      required:
+        - chat_id
+        - message
+      properties:
+        chat_id:
+          type: string
+          format: uuid
+          description: Unique identifier of the chat this message was sent to
+          example: 550e8400-e29b-41d4-a716-446655440000
+        message:
+          $ref: '#/components/schemas/SentMessage'
+    GetThreadResponse:
+      type: object
+      description: Response containing messages in a thread with pagination
+      required:
+        - messages
+      properties:
+        messages:
+          type: array
+          description: Messages in the thread, ordered by the specified order parameter
+          items:
+            $ref: '#/components/schemas/ThreadMessage'
+        next_cursor:
+          type: string
+          description: Cursor for fetching the next page of results (null if no more results)
+          nullable: true
+          example: eyJpZCI6IjEyMzQ1Njc4OTAiLCJ0cyI6MTYzMDUwMDAwMH0=
+    SendVoiceMemoToChatRequest:
+      type: object
+      description: Request to send a voice memo to a chat (chat_id provided in path)
+      required:
+        - from
+        - voice_memo_url
+      properties:
+        from:
+          type: string
+          description: Sender phone number in E.164 format
+          pattern: ^\+[1-9][0-9]{1,14}$
+          example: '+12052535597'
+        voice_memo_url:
+          type: string
+          format: uri
+          description: URL of the voice memo audio file. Must be a publicly accessible HTTPS URL.
+          example: https://example.com/voice-memo.m4a
+    SendVoiceMemoResponse:
+      type: object
+      required:
+        - success
+        - message
+        - chat
+      properties:
+        success:
+          type: boolean
+          description: Whether the voice memo was successfully queued
+          example: true
+        message:
+          $ref: '#/components/schemas/VoiceMemoMessage'
+        chat:
+          $ref: '#/components/schemas/ChatInfo'
+    SendVoiceMemoToChatResult:
+      type: object
+      description: Response for sending a voice memo to a chat
+      required:
+        - voice_memo
+      properties:
+        voice_memo:
+          type: object
+          required:
+            - id
+            - from
+            - to
+            - status
+            - voice_memo
+            - created_at
+            - chat
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Message identifier
+              example: 69a37c7d-af4f-4b5e-af42-e28e98ce873a
+            from:
+              type: string
+              description: Sender phone number
+              example: '+12052535597'
+            to:
+              type: array
+              items:
+                type: string
+              description: Recipient handles (phone numbers or email addresses)
+              example:
+                - '+12052532136'
+            status:
+              type: string
+              description: Current delivery status
+              example: queued
+            voice_memo:
+              $ref: '#/components/schemas/VoiceMemoAttachment'
+            created_at:
+              type: string
+              format: date-time
+              description: When the voice memo was created
+            chat:
+              $ref: '#/components/schemas/ChatInfo'
+    VoiceMemoMessage:
+      type: object
+      required:
+        - id
+        - chat_id
+        - from
+        - to
+        - voice_memo
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Message identifier
+          example: 69a37c7d-af4f-4b5e-af42-e28e98ce873a
+        chat_id:
+          type: string
+          format: uuid
+          description: Chat identifier
+          example: 94c6bf33-31d9-40e3-a0e9-f94250ecedb9
+        from:
+          type: string
+          description: Sender phone number
+          example: '+12052535597'
+        to:
+          type: array
+          items:
+            type: string
+          description: Recipient handles (phone numbers or email addresses)
+          example:
+            - '+12052532136'
+        voice_memo:
+          $ref: '#/components/schemas/VoiceMemoAttachment'
+        status:
+          type: string
+          description: Current delivery status
+          example: queued
+        created_at:
+          type: string
+          format: date-time
+          description: When the voice memo was created
+    VoiceMemoAttachment:
+      type: object
+      required:
+        - id
+        - url
+        - filename
+        - mime_type
+        - size_bytes
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Attachment identifier
+          example: 550e8400-e29b-41d4-a716-446655440000
+        url:
+          type: string
+          format: uri
+          description: CDN URL for downloading the voice memo
+          example: https://cdn.example.com/voice-memos/abc123.m4a
+        filename:
+          type: string
+          description: Original filename
+          example: voice-memo.m4a
+        mime_type:
+          type: string
+          description: Audio MIME type
+          example: audio/x-m4a
+        size_bytes:
+          type: integer
+          description: File size in bytes
+          example: 524288
+        duration_ms:
+          type: integer
+          description: Duration in milliseconds
+          example: 15000
+          nullable: true
+    ChatInfo:
+      type: object
+      required:
+        - id
+        - handles
+        - is_group
+        - service
+        - is_active
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Chat identifier
+        handles:
+          type: array
+          description: Chat participants
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              handle:
+                type: string
+                description: Phone number or email address of the participant
+              service:
+                type: string
+              joined_at:
+                type: string
+                format: date-time
+        is_group:
+          type: boolean
+          description: Whether this is a group chat
+        service:
+          type: string
+          description: Messaging service
+          example: iMessage
+        is_active:
+          type: boolean
+          description: Whether the chat is active
+    MessagePart:
+      type: object
+      required:
+        - type
+      discriminator:
+        propertyName: type
+        mapping:
+          text: '#/components/schemas/TextPart'
+          media: '#/components/schemas/MediaPart'
+      oneOf:
+        - $ref: '#/components/schemas/TextPart'
+        - $ref: '#/components/schemas/MediaPart'
+    TextPart:
+      type: object
+      required:
+        - type
+        - value
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+          description: Indicates this is a text message part
+        value:
+          type: string
+          description: The text content
+          minLength: 1
+          maxLength: 10000
+          example: Hello!
+        idempotency_key:
+          type: string
+          description: |
+            Optional idempotency key for this specific message part.
+            Use this to prevent duplicate sends of the same part.
+          maxLength: 255
+          example: text-part-abc123
+      example:
+        type: text
+        value: Check this out!
+    MediaPart:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - media
+          description: Indicates this is a media attachment part
+        url:
+          type: string
+          format: uri
+          description: |
+            Any publicly accessible HTTPS URL to the media file. The server downloads and
+            sends the file automatically — no pre-upload step required.
+
+            **Note:** The file is downloaded on each send. If you send the same URL to
+            multiple recipients, consider using `attachment_id` instead to avoid redundant downloads.
+
+            **Supported formats:**
+            - Images: .jpg, .jpeg, .png, .gif, .heic, .heif, .tif, .tiff, .bmp
+            - Videos: .mp4, .mov, .m4v, .mpeg, .mpg, .3gp
+            - Documents: .pdf, .txt, .rtf, .csv, .doc, .docx, .xls, .xlsx, .ppt, .pptx, .pages, .numbers, .key, .epub, .zip, .html, .htm
+            - Contact & Calendar: .vcf, .ics
+
+            **Note:** Audio files should use the dedicated `/v3/chats/{chatId}/voicememo` endpoint.
+
+            Either `url` or `attachment_id` must be provided, but not both.
+          pattern: ^https://
+          example: https://example.com/images/photo.jpg
+        attachment_id:
+          type: string
+          format: uuid
+          description: |
+            Reference to a file pre-uploaded via `POST /v3/attachments` (optional).
+            The file is already stored, so sends using this ID skip the download step —
+            useful when sending the same file to many recipients.
+
+            Either `url` or `attachment_id` must be provided, but not both.
+          example: 550e8400-e29b-41d4-a716-446655440000
+        idempotency_key:
+          type: string
+          description: |
+            Optional idempotency key for this specific message part.
+            Use this to prevent duplicate sends of the same part.
+          maxLength: 255
+          example: media-part-xyz789
+      example:
+        type: media
+        url: https://skywalker-next.linqapp.com/_next/static/media/conversations-imessage.0dc825b0.png
+    TextPartResponse:
+      type: object
+      description: A text message part
+      required:
+        - type
+        - value
+        - reactions
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+          description: Indicates this is a text message part
+        value:
+          type: string
+          description: The text content
+          example: Check this out!
+        reactions:
+          type: array
+          nullable: true
+          description: Reactions on this message part
+          items:
+            $ref: '#/components/schemas/Reaction'
+      example:
+        type: text
+        value: Hello!
+    MediaPartResponse:
+      type: object
+      description: A media attachment part
+      required:
+        - type
+        - id
+        - url
+        - filename
+        - mime_type
+        - size_bytes
+        - reactions
+      properties:
+        type:
+          type: string
+          enum:
+            - media
+          description: Indicates this is a media attachment part
+        id:
+          type: string
+          format: uuid
+          description: Unique attachment identifier
+          example: abc12345-1234-5678-9abc-def012345678
+        url:
+          type: string
+          format: uri
+          description: |
+            Presigned URL for downloading the attachment (expires in 1 hour).
+          example: https://cdn.linqapp.com/attachments/550e8400/photo.jpg?signature=...
+        filename:
+          type: string
+          description: Original filename
+          example: photo.jpg
+        mime_type:
+          type: string
+          description: MIME type of the file
+          example: image/jpeg
+        size_bytes:
+          type: integer
+          description: File size in bytes
+          example: 245678
+        reactions:
+          type: array
+          nullable: true
+          description: Reactions on this message part
+          items:
+            $ref: '#/components/schemas/Reaction'
+      example:
+        type: media
+        id: abc12345-1234-5678-9abc-def012345678
+        url: https://cdn.linqapp.com/attachments/abc12345/photo.jpg?signature=...
+        filename: photo.jpg
+        mime_type: image/jpeg
+        size_bytes: 245678
+    MessageEffects:
+      type: object
+      description: |
+        Message effects for iMessage. Only one effect type can be applied per message.
+        Screen effects play a full-screen animation. Bubble effects animate the message bubble.
+      properties:
+        screen_effect:
+          type: string
+          description: |
+            Full-screen animation effect. Available screen effects:
+            - confetti: Colorful confetti falls from top of screen
+            - fireworks: Fireworks explode across the screen
+            - lasers: Laser beams scan across the screen
+            - sparkles: Sparkle/celebration effect
+            - celebration: Alias for sparkles (matches UI name)
+            - hearts: Floating hearts fill the screen
+            - love: Alias for hearts (matches UI name)
+            - balloons: Colorful balloons float up
+            - happy_birthday: Alias for balloons
+            - echo: Message text echoes/multiplies across screen
+            - spotlight: Spotlight illuminates the message
+          enum:
+            - confetti
+            - fireworks
+            - lasers
+            - sparkles
+            - celebration
+            - hearts
+            - love
+            - balloons
+            - happy_birthday
+            - echo
+            - spotlight
+          example: confetti
+        bubble_effect:
+          type: string
+          description: |
+            Message bubble animation effect. Available bubble effects:
+            - slam: Message slams onto screen with impact
+            - loud: Message appears larger with emphasis
+            - gentle: Message fades in softly
+            - invisible: Invisible ink effect (revealed on tap)
+          enum:
+            - slam
+            - loud
+            - gentle
+            - invisible
+          example: slam
+    MessageContent:
+      type: object
+      description: |
+        Message content container. Groups all message-related fields together,
+        separating the "what" (message content) from the "where" (routing fields like from/to).
+      required:
+        - parts
+      properties:
+        parts:
+          type: array
+          description: |
+            Array of message parts. Each part can be either text or media.
+            Parts are displayed in order. Text and media can be mixed.
+
+            **Supported Media:**
+            - Images: .jpg, .jpeg, .png, .gif, .heic, .heif, .tif, .tiff, .bmp
+            - Videos: .mp4, .mov, .m4v, .mpeg, .mpg, .3gp
+            - Documents: .pdf, .txt, .rtf, .csv, .doc, .docx, .xls, .xlsx, .ppt, .pptx, .pages, .numbers, .key, .epub, .zip, .html, .htm
+            - Contact & Calendar: .vcf, .ics
+
+            **Audio Handling:**
+            - Audio files (voice memos) should use the dedicated `/v3/chats/{chatId}/voicememo` endpoint
+            - This ensures proper voice memo formatting and playback in iMessage
+
+            **Validation Rule:** Consecutive text parts are not allowed. Text parts must
+            be separated by media parts. For example, [text, text] is invalid, but
+            [text, media, text] is valid.
+          minItems: 1
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/MessagePart'
+          example:
+            - type: text
+              value: Check this out!
+            - type: media
+              url: https://skywalker-next.linqapp.com/_next/static/media/conversations-imessage.0dc825b0.png
+        effect:
+          $ref: '#/components/schemas/MessageEffect'
+          description: iMessage effect to apply to this message (screen or bubble effect)
+        reply_to:
+          $ref: '#/components/schemas/ReplyTo'
+          description: Reply to another message to create a threaded conversation
+        idempotency_key:
+          type: string
+          description: |
+            Optional idempotency key for this message.
+            Use this to prevent duplicate sends of the same message.
+          maxLength: 255
+          example: msg-abc123xyz
+        preferred_service:
+          type: string
+          description: |
+            Preferred messaging service to use for this message.
+            If not specified, uses default fallback chain: iMessage → RCS → SMS.
+            - iMessage: Enforces iMessage without fallback to RCS or SMS. Message fails if recipient doesn't support iMessage.
+            - RCS: Enforces RCS or SMS (no iMessage). Uses RCS if recipient supports it, otherwise falls back to SMS.
+            - SMS: Enforces SMS (no iMessage). Uses RCS if recipient supports it, otherwise falls back to SMS.
+          enum:
+            - iMessage
+            - RCS
+            - SMS
+          example: iMessage
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - success
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+        success:
+          type: boolean
+          description: Always false for error responses
+          example: false
+        trace_id:
+          type: string
+          description: Unique trace ID for request tracing and debugging
+          example: trace_abc123def456
+    ErrorDetail:
+      type: object
+      required:
+        - status
+        - code
+        - message
+      properties:
+        status:
+          type: integer
+          description: HTTP status code (e.g., 400, 404, 500)
+          example: 400
+        code:
+          type: integer
+          description: Linq API error code for programmatic error handling
+          example: 1002
+        message:
+          type: string
+          description: Human-readable error message
+          example: Phone number must be in E.164 format
+    Message:
+      type: object
+      required:
+        - id
+        - chat_id
+        - is_from_me
+        - is_delivered
+        - is_read
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the message
+          format: uuid
+          example: 69a37c7d-af4f-4b5e-af42-e28e98ce873a
+        chat_id:
+          type: string
+          description: ID of the chat this message belongs to
+          format: uuid
+          example: 94c6bf33-31d9-40e3-a0e9-f94250ecedb9
+        from:
+          type: string
+          description: Phone number of the message sender
+          example: '+12052535597'
+        parts:
+          type: array
+          description: Message parts in order (text and media)
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/TextPartResponse'
+              - $ref: '#/components/schemas/MediaPartResponse'
+        reply_to:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ReplyTo'
+        is_from_me:
+          type: boolean
+          description: Whether this message was sent by the authenticated user
+          example: true
+        is_delivered:
+          type: boolean
+          description: Whether the message has been delivered
+          example: true
+        is_read:
+          type: boolean
+          description: Whether the message has been read
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          description: When the message was created
+          example: '2024-01-15T10:30:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          description: When the message was last updated
+          example: '2024-01-15T10:30:00Z'
+        sent_at:
+          type: string
+          format: date-time
+          description: When the message was sent
+          example: '2024-01-15T10:30:05Z'
+        delivered_at:
+          type: string
+          format: date-time
+          description: When the message was delivered
+          example: '2024-01-15T10:30:10Z'
+        read_at:
+          type: string
+          format: date-time
+          description: When the message was read
+          example: '2024-01-15T10:35:00Z'
+        effect:
+          allOf:
+            - $ref: '#/components/schemas/MessageEffect'
+          nullable: true
+          description: iMessage effect applied to this message (screen or bubble effect)
+    MessageEffect:
+      type: object
+      description: iMessage effect applied to a message (screen or bubble effect)
+      properties:
+        type:
+          type: string
+          description: Type of effect
+          enum:
+            - screen
+            - bubble
+          example: screen
+        name:
+          type: string
+          description: |
+            Name of the effect. Common values:
+            - Screen effects: confetti, fireworks, lasers, sparkles, celebration, hearts, love, balloons, happy_birthday, echo, spotlight
+            - Bubble effects: slam, loud, gentle, invisible
+          example: confetti
+    ReplyTo:
+      type: object
+      description: Indicates this message is a threaded reply to another message
+      required:
+        - message_id
+      properties:
+        message_id:
+          type: string
+          format: uuid
+          description: The ID of the message to reply to
+          example: 550e8400-e29b-41d4-a716-446655440000
+        part_index:
+          type: integer
+          format: int32
+          description: |
+            The specific message part to reply to (0-based index).
+            Defaults to 0 (first part) if not provided.
+            Use this when replying to a specific part of a multipart message.
+          minimum: 0
+          example: 0
+    Attachment:
+      type: object
+      required:
+        - id
+        - filename
+        - content_type
+        - size_bytes
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the attachment (UUID)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        filename:
+          type: string
+          description: Original filename of the attachment
+          example: photo.jpg
+        content_type:
+          $ref: '#/components/schemas/SupportedContentType'
+        size_bytes:
+          type: integer
+          format: int64
+          description: Size of the attachment in bytes
+          example: 1024000
+        status:
+          type: string
+          description: Current upload/processing status
+          enum:
+            - pending
+            - complete
+            - failed
+          example: complete
+        download_url:
+          type: string
+          format: uri
+          description: URL to download the attachment
+        created_at:
+          type: string
+          format: date-time
+          description: When the attachment was created
+          example: '2024-01-15T10:30:00Z'
+    ReactionType:
+      type: string
+      description: |
+        Type of reaction. Standard iMessage tapbacks are love, like, dislike, laugh, emphasize, question.
+        Custom emoji reactions have type "custom" with the actual emoji in the custom_emoji field.
+      enum:
+        - love
+        - like
+        - dislike
+        - laugh
+        - emphasize
+        - question
+        - custom
+      example: love
+    Reaction:
+      type: object
+      required:
+        - is_me
+        - handle
+        - type
+      properties:
+        is_me:
+          type: boolean
+          description: Whether this reaction is from the current user
+          example: false
+        handle:
+          $ref: '#/components/schemas/ChatHandle'
+        type:
+          $ref: '#/components/schemas/ReactionType'
+        custom_emoji:
+          type: string
+          description: Custom emoji if type is "custom", null otherwise
+          example: 🚀
+          nullable: true
+    DeleteMessageRequest:
+      type: object
+      required:
+        - chat_id
+      properties:
+        chat_id:
+          type: string
+          description: ID of the chat containing the message to delete
+          format: uuid
+          example: 94c6bf33-31d9-40e3-a0e9-f94250ecedb9
+    SendReactionRequest:
+      type: object
+      required:
+        - operation
+        - type
+      properties:
+        operation:
+          type: string
+          description: Whether to add or remove the reaction
+          enum:
+            - add
+            - remove
+          example: add
+        type:
+          $ref: '#/components/schemas/ReactionType'
+        custom_emoji:
+          type: string
+          description: |
+            Custom emoji string. Required when type is "custom".
+          example: 😍
+        part_index:
+          type: integer
+          description: |
+            Optional index of the message part to react to.
+            If not provided, reacts to the entire message (part 0).
+          example: 1
+    SupportedContentType:
+      type: string
+      description: |
+        Supported MIME types for file attachments and media URLs.
+
+        **Images:** image/jpeg, image/png, image/gif, image/heic, image/heif, image/tiff, image/bmp
+
+        **Videos:** video/mp4, video/quicktime, video/mpeg, video/3gpp
+
+        **Audio:** audio/mpeg, audio/mp4, audio/x-m4a, audio/x-caf, audio/wav, audio/aiff, audio/aac, audio/amr
+
+        **Documents:** application/pdf, text/plain, text/vcard, text/rtf, text/csv, text/html, text/calendar, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-powerpoint, application/vnd.openxmlformats-officedocument.presentationml.presentation, application/vnd.apple.pages, application/vnd.apple.numbers, application/vnd.apple.keynote, application/epub+zip, application/zip
+
+        **Unsupported:** WebP, SVG, FLAC, OGG, and executable files are explicitly rejected.
+      enum:
+        - image/jpeg
+        - image/jpg
+        - image/png
+        - image/gif
+        - image/heic
+        - image/heif
+        - image/tiff
+        - image/bmp
+        - image/x-ms-bmp
+        - video/mp4
+        - video/quicktime
+        - video/mpeg
+        - video/x-m4v
+        - video/3gpp
+        - audio/mpeg
+        - audio/mp3
+        - audio/mp4
+        - audio/x-m4a
+        - audio/m4a
+        - audio/x-caf
+        - audio/wav
+        - audio/x-wav
+        - audio/aiff
+        - audio/x-aiff
+        - audio/aac
+        - audio/x-aac
+        - audio/amr
+        - application/pdf
+        - text/plain
+        - text/vcard
+        - text/x-vcard
+        - text/rtf
+        - application/rtf
+        - text/csv
+        - text/html
+        - text/calendar
+        - application/msword
+        - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+        - application/vnd.ms-excel
+        - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        - application/vnd.ms-powerpoint
+        - application/vnd.openxmlformats-officedocument.presentationml.presentation
+        - application/vnd.apple.pages
+        - application/x-iwork-pages-sffpages
+        - application/vnd.apple.numbers
+        - application/x-iwork-numbers-sffnumbers
+        - application/vnd.apple.keynote
+        - application/x-iwork-keynote-sffkey
+        - application/epub+zip
+        - application/zip
+        - application/x-zip-compressed
+      example: image/jpeg
+    RequestUploadRequest:
+      type: object
+      required:
+        - filename
+        - content_type
+        - size_bytes
+      properties:
+        filename:
+          type: string
+          description: Name of the file to upload
+          minLength: 1
+          maxLength: 255
+          example: photo.jpg
+        content_type:
+          $ref: '#/components/schemas/SupportedContentType'
+        size_bytes:
+          type: integer
+          format: int64
+          description: Size of the file in bytes (max 100MB)
+          minimum: 1
+          maximum: 104857600
+          example: 1024000
+    RequestUploadResult:
+      type: object
+      required:
+        - attachment_id
+        - upload_url
+        - download_url
+        - http_method
+        - expires_at
+        - required_headers
+      properties:
+        attachment_id:
+          type: string
+          description: Unique identifier for the attachment (for status checks via GET /v3/attachments/{id})
+          format: uuid
+          example: abc12345-1234-5678-9abc-def012345678
+        upload_url:
+          type: string
+          format: uri
+          description: |
+            Presigned URL for uploading the file. PUT the raw binary file content to this URL
+            with the `required_headers`. Do not JSON-encode or multipart-wrap the body.
+            Expires after 15 minutes.
+          example: https://uploads.linqapp.com/attachments/abc12345?X-Amz-Algorithm=...
+        download_url:
+          type: string
+          format: uri
+          description: |
+            Permanent CDN URL for the file. Does not expire. Use the `attachment_id`
+            to reference this file in media parts when sending messages.
+          example: https://cdn.linqapp.com/uploads/partner-id/abc12345/photo.jpg
+        http_method:
+          type: string
+          description: HTTP method to use for upload (always PUT)
+          enum:
+            - PUT
+          example: PUT
+        expires_at:
+          type: string
+          format: date-time
+          description: When the upload URL expires (15 minutes from now)
+          example: '2024-01-15T10:45:00Z'
+        required_headers:
+          type: object
+          description: HTTP headers required for the upload request
+          additionalProperties:
+            type: string
+          example:
+            Content-Type: image/jpeg
+    Chat:
+      type: object
+      required:
+        - id
+        - display_name
+        - handles
+        - is_archived
+        - is_group
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the chat
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        display_name:
+          type: string
+          description: Display name for the chat
+          example: Team Discussion
+          nullable: true
+        service:
+          type: string
+          description: Service type for the chat
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+          example: iMessage
+          nullable: true
+        handles:
+          type: array
+          description: List of chat participants with full handle details
+          items:
+            $ref: '#/components/schemas/ChatHandle'
+        is_archived:
+          type: boolean
+          description: Whether the chat is archived
+          default: false
+        is_group:
+          type: boolean
+          description: Whether this is a group chat
+          default: false
+        created_at:
+          type: string
+          format: date-time
+          description: When the chat was created
+          example: '2024-01-15T10:30:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          description: When the chat was last updated
+          example: '2024-01-15T10:30:00Z'
+    ChatHandle:
+      type: object
+      required:
+        - id
+        - handle
+        - service
+        - joined_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for this handle
+          example: 550e8400-e29b-41d4-a716-446655440000
+        handle:
+          type: string
+          description: Phone number (E.164) or email address of the participant
+          example: '+15551234567'
+        service:
+          type: string
+          description: Service type (iMessage, SMS, RCS, etc.)
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+          example: iMessage
+        status:
+          type: string
+          description: Participant status
+          enum:
+            - active
+            - left
+            - removed
+          default: active
+        joined_at:
+          type: string
+          format: date-time
+          description: When this participant joined the chat
+          example: '2025-05-21T15:30:00.000-05:00'
+        left_at:
+          type: string
+          format: date-time
+          description: When they left (if applicable)
+          nullable: true
+        is_me:
+          type: boolean
+          description: Whether this handle belongs to the sender (your phone number)
+          example: false
+    ListChatsResult:
+      type: object
+      required:
+        - chats
+      properties:
+        chats:
+          type: array
+          description: List of chats
+          items:
+            $ref: '#/components/schemas/Chat'
+        next_cursor:
+          type: string
+          nullable: true
+          description: |
+            Cursor for fetching the next page of results.
+            Null if there are no more results to fetch.
+            Pass this value as the `cursor` parameter in the next request.
+    CreateChatRequest:
+      type: object
+      required:
+        - from
+        - to
+        - message
+      properties:
+        from:
+          type: string
+          description: |
+            Sender phone number in E.164 format. Must be a phone number that the
+            authenticated partner has permission to send from.
+          pattern: ^\+[1-9][0-9]{1,14}$
+          example: '+12052535597'
+        to:
+          type: array
+          description: |
+            Array of recipient handles (phone numbers in E.164 format or email addresses).
+            For individual chats, provide one recipient. For group chats, provide multiple.
+          minItems: 1
+          maxItems: 31
+          items:
+            type: string
+          example:
+            - '+12052532136'
+        message:
+          $ref: '#/components/schemas/MessageContent'
+    CreateChatResult:
+      type: object
+      description: Response for creating a new chat with an initial message
+      required:
+        - chat
+      properties:
+        chat:
+          type: object
+          required:
+            - id
+            - display_name
+            - service
+            - is_group
+            - handles
+            - message
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Unique identifier for the created chat (UUID)
+              example: 94c6bf33-31d9-40e3-a0e9-f94250ecedb9
+            display_name:
+              type: string
+              description: Display name of the chat or primary participant
+              example: John Doe
+              nullable: true
+            service:
+              type: string
+              description: Messaging service used
+              example: iMessage
+            is_group:
+              type: boolean
+              description: Whether this is a group chat
+              example: false
+            handles:
+              type: array
+              description: List of participants in the chat
+              items:
+                $ref: '#/components/schemas/ChatHandle'
+            message:
+              $ref: '#/components/schemas/SentMessage'
+    UpdateChatRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          description: New display name for the chat (group chats only)
+          example: Updated Team Name
+        group_chat_icon:
+          type: string
+          format: uri
+          description: URL of an image to set as the group chat icon (group chats only)
+          example: https://example.com/icon.png
+    AddParticipantRequest:
+      type: object
+      required:
+        - handle
+      properties:
+        handle:
+          type: string
+          description: Phone number (E.164 format) or email address of the participant to add
+          example: '+12052532136'
+    RemoveParticipantRequest:
+      type: object
+      required:
+        - handle
+      properties:
+        handle:
+          type: string
+          description: Phone number (E.164 format) or email address of the participant to remove
+          example: '+12052532136'
+    SendMessageToChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          $ref: '#/components/schemas/MessageContent'
+    GetMessagesResult:
+      type: object
+      required:
+        - messages
+      properties:
+        messages:
+          type: array
+          description: List of messages
+          items:
+            $ref: '#/components/schemas/Message'
+        next_cursor:
+          type: string
+          nullable: true
+          description: |
+            Cursor for fetching the next page of results.
+            Null if there are no more results to fetch.
+            Pass this value as the `cursor` parameter in the next request.
+    WebhookSubscriptionResponse:
+      type: object
+      required:
+        - id
+        - target_url
+        - subscribed_events
+        - is_active
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the webhook subscription
+          example: b2c3d4e5-f6a7-8901-bcde-f23456789012
+        target_url:
+          type: string
+          format: uri
+          description: URL where webhook events will be sent
+          example: https://webhooks.example.com/linq/events
+        subscribed_events:
+          type: array
+          description: List of event types this subscription receives
+          items:
+            type: string
+          example:
+            - message.sent
+            - message.delivered
+            - message.read
+        is_active:
+          type: boolean
+          description: Whether this subscription is currently active
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: When the subscription was created
+          example: '2024-01-15T10:30:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          description: When the subscription was last updated
+          example: '2024-01-15T10:30:00Z'
+    WebhookSubscriptionCreatedResponse:
+      type: object
+      description: Response returned when creating a webhook subscription. Includes the signing secret which is only shown once.
+      required:
+        - id
+        - target_url
+        - signing_secret
+        - subscribed_events
+        - is_active
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the webhook subscription
+          example: b2c3d4e5-f6a7-8901-bcde-f23456789012
+        target_url:
+          type: string
+          format: uri
+          description: URL where webhook events will be sent
+          example: https://webhooks.example.com/linq/events
+        signing_secret:
+          type: string
+          description: Secret for verifying webhook signatures. Store this securely - it cannot be retrieved again.
+          example: whsec_abc123def456
+        subscribed_events:
+          type: array
+          description: List of event types this subscription receives
+          items:
+            type: string
+          example:
+            - message.sent
+            - message.delivered
+            - message.read
+        is_active:
+          type: boolean
+          description: Whether this subscription is currently active
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: When the subscription was created
+          example: '2024-01-15T10:30:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          description: When the subscription was last updated
+          example: '2024-01-15T10:30:00Z'
+    CreateWebhookSubscriptionRequest:
+      type: object
+      required:
+        - target_url
+        - subscribed_events
+      properties:
+        target_url:
+          type: string
+          format: uri
+          description: URL where webhook events will be sent. Must be HTTPS.
+          example: https://webhooks.example.com/linq/events
+        subscribed_events:
+          type: array
+          description: List of event types to subscribe to
+          minItems: 1
+          items:
+            type: string
+          example:
+            - message.sent
+            - message.delivered
+    UpdateWebhookSubscriptionRequest:
+      type: object
+      properties:
+        target_url:
+          type: string
+          format: uri
+          description: New target URL for webhook events
+          example: https://webhooks.example.com/linq/events
+        subscribed_events:
+          type: array
+          description: Updated list of event types to subscribe to
+          minItems: 1
+          items:
+            type: string
+          example:
+            - message.sent
+            - message.delivered
+        is_active:
+          type: boolean
+          description: Activate or deactivate the subscription
+          example: true
+    ListWebhookSubscriptionsResult:
+      type: object
+      required:
+        - subscriptions
+      properties:
+        subscriptions:
+          type: array
+          description: List of webhook subscriptions
+          items:
+            $ref: '#/components/schemas/WebhookSubscriptionResponse'
+    ListPhoneNumbersResult:
+      type: object
+      required:
+        - phone_numbers
+      properties:
+        phone_numbers:
+          type: array
+          description: List of phone numbers assigned to the partner
+          items:
+            $ref: '#/components/schemas/PhoneNumberInfo'
+    PhoneNumberInfo:
+      type: object
+      required:
+        - id
+        - phone_number
+        - type
+        - country_code
+        - capabilities
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the phone number
+          example: 550e8400-e29b-41d4-a716-446655440000
+        phone_number:
+          type: string
+          description: Phone number in E.164 format
+          example: '+12025551234'
+        type:
+          type: string
+          description: Type of phone number
+          enum:
+            - TWILIO
+            - APPLE_ID
+          example: APPLE_ID
+        country_code:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+          example: US
+        capabilities:
+          $ref: '#/components/schemas/PhoneCapabilities'
+    PhoneCapabilities:
+      type: object
+      required:
+        - sms
+        - mms
+        - voice
+      properties:
+        sms:
+          type: boolean
+          description: Whether SMS messaging is supported
+          example: true
+        mms:
+          type: boolean
+          description: Whether MMS messaging is supported
+          example: true
+        voice:
+          type: boolean
+          description: Whether voice calls are supported
+          example: false
+    WebhookEnvelopeBase:
+      type: object
+      required:
+        - api_version
+        - event_type
+        - event_id
+        - created_at
+        - data
+        - trace_id
+        - partner_id
+      properties:
+        api_version:
+          type: string
+          description: API version for the webhook payload format
+          example: v3
+        event_id:
+          type: string
+          format: uuid
+          description: Unique identifier for this event (for deduplication)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        created_at:
+          type: string
+          format: date-time
+          description: When the event was created
+          example: '2025-11-23T17:30:00Z'
+        trace_id:
+          type: string
+          description: Trace ID for debugging and correlation across systems.
+          example: abc123def456
+        partner_id:
+          type: string
+          description: Partner identifier. Present on all webhooks for cross-referencing.
+          example: partner_abc123
+    schemas-TextPartResponse:
+      type: object
+      description: A text message part
+      required:
+        - type
+        - value
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+          description: Indicates this is a text message part
+        value:
+          type: string
+          description: The text content
+          example: Check this out!
+      example:
+        type: text
+        value: Hello!
+    schemas-MediaPartResponse:
+      type: object
+      description: A media attachment part
+      required:
+        - type
+        - id
+        - url
+        - filename
+        - mime_type
+        - size_bytes
+      properties:
+        type:
+          type: string
+          enum:
+            - media
+          description: Indicates this is a media attachment part
+        id:
+          type: string
+          format: uuid
+          description: Unique attachment identifier
+          example: abc12345-1234-5678-9abc-def012345678
+        url:
+          type: string
+          format: uri
+          description: |
+            Presigned URL for downloading the attachment (expires in 1 hour).
+          example: https://cdn.linqapp.com/attachments/550e8400/photo.jpg?signature=...
+        filename:
+          type: string
+          description: Original filename
+          example: photo.jpg
+        mime_type:
+          type: string
+          description: MIME type of the file
+          example: image/jpeg
+        size_bytes:
+          type: integer
+          description: File size in bytes
+          example: 245678
+      example:
+        type: media
+        id: abc12345-1234-5678-9abc-def012345678
+        url: https://cdn.linqapp.com/attachments/abc12345/photo.jpg?signature=...
+        filename: photo.jpg
+        mime_type: image/jpeg
+        size_bytes: 245678
+    schemas-MessageEffect:
+      type: object
+      description: iMessage effect applied to a message (screen or bubble animation)
+      properties:
+        type:
+          type: string
+          description: Effect category
+          enum:
+            - screen
+            - bubble
+          example: bubble
+        name:
+          type: string
+          description: Effect name (confetti, fireworks, slam, gentle, etc.)
+          example: gentle
+    MessagePayload:
+      type: object
+      description: Message content nested within webhook events
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Message identifier
+          example: 550e8400-e29b-41d4-a716-446655440001
+        parts:
+          type: array
+          description: Message content parts (text and/or media)
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/schemas-TextPartResponse'
+              - $ref: '#/components/schemas/schemas-MediaPartResponse'
+        effect:
+          $ref: '#/components/schemas/schemas-MessageEffect'
+        reply_to:
+          type: object
+          description: Reference to the message this is replying to
+          properties:
+            message_id:
+              type: string
+              format: uuid
+              description: The ID of the message being replied to
+              example: 550e8400-e29b-41d4-a716-446655440000
+            part_index:
+              type: integer
+              format: int32
+              minimum: 0
+              description: Index of the message part being replied to (0-based)
+              example: 0
+    MessageSentEvent:
+      type: object
+      description: Payload for message.sent webhook events
+      properties:
+        chat_id:
+          type: string
+          format: uuid
+          description: Chat identifier
+          example: 550e8400-e29b-41d4-a716-446655440000
+        from:
+          type: string
+          description: Phone number of the message sender (the phone number you sent from)
+          example: '+14155551234'
+        message:
+          $ref: '#/components/schemas/MessagePayload'
+        is_from_me:
+          type: boolean
+          description: Whether the message was sent by us (always true for sent events)
+          example: true
+        service:
+          type: string
+          description: Message service type
+          enum:
+            - iMessage
+            - SMS
+          example: iMessage
+    MessageSentWebhook:
+      description: Complete webhook payload for message.sent events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: message.sent
+            data:
+              $ref: '#/components/schemas/MessageSentEvent'
+    MessageReceivedEvent:
+      type: object
+      description: Payload for message.received webhook events
+      properties:
+        chat_id:
+          type: string
+          format: uuid
+          description: Chat identifier
+          example: 550e8400-e29b-41d4-a716-446655440000
+        from:
+          type: string
+          description: Phone number or email address of the message sender
+          example: '+14155559876'
+        message:
+          $ref: '#/components/schemas/MessagePayload'
+        recipient_phone:
+          type: string
+          description: Our phone number that received the message
+          example: '+14155551234'
+        is_from_me:
+          type: boolean
+          description: Whether the message was sent by us (always false for received events)
+          example: false
+        received_at:
+          type: string
+          format: date-time
+          description: When the message was received
+          example: '2025-11-23T17:29:55Z'
+        service:
+          type: string
+          description: Message service type
+          enum:
+            - iMessage
+            - SMS
+          example: iMessage
+    MessageReceivedWebhook:
+      description: Complete webhook payload for message.received events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: message.received
+            data:
+              $ref: '#/components/schemas/MessageReceivedEvent'
+    MessageReadEvent:
+      type: object
+      description: Payload for message.read webhook events
+      required:
+        - read_at
+      properties:
+        chat_id:
+          type: string
+          description: Chat identifier (UUID)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        message_id:
+          type: string
+          description: Message identifier (UUID)
+          example: 550e8400-e29b-41d4-a716-446655440001
+        read_at:
+          type: string
+          format: date-time
+          description: When the message was read
+          example: '2025-11-23T17:35:00Z'
+    MessageReadWebhook:
+      description: Complete webhook payload for message.read events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: message.read
+            data:
+              $ref: '#/components/schemas/MessageReadEvent'
+    MessageDeliveredEvent:
+      type: object
+      description: Payload for message.delivered webhook events
+      required:
+        - delivered_at
+      properties:
+        chat_id:
+          type: string
+          description: Chat identifier (UUID)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        message_id:
+          type: string
+          description: Message identifier (UUID)
+          example: 550e8400-e29b-41d4-a716-446655440001
+        delivered_at:
+          type: string
+          format: date-time
+          description: When the message was delivered to the recipient's device
+          example: '2025-11-23T17:32:00Z'
+    MessageDeliveredWebhook:
+      description: Complete webhook payload for message.delivered events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: message.delivered
+            data:
+              $ref: '#/components/schemas/MessageDeliveredEvent'
+    WebhookErrorCode:
+      type: integer
+      description: |
+        Error codes that appear in webhook failure events (`message.failed`,
+        `chat.group_name_update_failed`, `chat.group_icon_update_failed`).
+
+        | Code | Name | Description | Recommended Action |
+        |------|------|-------------|-------------------|
+        | 3007 | `retries_exhausted` | Maximum delivery attempts exceeded | Retry after delay |
+        | 4001 | `delivery_failed` | Request could not be delivered | Check phone status |
+      example: 4001
+      enum:
+        - 3007
+        - 4001
+      x-enum-varnames:
+        - RetriesExhausted
+        - DeliveryFailed
+    MessageFailedEvent:
+      type: object
+      description: |
+        Error details for message.failed webhook events.
+        See [WebhookErrorCode](#/components/schemas/WebhookErrorCode) for the full error code reference.
+      required:
+        - code
+        - failed_at
+      properties:
+        chat_id:
+          type: string
+          description: Chat identifier (UUID)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        message_id:
+          type: string
+          description: Message identifier (UUID)
+          example: 550e8400-e29b-41d4-a716-446655440001
+        code:
+          $ref: '#/components/schemas/WebhookErrorCode'
+        reason:
+          type: string
+          description: Human-readable description of the failure
+          example: Request expired before being processed
+        failed_at:
+          type: string
+          format: date-time
+          description: When the failure was detected
+          example: '2025-11-23T17:35:00Z'
+    MessageFailedWebhook:
+      description: Complete webhook payload for message.failed events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: message.failed
+            data:
+              $ref: '#/components/schemas/MessageFailedEvent'
+    ReactionEventBase:
+      type: object
+      required:
+        - reaction_type
+        - is_from_me
+      properties:
+        chat_id:
+          type: string
+          description: Chat identifier (UUID)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        from:
+          type: string
+          description: Phone number or email address of the person who added/removed the reaction
+          example: '+14155559876'
+        message_id:
+          type: string
+          description: Message identifier (UUID) that the reaction was added to or removed from
+          example: 550e8400-e29b-41d4-a716-446655440001
+        part_index:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Index of the message part that was reacted to (0-based)
+          example: 0
+        reaction_type:
+          $ref: '#/components/schemas/ReactionType'
+        custom_emoji:
+          type: string
+          nullable: true
+          description: The actual emoji when reaction_type is "custom". Null for standard tapbacks.
+          example: null
+        is_from_me:
+          type: boolean
+          description: Whether this reaction was from the owner of the phone number (true) or from someone else (false)
+          example: false
+        service:
+          type: string
+          description: Message service type
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+          example: iMessage
+        reacted_at:
+          type: string
+          format: date-time
+          description: When the reaction was added or removed
+          example: '2025-11-23T17:35:00Z'
+    ReactionAddedEvent:
+      description: Payload for reaction.added webhook events
+      allOf:
+        - $ref: '#/components/schemas/ReactionEventBase'
+    ReactionAddedWebhook:
+      description: Complete webhook payload for reaction.added events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: reaction.added
+            data:
+              $ref: '#/components/schemas/ReactionAddedEvent'
+    ReactionRemovedEvent:
+      description: Payload for reaction.removed webhook events
+      allOf:
+        - $ref: '#/components/schemas/ReactionEventBase'
+    ReactionRemovedWebhook:
+      description: Complete webhook payload for reaction.removed events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: reaction.removed
+            data:
+              $ref: '#/components/schemas/ReactionRemovedEvent'
+    ParticipantAddedEvent:
+      type: object
+      description: Payload for participant.added webhook events
+      required:
+        - handle
+      properties:
+        chat_id:
+          type: string
+          description: Chat identifier (UUID) of the group chat
+          example: 550e8400-e29b-41d4-a716-446655440000
+        handle:
+          type: string
+          description: Handle (phone number or email address) of the added participant
+          example: '+14155559876'
+        added_at:
+          type: string
+          format: date-time
+          description: When the participant was added
+          example: '2025-11-23T17:40:00Z'
+    ParticipantAddedWebhook:
+      description: Complete webhook payload for participant.added events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: participant.added
+            data:
+              $ref: '#/components/schemas/ParticipantAddedEvent'
+    ParticipantRemovedEvent:
+      type: object
+      description: Payload for participant.removed webhook events
+      required:
+        - handle
+      properties:
+        chat_id:
+          type: string
+          description: Chat identifier (UUID) of the group chat
+          example: 550e8400-e29b-41d4-a716-446655440000
+        handle:
+          type: string
+          description: Handle (phone number or email address) of the removed participant
+          example: '+14155559876'
+        removed_at:
+          type: string
+          format: date-time
+          description: When the participant was removed
+          example: '2025-11-23T17:45:00Z'
+    ParticipantRemovedWebhook:
+      description: Complete webhook payload for participant.removed events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: participant.removed
+            data:
+              $ref: '#/components/schemas/ParticipantRemovedEvent'
+    Handle:
+      type: object
+      description: A handle representing a person (phone number or email address) as a participant in a chat
+      required:
+        - handle
+        - is_me
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for this handle
+          example: 550e8400-e29b-41d4-a716-446655440000
+        handle:
+          type: string
+          description: Phone number (E.164 format) or email address
+          example: '+14155559876'
+        is_me:
+          type: boolean
+          description: Whether this handle belongs to your account (your phone number)
+          example: false
+        service:
+          type: string
+          description: Service type (iMessage, SMS, RCS)
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+          example: iMessage
+        status:
+          type: string
+          description: Participant status in the chat
+          enum:
+            - active
+            - left
+            - removed
+          default: active
+          example: active
+        joined_at:
+          type: string
+          format: date-time
+          description: When this participant joined the chat
+          example: '2025-05-21T15:30:00.000Z'
+        left_at:
+          type: string
+          format: date-time
+          description: When this participant left the chat (if applicable)
+          nullable: true
+          example: null
+    ChatGroupNameUpdatedEvent:
+      type: object
+      description: Payload for chat.group_name_updated webhook events
+      required:
+        - chat_id
+        - updated_at
+      properties:
+        chat_id:
+          type: string
+          description: Chat identifier (UUID) of the group chat
+          example: 550e8400-e29b-41d4-a716-446655440000
+        old_value:
+          type: string
+          nullable: true
+          description: Previous group name (null if no previous name)
+          example: Old Group Name
+        new_value:
+          type: string
+          nullable: true
+          description: New group name (null if the name was removed)
+          example: New Group Name
+        changed_by_handle:
+          $ref: '#/components/schemas/Handle'
+          nullable: true
+          description: The handle who made the change.
+        updated_at:
+          type: string
+          format: date-time
+          description: When the update occurred
+          example: '2025-11-23T17:50:00Z'
+    ChatGroupNameUpdatedWebhook:
+      description: Complete webhook payload for chat.group_name_updated events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: chat.group_name_updated
+            data:
+              $ref: '#/components/schemas/ChatGroupNameUpdatedEvent'
+    ChatGroupIconUpdatedEvent:
+      type: object
+      description: Payload for chat.group_icon_updated webhook events
+      required:
+        - chat_id
+        - updated_at
+      properties:
+        chat_id:
+          type: string
+          description: Chat identifier (UUID) of the group chat
+          example: 550e8400-e29b-41d4-a716-446655440000
+        old_value:
+          type: string
+          nullable: true
+          description: Previous icon URL (null if no previous icon)
+          example: https://example.com/old-icon.png
+        new_value:
+          type: string
+          nullable: true
+          description: New icon URL (null if the icon was removed)
+          example: https://example.com/new-icon.png
+        changed_by_handle:
+          $ref: '#/components/schemas/Handle'
+          nullable: true
+          description: The handle who made the change.
+        updated_at:
+          type: string
+          format: date-time
+          description: When the update occurred
+          example: '2025-11-23T17:50:00Z'
+    ChatGroupIconUpdatedWebhook:
+      description: Complete webhook payload for chat.group_icon_updated events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: chat.group_icon_updated
+            data:
+              $ref: '#/components/schemas/ChatGroupIconUpdatedEvent'
+    ChatGroupNameUpdateFailedEvent:
+      type: object
+      description: |
+        Error details for chat.group_name_update_failed webhook events.
+        See [WebhookErrorCode](#/components/schemas/WebhookErrorCode) for the full error code reference.
+      required:
+        - chat_id
+        - error_code
+        - failed_at
+      properties:
+        chat_id:
+          type: string
+          description: Chat identifier (UUID) of the group chat
+          example: 550e8400-e29b-41d4-a716-446655440000
+        error_code:
+          $ref: '#/components/schemas/WebhookErrorCode'
+        failed_at:
+          type: string
+          format: date-time
+          description: When the failure was detected
+          example: '2025-11-23T17:55:00Z'
+    ChatGroupNameUpdateFailedWebhook:
+      description: Complete webhook payload for chat.group_name_update_failed events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: chat.group_name_update_failed
+            data:
+              $ref: '#/components/schemas/ChatGroupNameUpdateFailedEvent'
+    ChatGroupIconUpdateFailedEvent:
+      type: object
+      description: |
+        Error details for chat.group_icon_update_failed webhook events.
+        See [WebhookErrorCode](#/components/schemas/WebhookErrorCode) for the full error code reference.
+      required:
+        - chat_id
+        - error_code
+        - failed_at
+      properties:
+        chat_id:
+          type: string
+          description: Chat identifier (UUID) of the group chat
+          example: 550e8400-e29b-41d4-a716-446655440000
+        error_code:
+          $ref: '#/components/schemas/WebhookErrorCode'
+        failed_at:
+          type: string
+          format: date-time
+          description: When the failure was detected
+          example: '2025-11-23T17:55:00Z'
+    ChatGroupIconUpdateFailedWebhook:
+      description: Complete webhook payload for chat.group_icon_update_failed events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: chat.group_icon_update_failed
+            data:
+              $ref: '#/components/schemas/ChatGroupIconUpdateFailedEvent'
+x-tagGroups:
+  - name: Messaging
+    tags:
+      - Chats
+      - Messages
+      - Attachments
+      - Phone Numbers
+  - name: Webhooks
+    tags:
+      - Webhooks
+      - Webhook Events

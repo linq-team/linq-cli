@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/linq-team/linq-cli/internal/apiv3"
-	"github.com/linq-team/linq-cli/internal/client"
 	"github.com/linq-team/linq-cli/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -46,14 +47,20 @@ var sendCmd = &cobra.Command{
 			return fmt.Errorf("--from flag required (or set default with 'linq config set default_from +1234567890')")
 		}
 
-		c := client.New(cfg.BaseURL(), token)
+		client, err := apiv3.NewClientWithResponses(cfg.BaseURL(), apiv3.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+			req.Header.Set("Authorization", "Bearer "+token)
+			return nil
+		}))
+		if err != nil {
+			return fmt.Errorf("failed to create client: %w", err)
+		}
 
 		var textPart apiv3.MessagePart
 		if err := textPart.FromTextPart(apiv3.TextPart{Value: message}); err != nil {
 			return fmt.Errorf("failed to create message part: %w", err)
 		}
 
-		req := &apiv3.CreateChatRequest{
+		body := apiv3.CreateChatJSONRequestBody{
 			From: from,
 			To:   []string{to},
 			Message: apiv3.MessageContent{
@@ -63,18 +70,23 @@ var sendCmd = &cobra.Command{
 
 		if effect != "" {
 			effectType := apiv3.MessageEffectTypeScreen
-			req.Message.Effect = &apiv3.MessageEffect{
+			body.Message.Effect = &apiv3.MessageEffect{
 				Type: &effectType,
 				Name: &effect,
 			}
 		}
 
-		resp, err := c.CreateChat(req)
+		resp, err := client.CreateChatWithResponse(context.Background(), body)
 		if err != nil {
 			return fmt.Errorf("send failed: %w", err)
 		}
 
-		fmt.Printf("Message sent to %s (chat: %s, message: %s)\n", to, resp.Chat.Id, resp.Chat.Message.Id)
+		if resp.JSON201 == nil {
+			return fmt.Errorf("send failed: %s", resp.Status())
+		}
+
+		result := resp.JSON201
+		fmt.Printf("Message sent to %s (chat: %s, message: %s)\n", to, result.Chat.Id, result.Chat.Message.Id)
 		return nil
 	},
 }

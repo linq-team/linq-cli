@@ -1,6 +1,5 @@
 bin/
 dist/
-spec/
 .idea/
 *.exe
 *.dll

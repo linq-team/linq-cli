@@ -4,8 +4,15 @@
 package apiv3
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/oapi-codegen/runtime"
@@ -51,40 +58,6 @@ const (
 	DeliveryStatusPending   DeliveryStatus = "pending"
 	DeliveryStatusQueued    DeliveryStatus = "queued"
 	DeliveryStatusSent      DeliveryStatus = "sent"
-)
-
-// Defines values for ErrorCode.
-const (
-	ErrorCodeAccessDenied          ErrorCode = 2005
-	ErrorCodeAttachmentNotFound    ErrorCode = 2003
-	ErrorCodeAttachmentNotReady    ErrorCode = 2007
-	ErrorCodeCannotUpdateDM        ErrorCode = 1006
-	ErrorCodeChatNotFound          ErrorCode = 2001
-	ErrorCodeDatabaseConnection    ErrorCode = 3001
-	ErrorCodeDatabaseQuery         ErrorCode = 3002
-	ErrorCodeDeliveryFailed        ErrorCode = 4001
-	ErrorCodeEventStreamConnection ErrorCode = 3003
-	ErrorCodeEventStreamPublish    ErrorCode = 3004
-	ErrorCodeFileDownloadFailed    ErrorCode = 5002
-	ErrorCodeFileTooLarge          ErrorCode = 5005
-	ErrorCodeFileUploadFailed      ErrorCode = 5001
-	ErrorCodeInternalServerError   ErrorCode = 3006
-	ErrorCodeInvalidFileType       ErrorCode = 5004
-	ErrorCodeInvalidMessageContent ErrorCode = 1004
-	ErrorCodeInvalidParameterValue ErrorCode = 1005
-	ErrorCodeInvalidPhoneFormat    ErrorCode = 1002
-	ErrorCodeInvalidRequestBody    ErrorCode = 1003
-	ErrorCodeMessageNotFound       ErrorCode = 2002
-	ErrorCodeMissingRequiredField  ErrorCode = 1001
-	ErrorCodeNetworkTimeout        ErrorCode = 3005
-	ErrorCodePhoneNotAvailable     ErrorCode = 4002
-	ErrorCodePhonePermissionDenied ErrorCode = 2006
-	ErrorCodePresignedURLFailed    ErrorCode = 5003
-	ErrorCodeRateLimitExceeded     ErrorCode = 1007
-	ErrorCodeRetriesExhausted      ErrorCode = 3007
-	ErrorCodeServiceUnavailable    ErrorCode = 4004
-	ErrorCodeUnauthorized          ErrorCode = 2004
-	ErrorCodeWebhookDeliveryFailed ErrorCode = 4003
 )
 
 // Defines values for HandleService.
@@ -183,9 +156,9 @@ const (
 	ReactionTypeQuestion  ReactionType = "question"
 )
 
-// Defines values for RequestUploadResponseHttpMethod.
+// Defines values for RequestUploadResultHttpMethod.
 const (
-	PUT RequestUploadResponseHttpMethod = "PUT"
+	PUT RequestUploadResultHttpMethod = "PUT"
 )
 
 // Defines values for SendReactionRequestOperation.
@@ -261,8 +234,8 @@ const (
 
 // Defines values for WebhookErrorCode.
 const (
-	WebhookErrorCodeDeliveryFailed   WebhookErrorCode = 4001
-	WebhookErrorCodeRetriesExhausted WebhookErrorCode = 3007
+	DeliveryFailed   WebhookErrorCode = 4001
+	RetriesExhausted WebhookErrorCode = 3007
 )
 
 // Defines values for SchemasMediaPartResponseType.
@@ -601,8 +574,8 @@ type CreateChatRequest struct {
 	To []string `json:"to"`
 }
 
-// CreateChatResponse Response for creating a new chat with an initial message
-type CreateChatResponse struct {
+// CreateChatResult Response for creating a new chat with an initial message
+type CreateChatResult struct {
 	Chat struct {
 		// DisplayName Display name of the chat or primary participant
 		DisplayName *string `json:"display_name"`
@@ -642,187 +615,10 @@ type DeleteMessageRequest struct {
 // DeliveryStatus Current delivery status of a message
 type DeliveryStatus string
 
-// ErrorCode Linq API error codes for programmatic error handling.
-//
-// ## Error Code Ranges
-//
-// | Range | Category | Description |
-// |-------|----------|-------------|
-// | 1xxx | Client Errors | Validation failures, malformed requests |
-// | 2xxx | Resource Errors | Not found, permission denied |
-// | 3xxx | Infrastructure | Processing failures, retries exhausted |
-// | 4xxx | Delivery | Message delivery failures |
-// | 5xxx | Attachments | File upload/download failures |
-//
-// ## Complete Error Code Reference
-//
-// ### 1xxx: Client/Request Errors
-//
-// | Code | Name | Description | HTTP |
-// |------|------|-------------|------|
-// | 1001 | `missing_required_field` | A required field is missing from the request | 400 |
-// | 1002 | `invalid_phone_format` | Phone number must be in E.164 format (e.g., +14155551234) | 400 |
-// | 1003 | `invalid_request_body` | Request body is malformed or contains invalid JSON | 400 |
-// | 1004 | `invalid_message_content` | Message content or parts are invalid | 400 |
-// | 1005 | `invalid_parameter` | A parameter value is invalid | 400 |
-// | 1006 | `cannot_update_dm` | Cannot update a direct message chat (only group chats) | 400 |
-// | 1007 | `rate_limit_exceeded` | Daily message limit exceeded for this partner | 429 |
-//
-// ### 2xxx: Resource Errors
-//
-// | Code | Name | Description | HTTP |
-// |------|------|-------------|------|
-// | 2001 | `chat_not_found` | The requested chat does not exist | 404 |
-// | 2002 | `message_not_found` | The requested message does not exist | 404 |
-// | 2003 | `attachment_not_found` | The requested attachment does not exist | 404 |
-// | 2004 | `unauthorized` | Missing or invalid authentication token | 401 |
-// | 2005 | `access_denied` | You don't have permission to access this resource | 403 |
-// | 2006 | `phone_permission_denied` | You don't have permission to send from this phone number | 403 |
-// | 2007 | `attachment_not_ready` | Attachment is still being processed | 404 |
-//
-// ### 3xxx: Infrastructure Errors
-//
-// | Code | Name | Description | HTTP |
-// |------|------|-------------|------|
-// | 3001 | `database_connection` | Database connection error (transient) | 500 |
-// | 3002 | `database_query` | Database operation failed | 500 |
-// | 3003 | `event_stream_connection` | Event stream connection error (transient) | 500 |
-// | 3004 | `event_stream_publish` | Failed to publish to event stream | 500 |
-// | 3005 | `network_timeout` | Network operation timed out | 504 |
-// | 3006 | `internal_error` | Internal server error | 500 |
-// | 3007 | `retries_exhausted` | Maximum delivery attempts exceeded | 500 |
-//
-// ### 4xxx: Delivery Errors
-//
-// | Code | Name | Description | HTTP |
-// |------|------|-------------|------|
-// | 4001 | `delivery_failed` | Request could not be delivered for processing | 500 |
-// | 4002 | `phone_not_available` | Phone number is not available for this operation | 500 |
-// | 4003 | `webhook_delivery_failed` | Webhook delivery to your endpoint failed | 500 |
-// | 4004 | `service_unavailable` | External service is temporarily unavailable | 503 |
-//
-// ### 5xxx: Attachment/File Errors
-//
-// | Code | Name | Description | HTTP |
-// |------|------|-------------|------|
-// | 5001 | `file_upload_failed` | File upload failed | 500 |
-// | 5002 | `file_download_failed` | File download failed | 500 |
-// | 5003 | `presigned_url_failed` | Failed to generate file access URL | 500 |
-// | 5004 | `invalid_file_type` | File type is not supported | 400 |
-// | 5005 | `file_too_large` | File exceeds the maximum size limit | 400 |
-//
-// ## Handling Errors
-//
-// ```json
-//
-//	{
-//	  "success": false,
-//	  "error": {
-//	    "status": 400,
-//	    "code": 1002,
-//	    "message": "Phone number must be in E.164 format"
-//	  },
-//	  "trace_id": "abc123"
-//	}
-//
-// ```
-//
-// **Recommended retry strategy for transient errors (3xxx, 4xxx with 5xx HTTP):**
-// 1. Wait 1-5 seconds, retry
-// 2. If still failing, wait 30 seconds
-// 3. After 3 failed attempts, log and alert
-type ErrorCode int
-
 // ErrorDetail defines model for ErrorDetail.
 type ErrorDetail struct {
-	// Code Linq API error codes for programmatic error handling.
-	//
-	// ## Error Code Ranges
-	//
-	// | Range | Category | Description |
-	// |-------|----------|-------------|
-	// | 1xxx | Client Errors | Validation failures, malformed requests |
-	// | 2xxx | Resource Errors | Not found, permission denied |
-	// | 3xxx | Infrastructure | Processing failures, retries exhausted |
-	// | 4xxx | Delivery | Message delivery failures |
-	// | 5xxx | Attachments | File upload/download failures |
-	//
-	// ## Complete Error Code Reference
-	//
-	// ### 1xxx: Client/Request Errors
-	//
-	// | Code | Name | Description | HTTP |
-	// |------|------|-------------|------|
-	// | 1001 | `missing_required_field` | A required field is missing from the request | 400 |
-	// | 1002 | `invalid_phone_format` | Phone number must be in E.164 format (e.g., +14155551234) | 400 |
-	// | 1003 | `invalid_request_body` | Request body is malformed or contains invalid JSON | 400 |
-	// | 1004 | `invalid_message_content` | Message content or parts are invalid | 400 |
-	// | 1005 | `invalid_parameter` | A parameter value is invalid | 400 |
-	// | 1006 | `cannot_update_dm` | Cannot update a direct message chat (only group chats) | 400 |
-	// | 1007 | `rate_limit_exceeded` | Daily message limit exceeded for this partner | 429 |
-	//
-	// ### 2xxx: Resource Errors
-	//
-	// | Code | Name | Description | HTTP |
-	// |------|------|-------------|------|
-	// | 2001 | `chat_not_found` | The requested chat does not exist | 404 |
-	// | 2002 | `message_not_found` | The requested message does not exist | 404 |
-	// | 2003 | `attachment_not_found` | The requested attachment does not exist | 404 |
-	// | 2004 | `unauthorized` | Missing or invalid authentication token | 401 |
-	// | 2005 | `access_denied` | You don't have permission to access this resource | 403 |
-	// | 2006 | `phone_permission_denied` | You don't have permission to send from this phone number | 403 |
-	// | 2007 | `attachment_not_ready` | Attachment is still being processed | 404 |
-	//
-	// ### 3xxx: Infrastructure Errors
-	//
-	// | Code | Name | Description | HTTP |
-	// |------|------|-------------|------|
-	// | 3001 | `database_connection` | Database connection error (transient) | 500 |
-	// | 3002 | `database_query` | Database operation failed | 500 |
-	// | 3003 | `event_stream_connection` | Event stream connection error (transient) | 500 |
-	// | 3004 | `event_stream_publish` | Failed to publish to event stream | 500 |
-	// | 3005 | `network_timeout` | Network operation timed out | 504 |
-	// | 3006 | `internal_error` | Internal server error | 500 |
-	// | 3007 | `retries_exhausted` | Maximum delivery attempts exceeded | 500 |
-	//
-	// ### 4xxx: Delivery Errors
-	//
-	// | Code | Name | Description | HTTP |
-	// |------|------|-------------|------|
-	// | 4001 | `delivery_failed` | Request could not be delivered for processing | 500 |
-	// | 4002 | `phone_not_available` | Phone number is not available for this operation | 500 |
-	// | 4003 | `webhook_delivery_failed` | Webhook delivery to your endpoint failed | 500 |
-	// | 4004 | `service_unavailable` | External service is temporarily unavailable | 503 |
-	//
-	// ### 5xxx: Attachment/File Errors
-	//
-	// | Code | Name | Description | HTTP |
-	// |------|------|-------------|------|
-	// | 5001 | `file_upload_failed` | File upload failed | 500 |
-	// | 5002 | `file_download_failed` | File download failed | 500 |
-	// | 5003 | `presigned_url_failed` | Failed to generate file access URL | 500 |
-	// | 5004 | `invalid_file_type` | File type is not supported | 400 |
-	// | 5005 | `file_too_large` | File exceeds the maximum size limit | 400 |
-	//
-	// ## Handling Errors
-	//
-	// ```json
-	// {
-	//   "success": false,
-	//   "error": {
-	//     "status": 400,
-	//     "code": 1002,
-	//     "message": "Phone number must be in E.164 format"
-	//   },
-	//   "trace_id": "abc123"
-	// }
-	// ```
-	//
-	// **Recommended retry strategy for transient errors (3xxx, 4xxx with 5xx HTTP):**
-	// 1. Wait 1-5 seconds, retry
-	// 2. If still failing, wait 30 seconds
-	// 3. After 3 failed attempts, log and alert
-	Code ErrorCode `json:"code"`
+	// Code Linq API error code for programmatic error handling
+	Code int `json:"code"`
 
 	// Message Human-readable error message
 	Message string `json:"message"`
@@ -842,8 +638,8 @@ type ErrorResponse struct {
 	TraceId *string `json:"trace_id,omitempty"`
 }
 
-// GetMessagesResponse defines model for GetMessagesResponse.
-type GetMessagesResponse struct {
+// GetMessagesResult defines model for GetMessagesResult.
+type GetMessagesResult struct {
 	// Messages List of messages
 	Messages []Message `json:"messages"`
 
@@ -892,8 +688,8 @@ type HandleService string
 // HandleStatus Participant status in the chat
 type HandleStatus string
 
-// ListChatsResponse defines model for ListChatsResponse.
-type ListChatsResponse struct {
+// ListChatsResult defines model for ListChatsResult.
+type ListChatsResult struct {
 	// Chats List of chats
 	Chats []Chat `json:"chats"`
 
@@ -903,14 +699,14 @@ type ListChatsResponse struct {
 	NextCursor *string `json:"next_cursor"`
 }
 
-// ListPhoneNumbersResponse defines model for ListPhoneNumbersResponse.
-type ListPhoneNumbersResponse struct {
+// ListPhoneNumbersResult defines model for ListPhoneNumbersResult.
+type ListPhoneNumbersResult struct {
 	// PhoneNumbers List of phone numbers assigned to the partner
 	PhoneNumbers []PhoneNumberInfo `json:"phone_numbers"`
 }
 
-// ListWebhookSubscriptionsResponse defines model for ListWebhookSubscriptionsResponse.
-type ListWebhookSubscriptionsResponse struct {
+// ListWebhookSubscriptionsResult defines model for ListWebhookSubscriptionsResult.
+type ListWebhookSubscriptionsResult struct {
 	// Subscriptions List of webhook subscriptions
 	Subscriptions []WebhookSubscriptionResponse `json:"subscriptions"`
 }
@@ -1631,8 +1427,8 @@ type RequestUploadRequest struct {
 	SizeBytes int64 `json:"size_bytes"`
 }
 
-// RequestUploadResponse defines model for RequestUploadResponse.
-type RequestUploadResponse struct {
+// RequestUploadResult defines model for RequestUploadResult.
+type RequestUploadResult struct {
 	// AttachmentId Unique identifier for the attachment (for status checks via GET /v3/attachments/{id})
 	AttachmentId openapi_types.UUID `json:"attachment_id"`
 
@@ -1644,7 +1440,7 @@ type RequestUploadResponse struct {
 	ExpiresAt time.Time `json:"expires_at"`
 
 	// HttpMethod HTTP method to use for upload (always PUT)
-	HttpMethod RequestUploadResponseHttpMethod `json:"http_method"`
+	HttpMethod RequestUploadResultHttpMethod `json:"http_method"`
 
 	// RequiredHeaders HTTP headers required for the upload request
 	RequiredHeaders map[string]string `json:"required_headers"`
@@ -1655,8 +1451,8 @@ type RequestUploadResponse struct {
 	UploadUrl string `json:"upload_url"`
 }
 
-// RequestUploadResponseHttpMethod HTTP method to use for upload (always PUT)
-type RequestUploadResponseHttpMethod string
+// RequestUploadResultHttpMethod HTTP method to use for upload (always PUT)
+type RequestUploadResultHttpMethod string
 
 // SendMessageResponse Response for sending a message to a chat
 type SendMessageResponse struct {
@@ -1712,8 +1508,8 @@ type SendVoiceMemoToChatRequest struct {
 	VoiceMemoUrl string `json:"voice_memo_url"`
 }
 
-// SendVoiceMemoToChatResponse Response for sending a voice memo to a chat
-type SendVoiceMemoToChatResponse struct {
+// SendVoiceMemoToChatResult Response for sending a voice memo to a chat
+type SendVoiceMemoToChatResult struct {
 	VoiceMemo struct {
 		Chat ChatInfo `json:"chat"`
 
@@ -2449,4 +2245,4010 @@ func (t ThreadMessage_Parts_Item) MarshalJSON() ([]byte, error) {
 func (t *ThreadMessage_Parts_Item) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
+}
+
+// RequestEditorFn  is the function signature for the RequestEditor callback function
+type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// Doer performs HTTP requests.
+//
+// The standard http.Client implements this interface.
+type HttpRequestDoer interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+// Client which conforms to the OpenAPI3 specification for this service.
+type Client struct {
+	// The endpoint of the server conforming to this interface, with scheme,
+	// https://api.deepmap.com for example. This can contain a path relative
+	// to the server, such as https://api.deepmap.com/dev-test, and all the
+	// paths in the swagger spec will be appended to the server.
+	Server string
+
+	// Doer for performing requests, typically a *http.Client with any
+	// customized settings, such as certificate chains.
+	Client HttpRequestDoer
+
+	// A list of callbacks for modifying requests which are generated before sending over
+	// the network.
+	RequestEditors []RequestEditorFn
+}
+
+// ClientOption allows setting custom parameters during construction
+type ClientOption func(*Client) error
+
+// Creates a new Client, with reasonable defaults
+func NewClient(server string, opts ...ClientOption) (*Client, error) {
+	// create a client with sane default values
+	client := Client{
+		Server: server,
+	}
+	// mutate client and add all optional params
+	for _, o := range opts {
+		if err := o(&client); err != nil {
+			return nil, err
+		}
+	}
+	// ensure the server URL always has a trailing slash
+	if !strings.HasSuffix(client.Server, "/") {
+		client.Server += "/"
+	}
+	// create httpClient, if not already present
+	if client.Client == nil {
+		client.Client = &http.Client{}
+	}
+	return &client, nil
+}
+
+// WithHTTPClient allows overriding the default Doer, which is
+// automatically created using http.Client. This is useful for tests.
+func WithHTTPClient(doer HttpRequestDoer) ClientOption {
+	return func(c *Client) error {
+		c.Client = doer
+		return nil
+	}
+}
+
+// WithRequestEditorFn allows setting up a callback function, which will be
+// called right before sending the request. This can be used to mutate the request.
+func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.RequestEditors = append(c.RequestEditors, fn)
+		return nil
+	}
+}
+
+// The interface specification for the client above.
+type ClientInterface interface {
+	// RequestUploadWithBody request with any body
+	RequestUploadWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RequestUpload(ctx context.Context, body RequestUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAttachment request
+	GetAttachment(ctx context.Context, attachmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListChats request
+	ListChats(ctx context.Context, params *ListChatsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateChatWithBody request with any body
+	CreateChatWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateChat(ctx context.Context, body CreateChatJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetChat request
+	GetChat(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateChatWithBody request with any body
+	UpdateChatWithBody(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateChat(ctx context.Context, chatId openapi_types.UUID, body UpdateChatJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetMessages request
+	GetMessages(ctx context.Context, chatId openapi_types.UUID, params *GetMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SendMessageToChatWithBody request with any body
+	SendMessageToChatWithBody(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SendMessageToChat(ctx context.Context, chatId openapi_types.UUID, body SendMessageToChatJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RemoveParticipantWithBody request with any body
+	RemoveParticipantWithBody(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RemoveParticipant(ctx context.Context, chatId openapi_types.UUID, body RemoveParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AddParticipantWithBody request with any body
+	AddParticipantWithBody(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AddParticipant(ctx context.Context, chatId openapi_types.UUID, body AddParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// MarkChatAsRead request
+	MarkChatAsRead(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ShareContactWithChat request
+	ShareContactWithChat(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StopTyping request
+	StopTyping(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartTyping request
+	StartTyping(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SendVoiceMemoToChatWithBody request with any body
+	SendVoiceMemoToChatWithBody(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SendVoiceMemoToChat(ctx context.Context, chatId openapi_types.UUID, body SendVoiceMemoToChatJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteMessageWithBody request with any body
+	DeleteMessageWithBody(ctx context.Context, messageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	DeleteMessage(ctx context.Context, messageId openapi_types.UUID, body DeleteMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetMessage request
+	GetMessage(ctx context.Context, messageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SendReactionWithBody request with any body
+	SendReactionWithBody(ctx context.Context, messageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SendReaction(ctx context.Context, messageId openapi_types.UUID, body SendReactionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetMessageThread request
+	GetMessageThread(ctx context.Context, messageId openapi_types.UUID, params *GetMessageThreadParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListPhoneNumbers request
+	ListPhoneNumbers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListWebhookSubscriptions request
+	ListWebhookSubscriptions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateWebhookSubscriptionWithBody request with any body
+	CreateWebhookSubscriptionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateWebhookSubscription(ctx context.Context, body CreateWebhookSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteWebhookSubscription request
+	DeleteWebhookSubscription(ctx context.Context, subscriptionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetWebhookSubscription request
+	GetWebhookSubscription(ctx context.Context, subscriptionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateWebhookSubscriptionWithBody request with any body
+	UpdateWebhookSubscriptionWithBody(ctx context.Context, subscriptionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateWebhookSubscription(ctx context.Context, subscriptionId string, body UpdateWebhookSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) RequestUploadWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestUploadRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RequestUpload(ctx context.Context, body RequestUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestUploadRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAttachment(ctx context.Context, attachmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAttachmentRequest(c.Server, attachmentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListChats(ctx context.Context, params *ListChatsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListChatsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateChatWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateChatRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateChat(ctx context.Context, body CreateChatJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateChatRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetChat(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetChatRequest(c.Server, chatId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateChatWithBody(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateChatRequestWithBody(c.Server, chatId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateChat(ctx context.Context, chatId openapi_types.UUID, body UpdateChatJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateChatRequest(c.Server, chatId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetMessages(ctx context.Context, chatId openapi_types.UUID, params *GetMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetMessagesRequest(c.Server, chatId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SendMessageToChatWithBody(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendMessageToChatRequestWithBody(c.Server, chatId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SendMessageToChat(ctx context.Context, chatId openapi_types.UUID, body SendMessageToChatJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendMessageToChatRequest(c.Server, chatId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RemoveParticipantWithBody(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRemoveParticipantRequestWithBody(c.Server, chatId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RemoveParticipant(ctx context.Context, chatId openapi_types.UUID, body RemoveParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRemoveParticipantRequest(c.Server, chatId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddParticipantWithBody(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddParticipantRequestWithBody(c.Server, chatId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddParticipant(ctx context.Context, chatId openapi_types.UUID, body AddParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddParticipantRequest(c.Server, chatId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) MarkChatAsRead(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMarkChatAsReadRequest(c.Server, chatId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ShareContactWithChat(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewShareContactWithChatRequest(c.Server, chatId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StopTyping(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStopTypingRequest(c.Server, chatId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StartTyping(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartTypingRequest(c.Server, chatId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SendVoiceMemoToChatWithBody(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendVoiceMemoToChatRequestWithBody(c.Server, chatId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SendVoiceMemoToChat(ctx context.Context, chatId openapi_types.UUID, body SendVoiceMemoToChatJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendVoiceMemoToChatRequest(c.Server, chatId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteMessageWithBody(ctx context.Context, messageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteMessageRequestWithBody(c.Server, messageId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteMessage(ctx context.Context, messageId openapi_types.UUID, body DeleteMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteMessageRequest(c.Server, messageId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetMessage(ctx context.Context, messageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetMessageRequest(c.Server, messageId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SendReactionWithBody(ctx context.Context, messageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendReactionRequestWithBody(c.Server, messageId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SendReaction(ctx context.Context, messageId openapi_types.UUID, body SendReactionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendReactionRequest(c.Server, messageId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetMessageThread(ctx context.Context, messageId openapi_types.UUID, params *GetMessageThreadParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetMessageThreadRequest(c.Server, messageId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListPhoneNumbers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPhoneNumbersRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListWebhookSubscriptions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListWebhookSubscriptionsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateWebhookSubscriptionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateWebhookSubscriptionRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateWebhookSubscription(ctx context.Context, body CreateWebhookSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateWebhookSubscriptionRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteWebhookSubscription(ctx context.Context, subscriptionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteWebhookSubscriptionRequest(c.Server, subscriptionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetWebhookSubscription(ctx context.Context, subscriptionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetWebhookSubscriptionRequest(c.Server, subscriptionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateWebhookSubscriptionWithBody(ctx context.Context, subscriptionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateWebhookSubscriptionRequestWithBody(c.Server, subscriptionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateWebhookSubscription(ctx context.Context, subscriptionId string, body UpdateWebhookSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateWebhookSubscriptionRequest(c.Server, subscriptionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// NewRequestUploadRequest calls the generic RequestUpload builder with application/json body
+func NewRequestUploadRequest(server string, body RequestUploadJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRequestUploadRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewRequestUploadRequestWithBody generates requests for RequestUpload with any type of body
+func NewRequestUploadRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/attachments")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetAttachmentRequest generates requests for GetAttachment
+func NewGetAttachmentRequest(server string, attachmentId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "attachmentId", runtime.ParamLocationPath, attachmentId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/attachments/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListChatsRequest generates requests for ListChats
+func NewListChatsRequest(server string, params *ListChatsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/chats")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "from", runtime.ParamLocationQuery, params.From); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "cursor", runtime.ParamLocationQuery, *params.Cursor); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateChatRequest calls the generic CreateChat builder with application/json body
+func NewCreateChatRequest(server string, body CreateChatJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateChatRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateChatRequestWithBody generates requests for CreateChat with any type of body
+func NewCreateChatRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/chats")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetChatRequest generates requests for GetChat
+func NewGetChatRequest(server string, chatId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "chatId", runtime.ParamLocationPath, chatId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/chats/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateChatRequest calls the generic UpdateChat builder with application/json body
+func NewUpdateChatRequest(server string, chatId openapi_types.UUID, body UpdateChatJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateChatRequestWithBody(server, chatId, "application/json", bodyReader)
+}
+
+// NewUpdateChatRequestWithBody generates requests for UpdateChat with any type of body
+func NewUpdateChatRequestWithBody(server string, chatId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "chatId", runtime.ParamLocationPath, chatId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/chats/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetMessagesRequest generates requests for GetMessages
+func NewGetMessagesRequest(server string, chatId openapi_types.UUID, params *GetMessagesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "chatId", runtime.ParamLocationPath, chatId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/chats/%s/messages", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "cursor", runtime.ParamLocationQuery, *params.Cursor); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSendMessageToChatRequest calls the generic SendMessageToChat builder with application/json body
+func NewSendMessageToChatRequest(server string, chatId openapi_types.UUID, body SendMessageToChatJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSendMessageToChatRequestWithBody(server, chatId, "application/json", bodyReader)
+}
+
+// NewSendMessageToChatRequestWithBody generates requests for SendMessageToChat with any type of body
+func NewSendMessageToChatRequestWithBody(server string, chatId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "chatId", runtime.ParamLocationPath, chatId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/chats/%s/messages", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRemoveParticipantRequest calls the generic RemoveParticipant builder with application/json body
+func NewRemoveParticipantRequest(server string, chatId openapi_types.UUID, body RemoveParticipantJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRemoveParticipantRequestWithBody(server, chatId, "application/json", bodyReader)
+}
+
+// NewRemoveParticipantRequestWithBody generates requests for RemoveParticipant with any type of body
+func NewRemoveParticipantRequestWithBody(server string, chatId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "chatId", runtime.ParamLocationPath, chatId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/chats/%s/participants", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAddParticipantRequest calls the generic AddParticipant builder with application/json body
+func NewAddParticipantRequest(server string, chatId openapi_types.UUID, body AddParticipantJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAddParticipantRequestWithBody(server, chatId, "application/json", bodyReader)
+}
+
+// NewAddParticipantRequestWithBody generates requests for AddParticipant with any type of body
+func NewAddParticipantRequestWithBody(server string, chatId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "chatId", runtime.ParamLocationPath, chatId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/chats/%s/participants", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewMarkChatAsReadRequest generates requests for MarkChatAsRead
+func NewMarkChatAsReadRequest(server string, chatId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "chatId", runtime.ParamLocationPath, chatId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/chats/%s/read", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewShareContactWithChatRequest generates requests for ShareContactWithChat
+func NewShareContactWithChatRequest(server string, chatId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "chatId", runtime.ParamLocationPath, chatId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/chats/%s/share_contact_card", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewStopTypingRequest generates requests for StopTyping
+func NewStopTypingRequest(server string, chatId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "chatId", runtime.ParamLocationPath, chatId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/chats/%s/typing", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewStartTypingRequest generates requests for StartTyping
+func NewStartTypingRequest(server string, chatId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "chatId", runtime.ParamLocationPath, chatId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/chats/%s/typing", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSendVoiceMemoToChatRequest calls the generic SendVoiceMemoToChat builder with application/json body
+func NewSendVoiceMemoToChatRequest(server string, chatId openapi_types.UUID, body SendVoiceMemoToChatJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSendVoiceMemoToChatRequestWithBody(server, chatId, "application/json", bodyReader)
+}
+
+// NewSendVoiceMemoToChatRequestWithBody generates requests for SendVoiceMemoToChat with any type of body
+func NewSendVoiceMemoToChatRequestWithBody(server string, chatId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "chatId", runtime.ParamLocationPath, chatId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/chats/%s/voicememo", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteMessageRequest calls the generic DeleteMessage builder with application/json body
+func NewDeleteMessageRequest(server string, messageId openapi_types.UUID, body DeleteMessageJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewDeleteMessageRequestWithBody(server, messageId, "application/json", bodyReader)
+}
+
+// NewDeleteMessageRequestWithBody generates requests for DeleteMessage with any type of body
+func NewDeleteMessageRequestWithBody(server string, messageId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "messageId", runtime.ParamLocationPath, messageId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/messages/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetMessageRequest generates requests for GetMessage
+func NewGetMessageRequest(server string, messageId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "messageId", runtime.ParamLocationPath, messageId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/messages/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSendReactionRequest calls the generic SendReaction builder with application/json body
+func NewSendReactionRequest(server string, messageId openapi_types.UUID, body SendReactionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSendReactionRequestWithBody(server, messageId, "application/json", bodyReader)
+}
+
+// NewSendReactionRequestWithBody generates requests for SendReaction with any type of body
+func NewSendReactionRequestWithBody(server string, messageId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "messageId", runtime.ParamLocationPath, messageId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/messages/%s/reactions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetMessageThreadRequest generates requests for GetMessageThread
+func NewGetMessageThreadRequest(server string, messageId openapi_types.UUID, params *GetMessageThreadParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "messageId", runtime.ParamLocationPath, messageId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/messages/%s/thread", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "cursor", runtime.ParamLocationQuery, *params.Cursor); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "order", runtime.ParamLocationQuery, *params.Order); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListPhoneNumbersRequest generates requests for ListPhoneNumbers
+func NewListPhoneNumbersRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/phonenumbers")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListWebhookSubscriptionsRequest generates requests for ListWebhookSubscriptions
+func NewListWebhookSubscriptionsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/webhook-subscriptions")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateWebhookSubscriptionRequest calls the generic CreateWebhookSubscription builder with application/json body
+func NewCreateWebhookSubscriptionRequest(server string, body CreateWebhookSubscriptionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateWebhookSubscriptionRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateWebhookSubscriptionRequestWithBody generates requests for CreateWebhookSubscription with any type of body
+func NewCreateWebhookSubscriptionRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/webhook-subscriptions")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteWebhookSubscriptionRequest generates requests for DeleteWebhookSubscription
+func NewDeleteWebhookSubscriptionRequest(server string, subscriptionId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "subscriptionId", runtime.ParamLocationPath, subscriptionId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/webhook-subscriptions/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetWebhookSubscriptionRequest generates requests for GetWebhookSubscription
+func NewGetWebhookSubscriptionRequest(server string, subscriptionId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "subscriptionId", runtime.ParamLocationPath, subscriptionId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/webhook-subscriptions/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateWebhookSubscriptionRequest calls the generic UpdateWebhookSubscription builder with application/json body
+func NewUpdateWebhookSubscriptionRequest(server string, subscriptionId string, body UpdateWebhookSubscriptionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateWebhookSubscriptionRequestWithBody(server, subscriptionId, "application/json", bodyReader)
+}
+
+// NewUpdateWebhookSubscriptionRequestWithBody generates requests for UpdateWebhookSubscription with any type of body
+func NewUpdateWebhookSubscriptionRequestWithBody(server string, subscriptionId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "subscriptionId", runtime.ParamLocationPath, subscriptionId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v3/webhook-subscriptions/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+	for _, r := range c.RequestEditors {
+		if err := r(ctx, req); err != nil {
+			return err
+		}
+	}
+	for _, r := range additionalEditors {
+		if err := r(ctx, req); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ClientWithResponses builds on ClientInterface to offer response payloads
+type ClientWithResponses struct {
+	ClientInterface
+}
+
+// NewClientWithResponses creates a new ClientWithResponses, which wraps
+// Client with return type handling
+func NewClientWithResponses(server string, opts ...ClientOption) (*ClientWithResponses, error) {
+	client, err := NewClient(server, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &ClientWithResponses{client}, nil
+}
+
+// WithBaseURL overrides the baseURL.
+func WithBaseURL(baseURL string) ClientOption {
+	return func(c *Client) error {
+		newBaseURL, err := url.Parse(baseURL)
+		if err != nil {
+			return err
+		}
+		c.Server = newBaseURL.String()
+		return nil
+	}
+}
+
+// ClientWithResponsesInterface is the interface specification for the client with responses above.
+type ClientWithResponsesInterface interface {
+	// RequestUploadWithBodyWithResponse request with any body
+	RequestUploadWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestUploadResponse, error)
+
+	RequestUploadWithResponse(ctx context.Context, body RequestUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestUploadResponse, error)
+
+	// GetAttachmentWithResponse request
+	GetAttachmentWithResponse(ctx context.Context, attachmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetAttachmentResponse, error)
+
+	// ListChatsWithResponse request
+	ListChatsWithResponse(ctx context.Context, params *ListChatsParams, reqEditors ...RequestEditorFn) (*ListChatsResponse, error)
+
+	// CreateChatWithBodyWithResponse request with any body
+	CreateChatWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateChatResponse, error)
+
+	CreateChatWithResponse(ctx context.Context, body CreateChatJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateChatResponse, error)
+
+	// GetChatWithResponse request
+	GetChatWithResponse(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetChatResponse, error)
+
+	// UpdateChatWithBodyWithResponse request with any body
+	UpdateChatWithBodyWithResponse(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateChatResponse, error)
+
+	UpdateChatWithResponse(ctx context.Context, chatId openapi_types.UUID, body UpdateChatJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateChatResponse, error)
+
+	// GetMessagesWithResponse request
+	GetMessagesWithResponse(ctx context.Context, chatId openapi_types.UUID, params *GetMessagesParams, reqEditors ...RequestEditorFn) (*GetMessagesResponse, error)
+
+	// SendMessageToChatWithBodyWithResponse request with any body
+	SendMessageToChatWithBodyWithResponse(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendMessageToChatResponse, error)
+
+	SendMessageToChatWithResponse(ctx context.Context, chatId openapi_types.UUID, body SendMessageToChatJSONRequestBody, reqEditors ...RequestEditorFn) (*SendMessageToChatResponse, error)
+
+	// RemoveParticipantWithBodyWithResponse request with any body
+	RemoveParticipantWithBodyWithResponse(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RemoveParticipantResponse, error)
+
+	RemoveParticipantWithResponse(ctx context.Context, chatId openapi_types.UUID, body RemoveParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*RemoveParticipantResponse, error)
+
+	// AddParticipantWithBodyWithResponse request with any body
+	AddParticipantWithBodyWithResponse(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddParticipantResponse, error)
+
+	AddParticipantWithResponse(ctx context.Context, chatId openapi_types.UUID, body AddParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*AddParticipantResponse, error)
+
+	// MarkChatAsReadWithResponse request
+	MarkChatAsReadWithResponse(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*MarkChatAsReadResponse, error)
+
+	// ShareContactWithChatWithResponse request
+	ShareContactWithChatWithResponse(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ShareContactWithChatResponse, error)
+
+	// StopTypingWithResponse request
+	StopTypingWithResponse(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*StopTypingResponse, error)
+
+	// StartTypingWithResponse request
+	StartTypingWithResponse(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*StartTypingResponse, error)
+
+	// SendVoiceMemoToChatWithBodyWithResponse request with any body
+	SendVoiceMemoToChatWithBodyWithResponse(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendVoiceMemoToChatResponse, error)
+
+	SendVoiceMemoToChatWithResponse(ctx context.Context, chatId openapi_types.UUID, body SendVoiceMemoToChatJSONRequestBody, reqEditors ...RequestEditorFn) (*SendVoiceMemoToChatResponse, error)
+
+	// DeleteMessageWithBodyWithResponse request with any body
+	DeleteMessageWithBodyWithResponse(ctx context.Context, messageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteMessageResponse, error)
+
+	DeleteMessageWithResponse(ctx context.Context, messageId openapi_types.UUID, body DeleteMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteMessageResponse, error)
+
+	// GetMessageWithResponse request
+	GetMessageWithResponse(ctx context.Context, messageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetMessageResponse, error)
+
+	// SendReactionWithBodyWithResponse request with any body
+	SendReactionWithBodyWithResponse(ctx context.Context, messageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendReactionResponse, error)
+
+	SendReactionWithResponse(ctx context.Context, messageId openapi_types.UUID, body SendReactionJSONRequestBody, reqEditors ...RequestEditorFn) (*SendReactionResponse, error)
+
+	// GetMessageThreadWithResponse request
+	GetMessageThreadWithResponse(ctx context.Context, messageId openapi_types.UUID, params *GetMessageThreadParams, reqEditors ...RequestEditorFn) (*GetMessageThreadResponse, error)
+
+	// ListPhoneNumbersWithResponse request
+	ListPhoneNumbersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPhoneNumbersResponse, error)
+
+	// ListWebhookSubscriptionsWithResponse request
+	ListWebhookSubscriptionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListWebhookSubscriptionsResponse, error)
+
+	// CreateWebhookSubscriptionWithBodyWithResponse request with any body
+	CreateWebhookSubscriptionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWebhookSubscriptionResponse, error)
+
+	CreateWebhookSubscriptionWithResponse(ctx context.Context, body CreateWebhookSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWebhookSubscriptionResponse, error)
+
+	// DeleteWebhookSubscriptionWithResponse request
+	DeleteWebhookSubscriptionWithResponse(ctx context.Context, subscriptionId string, reqEditors ...RequestEditorFn) (*DeleteWebhookSubscriptionResponse, error)
+
+	// GetWebhookSubscriptionWithResponse request
+	GetWebhookSubscriptionWithResponse(ctx context.Context, subscriptionId string, reqEditors ...RequestEditorFn) (*GetWebhookSubscriptionResponse, error)
+
+	// UpdateWebhookSubscriptionWithBodyWithResponse request with any body
+	UpdateWebhookSubscriptionWithBodyWithResponse(ctx context.Context, subscriptionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWebhookSubscriptionResponse, error)
+
+	UpdateWebhookSubscriptionWithResponse(ctx context.Context, subscriptionId string, body UpdateWebhookSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWebhookSubscriptionResponse, error)
+}
+
+type RequestUploadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RequestUploadResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r RequestUploadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RequestUploadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAttachmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Attachment
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAttachmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAttachmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListChatsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ListChatsResult
+	JSON401      *Unauthorized
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r ListChatsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListChatsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateChatResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *CreateChatResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateChatResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateChatResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetChatResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Chat
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetChatResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetChatResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateChatResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Chat
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateChatResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateChatResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetMessagesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *GetMessagesResult
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetMessagesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetMessagesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SendMessageToChatResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *SendMessageResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r SendMessageToChatResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SendMessageToChatResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RemoveParticipantResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *struct {
+		Message *string `json:"message,omitempty"`
+		Status  *string `json:"status,omitempty"`
+		TraceId *string `json:"trace_id,omitempty"`
+	}
+	JSON400 *BadRequest
+	JSON401 *Unauthorized
+	JSON404 *NotFound
+	JSON500 *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r RemoveParticipantResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RemoveParticipantResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type AddParticipantResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *struct {
+		Message *string `json:"message,omitempty"`
+		Status  *string `json:"status,omitempty"`
+		TraceId *string `json:"trace_id,omitempty"`
+	}
+	JSON400 *BadRequest
+	JSON401 *Unauthorized
+	JSON404 *NotFound
+	JSON500 *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r AddParticipantResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddParticipantResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type MarkChatAsReadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r MarkChatAsReadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r MarkChatAsReadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ShareContactWithChatResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r ShareContactWithChatResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ShareContactWithChatResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type StopTypingResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r StopTypingResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StopTypingResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type StartTypingResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r StartTypingResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StartTypingResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SendVoiceMemoToChatResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *SendVoiceMemoToChatResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON413      *ErrorResponse
+	JSON422      *UnprocessableEntity
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r SendVoiceMemoToChatResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SendVoiceMemoToChatResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteMessageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteMessageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteMessageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetMessageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Message
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetMessageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetMessageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SendReactionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Reaction
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r SendReactionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SendReactionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetMessageThreadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *GetThreadResponse
+	JSON401      *Unauthorized
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetMessageThreadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetMessageThreadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListPhoneNumbersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ListPhoneNumbersResult
+	JSON401      *Unauthorized
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r ListPhoneNumbersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListPhoneNumbersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListWebhookSubscriptionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ListWebhookSubscriptionsResult
+	JSON401      *Unauthorized
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r ListWebhookSubscriptionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListWebhookSubscriptionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateWebhookSubscriptionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *WebhookSubscriptionCreatedResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateWebhookSubscriptionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateWebhookSubscriptionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteWebhookSubscriptionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteWebhookSubscriptionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteWebhookSubscriptionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetWebhookSubscriptionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *WebhookSubscriptionResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r GetWebhookSubscriptionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetWebhookSubscriptionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateWebhookSubscriptionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *WebhookSubscriptionResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON500      *InternalServerError
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateWebhookSubscriptionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateWebhookSubscriptionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// RequestUploadWithBodyWithResponse request with arbitrary body returning *RequestUploadResponse
+func (c *ClientWithResponses) RequestUploadWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestUploadResponse, error) {
+	rsp, err := c.RequestUploadWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestUploadResponse(rsp)
+}
+
+func (c *ClientWithResponses) RequestUploadWithResponse(ctx context.Context, body RequestUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestUploadResponse, error) {
+	rsp, err := c.RequestUpload(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestUploadResponse(rsp)
+}
+
+// GetAttachmentWithResponse request returning *GetAttachmentResponse
+func (c *ClientWithResponses) GetAttachmentWithResponse(ctx context.Context, attachmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetAttachmentResponse, error) {
+	rsp, err := c.GetAttachment(ctx, attachmentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAttachmentResponse(rsp)
+}
+
+// ListChatsWithResponse request returning *ListChatsResponse
+func (c *ClientWithResponses) ListChatsWithResponse(ctx context.Context, params *ListChatsParams, reqEditors ...RequestEditorFn) (*ListChatsResponse, error) {
+	rsp, err := c.ListChats(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListChatsResponse(rsp)
+}
+
+// CreateChatWithBodyWithResponse request with arbitrary body returning *CreateChatResponse
+func (c *ClientWithResponses) CreateChatWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateChatResponse, error) {
+	rsp, err := c.CreateChatWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateChatResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateChatWithResponse(ctx context.Context, body CreateChatJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateChatResponse, error) {
+	rsp, err := c.CreateChat(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateChatResponse(rsp)
+}
+
+// GetChatWithResponse request returning *GetChatResponse
+func (c *ClientWithResponses) GetChatWithResponse(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetChatResponse, error) {
+	rsp, err := c.GetChat(ctx, chatId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetChatResponse(rsp)
+}
+
+// UpdateChatWithBodyWithResponse request with arbitrary body returning *UpdateChatResponse
+func (c *ClientWithResponses) UpdateChatWithBodyWithResponse(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateChatResponse, error) {
+	rsp, err := c.UpdateChatWithBody(ctx, chatId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateChatResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateChatWithResponse(ctx context.Context, chatId openapi_types.UUID, body UpdateChatJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateChatResponse, error) {
+	rsp, err := c.UpdateChat(ctx, chatId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateChatResponse(rsp)
+}
+
+// GetMessagesWithResponse request returning *GetMessagesResponse
+func (c *ClientWithResponses) GetMessagesWithResponse(ctx context.Context, chatId openapi_types.UUID, params *GetMessagesParams, reqEditors ...RequestEditorFn) (*GetMessagesResponse, error) {
+	rsp, err := c.GetMessages(ctx, chatId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetMessagesResponse(rsp)
+}
+
+// SendMessageToChatWithBodyWithResponse request with arbitrary body returning *SendMessageToChatResponse
+func (c *ClientWithResponses) SendMessageToChatWithBodyWithResponse(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendMessageToChatResponse, error) {
+	rsp, err := c.SendMessageToChatWithBody(ctx, chatId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSendMessageToChatResponse(rsp)
+}
+
+func (c *ClientWithResponses) SendMessageToChatWithResponse(ctx context.Context, chatId openapi_types.UUID, body SendMessageToChatJSONRequestBody, reqEditors ...RequestEditorFn) (*SendMessageToChatResponse, error) {
+	rsp, err := c.SendMessageToChat(ctx, chatId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSendMessageToChatResponse(rsp)
+}
+
+// RemoveParticipantWithBodyWithResponse request with arbitrary body returning *RemoveParticipantResponse
+func (c *ClientWithResponses) RemoveParticipantWithBodyWithResponse(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RemoveParticipantResponse, error) {
+	rsp, err := c.RemoveParticipantWithBody(ctx, chatId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRemoveParticipantResponse(rsp)
+}
+
+func (c *ClientWithResponses) RemoveParticipantWithResponse(ctx context.Context, chatId openapi_types.UUID, body RemoveParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*RemoveParticipantResponse, error) {
+	rsp, err := c.RemoveParticipant(ctx, chatId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRemoveParticipantResponse(rsp)
+}
+
+// AddParticipantWithBodyWithResponse request with arbitrary body returning *AddParticipantResponse
+func (c *ClientWithResponses) AddParticipantWithBodyWithResponse(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddParticipantResponse, error) {
+	rsp, err := c.AddParticipantWithBody(ctx, chatId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddParticipantResponse(rsp)
+}
+
+func (c *ClientWithResponses) AddParticipantWithResponse(ctx context.Context, chatId openapi_types.UUID, body AddParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*AddParticipantResponse, error) {
+	rsp, err := c.AddParticipant(ctx, chatId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddParticipantResponse(rsp)
+}
+
+// MarkChatAsReadWithResponse request returning *MarkChatAsReadResponse
+func (c *ClientWithResponses) MarkChatAsReadWithResponse(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*MarkChatAsReadResponse, error) {
+	rsp, err := c.MarkChatAsRead(ctx, chatId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMarkChatAsReadResponse(rsp)
+}
+
+// ShareContactWithChatWithResponse request returning *ShareContactWithChatResponse
+func (c *ClientWithResponses) ShareContactWithChatWithResponse(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ShareContactWithChatResponse, error) {
+	rsp, err := c.ShareContactWithChat(ctx, chatId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseShareContactWithChatResponse(rsp)
+}
+
+// StopTypingWithResponse request returning *StopTypingResponse
+func (c *ClientWithResponses) StopTypingWithResponse(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*StopTypingResponse, error) {
+	rsp, err := c.StopTyping(ctx, chatId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStopTypingResponse(rsp)
+}
+
+// StartTypingWithResponse request returning *StartTypingResponse
+func (c *ClientWithResponses) StartTypingWithResponse(ctx context.Context, chatId openapi_types.UUID, reqEditors ...RequestEditorFn) (*StartTypingResponse, error) {
+	rsp, err := c.StartTyping(ctx, chatId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartTypingResponse(rsp)
+}
+
+// SendVoiceMemoToChatWithBodyWithResponse request with arbitrary body returning *SendVoiceMemoToChatResponse
+func (c *ClientWithResponses) SendVoiceMemoToChatWithBodyWithResponse(ctx context.Context, chatId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendVoiceMemoToChatResponse, error) {
+	rsp, err := c.SendVoiceMemoToChatWithBody(ctx, chatId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSendVoiceMemoToChatResponse(rsp)
+}
+
+func (c *ClientWithResponses) SendVoiceMemoToChatWithResponse(ctx context.Context, chatId openapi_types.UUID, body SendVoiceMemoToChatJSONRequestBody, reqEditors ...RequestEditorFn) (*SendVoiceMemoToChatResponse, error) {
+	rsp, err := c.SendVoiceMemoToChat(ctx, chatId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSendVoiceMemoToChatResponse(rsp)
+}
+
+// DeleteMessageWithBodyWithResponse request with arbitrary body returning *DeleteMessageResponse
+func (c *ClientWithResponses) DeleteMessageWithBodyWithResponse(ctx context.Context, messageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteMessageResponse, error) {
+	rsp, err := c.DeleteMessageWithBody(ctx, messageId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteMessageResponse(rsp)
+}
+
+func (c *ClientWithResponses) DeleteMessageWithResponse(ctx context.Context, messageId openapi_types.UUID, body DeleteMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteMessageResponse, error) {
+	rsp, err := c.DeleteMessage(ctx, messageId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteMessageResponse(rsp)
+}
+
+// GetMessageWithResponse request returning *GetMessageResponse
+func (c *ClientWithResponses) GetMessageWithResponse(ctx context.Context, messageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetMessageResponse, error) {
+	rsp, err := c.GetMessage(ctx, messageId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetMessageResponse(rsp)
+}
+
+// SendReactionWithBodyWithResponse request with arbitrary body returning *SendReactionResponse
+func (c *ClientWithResponses) SendReactionWithBodyWithResponse(ctx context.Context, messageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendReactionResponse, error) {
+	rsp, err := c.SendReactionWithBody(ctx, messageId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSendReactionResponse(rsp)
+}
+
+func (c *ClientWithResponses) SendReactionWithResponse(ctx context.Context, messageId openapi_types.UUID, body SendReactionJSONRequestBody, reqEditors ...RequestEditorFn) (*SendReactionResponse, error) {
+	rsp, err := c.SendReaction(ctx, messageId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSendReactionResponse(rsp)
+}
+
+// GetMessageThreadWithResponse request returning *GetMessageThreadResponse
+func (c *ClientWithResponses) GetMessageThreadWithResponse(ctx context.Context, messageId openapi_types.UUID, params *GetMessageThreadParams, reqEditors ...RequestEditorFn) (*GetMessageThreadResponse, error) {
+	rsp, err := c.GetMessageThread(ctx, messageId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetMessageThreadResponse(rsp)
+}
+
+// ListPhoneNumbersWithResponse request returning *ListPhoneNumbersResponse
+func (c *ClientWithResponses) ListPhoneNumbersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPhoneNumbersResponse, error) {
+	rsp, err := c.ListPhoneNumbers(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListPhoneNumbersResponse(rsp)
+}
+
+// ListWebhookSubscriptionsWithResponse request returning *ListWebhookSubscriptionsResponse
+func (c *ClientWithResponses) ListWebhookSubscriptionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListWebhookSubscriptionsResponse, error) {
+	rsp, err := c.ListWebhookSubscriptions(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListWebhookSubscriptionsResponse(rsp)
+}
+
+// CreateWebhookSubscriptionWithBodyWithResponse request with arbitrary body returning *CreateWebhookSubscriptionResponse
+func (c *ClientWithResponses) CreateWebhookSubscriptionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWebhookSubscriptionResponse, error) {
+	rsp, err := c.CreateWebhookSubscriptionWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateWebhookSubscriptionResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateWebhookSubscriptionWithResponse(ctx context.Context, body CreateWebhookSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWebhookSubscriptionResponse, error) {
+	rsp, err := c.CreateWebhookSubscription(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateWebhookSubscriptionResponse(rsp)
+}
+
+// DeleteWebhookSubscriptionWithResponse request returning *DeleteWebhookSubscriptionResponse
+func (c *ClientWithResponses) DeleteWebhookSubscriptionWithResponse(ctx context.Context, subscriptionId string, reqEditors ...RequestEditorFn) (*DeleteWebhookSubscriptionResponse, error) {
+	rsp, err := c.DeleteWebhookSubscription(ctx, subscriptionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteWebhookSubscriptionResponse(rsp)
+}
+
+// GetWebhookSubscriptionWithResponse request returning *GetWebhookSubscriptionResponse
+func (c *ClientWithResponses) GetWebhookSubscriptionWithResponse(ctx context.Context, subscriptionId string, reqEditors ...RequestEditorFn) (*GetWebhookSubscriptionResponse, error) {
+	rsp, err := c.GetWebhookSubscription(ctx, subscriptionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetWebhookSubscriptionResponse(rsp)
+}
+
+// UpdateWebhookSubscriptionWithBodyWithResponse request with arbitrary body returning *UpdateWebhookSubscriptionResponse
+func (c *ClientWithResponses) UpdateWebhookSubscriptionWithBodyWithResponse(ctx context.Context, subscriptionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWebhookSubscriptionResponse, error) {
+	rsp, err := c.UpdateWebhookSubscriptionWithBody(ctx, subscriptionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateWebhookSubscriptionResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateWebhookSubscriptionWithResponse(ctx context.Context, subscriptionId string, body UpdateWebhookSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWebhookSubscriptionResponse, error) {
+	rsp, err := c.UpdateWebhookSubscription(ctx, subscriptionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateWebhookSubscriptionResponse(rsp)
+}
+
+// ParseRequestUploadResponse parses an HTTP response from a RequestUploadWithResponse call
+func ParseRequestUploadResponse(rsp *http.Response) (*RequestUploadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RequestUploadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RequestUploadResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAttachmentResponse parses an HTTP response from a GetAttachmentWithResponse call
+func ParseGetAttachmentResponse(rsp *http.Response) (*GetAttachmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAttachmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Attachment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListChatsResponse parses an HTTP response from a ListChatsWithResponse call
+func ParseListChatsResponse(rsp *http.Response) (*ListChatsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListChatsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ListChatsResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateChatResponse parses an HTTP response from a CreateChatWithResponse call
+func ParseCreateChatResponse(rsp *http.Response) (*CreateChatResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateChatResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest CreateChatResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetChatResponse parses an HTTP response from a GetChatWithResponse call
+func ParseGetChatResponse(rsp *http.Response) (*GetChatResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetChatResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Chat
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateChatResponse parses an HTTP response from a UpdateChatWithResponse call
+func ParseUpdateChatResponse(rsp *http.Response) (*UpdateChatResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateChatResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Chat
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetMessagesResponse parses an HTTP response from a GetMessagesWithResponse call
+func ParseGetMessagesResponse(rsp *http.Response) (*GetMessagesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetMessagesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetMessagesResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSendMessageToChatResponse parses an HTTP response from a SendMessageToChatWithResponse call
+func ParseSendMessageToChatResponse(rsp *http.Response) (*SendMessageToChatResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SendMessageToChatResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest SendMessageResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRemoveParticipantResponse parses an HTTP response from a RemoveParticipantWithResponse call
+func ParseRemoveParticipantResponse(rsp *http.Response) (*RemoveParticipantResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RemoveParticipantResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest struct {
+			Message *string `json:"message,omitempty"`
+			Status  *string `json:"status,omitempty"`
+			TraceId *string `json:"trace_id,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAddParticipantResponse parses an HTTP response from a AddParticipantWithResponse call
+func ParseAddParticipantResponse(rsp *http.Response) (*AddParticipantResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddParticipantResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest struct {
+			Message *string `json:"message,omitempty"`
+			Status  *string `json:"status,omitempty"`
+			TraceId *string `json:"trace_id,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseMarkChatAsReadResponse parses an HTTP response from a MarkChatAsReadWithResponse call
+func ParseMarkChatAsReadResponse(rsp *http.Response) (*MarkChatAsReadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &MarkChatAsReadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseShareContactWithChatResponse parses an HTTP response from a ShareContactWithChatWithResponse call
+func ParseShareContactWithChatResponse(rsp *http.Response) (*ShareContactWithChatResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ShareContactWithChatResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStopTypingResponse parses an HTTP response from a StopTypingWithResponse call
+func ParseStopTypingResponse(rsp *http.Response) (*StopTypingResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StopTypingResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStartTypingResponse parses an HTTP response from a StartTypingWithResponse call
+func ParseStartTypingResponse(rsp *http.Response) (*StartTypingResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StartTypingResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSendVoiceMemoToChatResponse parses an HTTP response from a SendVoiceMemoToChatWithResponse call
+func ParseSendVoiceMemoToChatResponse(rsp *http.Response) (*SendVoiceMemoToChatResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SendVoiceMemoToChatResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest SendVoiceMemoToChatResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest UnprocessableEntity
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteMessageResponse parses an HTTP response from a DeleteMessageWithResponse call
+func ParseDeleteMessageResponse(rsp *http.Response) (*DeleteMessageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteMessageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetMessageResponse parses an HTTP response from a GetMessageWithResponse call
+func ParseGetMessageResponse(rsp *http.Response) (*GetMessageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetMessageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Message
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSendReactionResponse parses an HTTP response from a SendReactionWithResponse call
+func ParseSendReactionResponse(rsp *http.Response) (*SendReactionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SendReactionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Reaction
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetMessageThreadResponse parses an HTTP response from a GetMessageThreadWithResponse call
+func ParseGetMessageThreadResponse(rsp *http.Response) (*GetMessageThreadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetMessageThreadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetThreadResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListPhoneNumbersResponse parses an HTTP response from a ListPhoneNumbersWithResponse call
+func ParseListPhoneNumbersResponse(rsp *http.Response) (*ListPhoneNumbersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListPhoneNumbersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ListPhoneNumbersResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListWebhookSubscriptionsResponse parses an HTTP response from a ListWebhookSubscriptionsWithResponse call
+func ParseListWebhookSubscriptionsResponse(rsp *http.Response) (*ListWebhookSubscriptionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListWebhookSubscriptionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ListWebhookSubscriptionsResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateWebhookSubscriptionResponse parses an HTTP response from a CreateWebhookSubscriptionWithResponse call
+func ParseCreateWebhookSubscriptionResponse(rsp *http.Response) (*CreateWebhookSubscriptionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateWebhookSubscriptionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest WebhookSubscriptionCreatedResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteWebhookSubscriptionResponse parses an HTTP response from a DeleteWebhookSubscriptionWithResponse call
+func ParseDeleteWebhookSubscriptionResponse(rsp *http.Response) (*DeleteWebhookSubscriptionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteWebhookSubscriptionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetWebhookSubscriptionResponse parses an HTTP response from a GetWebhookSubscriptionWithResponse call
+func ParseGetWebhookSubscriptionResponse(rsp *http.Response) (*GetWebhookSubscriptionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetWebhookSubscriptionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest WebhookSubscriptionResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateWebhookSubscriptionResponse parses an HTTP response from a UpdateWebhookSubscriptionWithResponse call
+func ParseUpdateWebhookSubscriptionResponse(rsp *http.Response) (*UpdateWebhookSubscriptionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateWebhookSubscriptionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest WebhookSubscriptionResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest InternalServerError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
 }
