@@ -1,3 +1,10 @@
+# [0.3.0](https://github.com/linq-team/linq-cli/compare/v0.2.0...v0.3.0) (2026-01-29)
+
+
+### Features
+
+* add ASCII art banner with linq logo to CLI help ([38ca963](https://github.com/linq-team/linq-cli/commit/38ca96350575f105a30b0c8fac03e85ed406463e))
+
 # [0.2.0](https://github.com/linq-team/linq-cli/compare/v0.1.0...v0.2.0) (2026-01-29)
 
 
