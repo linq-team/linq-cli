@@ -1,5 +1,5 @@
 {
-  "name": "@linq/cli",
+  "name": "@linqapp/cli",
   "version": "0.2.0",
   "description": "CLI for Linq messaging API",
   "type": "module",
