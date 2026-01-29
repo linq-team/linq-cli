@@ -11,6 +11,12 @@
     ],
     "@semantic-release/npm",
     [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "pnpm install --lockfile-only"
+      }
+    ],
+    [
       "@semantic-release/git",
       {
         "assets": ["package.json", "pnpm-lock.yaml", "CHANGELOG.md"],
