@@ -28,7 +28,12 @@
     "postpack": "rm -f oclif.manifest.json",
     "prepack": "pnpm run build && oclif manifest",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "pack": "oclif pack tarballs",
+    "pack:macos": "oclif pack macos",
+    "pack:win": "oclif pack win",
+    "pack:deb": "oclif pack deb",
+    "prepare": "lefthook install"
   },
   "oclif": {
     "bin": "linq",
@@ -41,7 +46,15 @@
       "@oclif/plugin-help",
       "@oclif/plugin-autocomplete"
     ],
-    "topicSeparator": " "
+    "topicSeparator": " ",
+    "targets": [
+      "darwin-x64",
+      "darwin-arm64",
+      "linux-x64",
+      "linux-arm64",
+      "win32-x64",
+      "win32-arm64"
+    ]
   },
   "dependencies": {
     "@inquirer/prompts": "^8.2.0",
@@ -51,14 +64,20 @@
     "openapi-fetch": "^0.15.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.3.1",
+    "@commitlint/config-conventional": "^20.3.1",
     "@eslint/js": "^9.39.2",
     "@oclif/test": "^4.1.16",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
     "@types/node": "^25.1.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
+    "lefthook": "^2.0.16",
     "oclif": "^4.22.70",
     "openapi-typescript": "^7.10.1",
     "prettier": "^3.8.1",
+    "semantic-release": "^25.0.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0",
     "vitest": "^4.0.18"
