@@ -1,0 +1,78 @@
+{
+  "name": "linq-cli",
+  "version": "0.1.0",
+  "description": "CLI for Linq messaging API",
+  "type": "module",
+  "bin": {
+    "linq": "./bin/run.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/bin",
+    "/dist",
+    "/oclif.manifest.json"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "pnpm run generate:types && tsc",
+    "clean": "rm -rf dist",
+    "dev": "./bin/dev.js",
+    "generate:types": "openapi-typescript openapi.yaml -o src/gen/api-types.ts",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "postpack": "rm -f oclif.manifest.json",
+    "prepack": "pnpm run build && oclif manifest",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "oclif": {
+    "bin": "linq",
+    "dirname": "linq",
+    "commands": {
+      "strategy": "pattern",
+      "target": "./dist/commands"
+    },
+    "plugins": [
+      "@oclif/plugin-help",
+      "@oclif/plugin-autocomplete"
+    ],
+    "topicSeparator": " "
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.2.0",
+    "@oclif/core": "^4.8.0",
+    "@oclif/plugin-autocomplete": "^3.2.40",
+    "@oclif/plugin-help": "^6.2.37",
+    "openapi-fetch": "^0.15.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@oclif/test": "^4.1.16",
+    "@types/node": "^25.1.0",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "oclif": "^4.22.70",
+    "openapi-typescript": "^7.10.1",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0",
+    "vitest": "^4.0.18"
+  },
+  "keywords": [
+    "linq",
+    "cli",
+    "messaging",
+    "imessage",
+    "sms"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/linq-team/linq-cli.git"
+  }
+}

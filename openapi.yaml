@@ -1742,6 +1742,54 @@ webhooks:
       responses:
         '200':
           description: Webhook received successfully
+  chat.created:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookChatCreated
+      summary: Chat created
+      description: Triggered when a new chat is created.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCreatedWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  chat.typing_indicator.started:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookChatTypingIndicatorStarted
+      summary: Typing indicator started
+      description: Triggered when a participant starts typing in a chat.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatTypingIndicatorStartedWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
+  chat.typing_indicator.stopped:
+    post:
+      tags:
+        - Webhook Events
+      operationId: webhookChatTypingIndicatorStopped
+      summary: Typing indicator stopped
+      description: Triggered when a participant stops typing in a chat.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatTypingIndicatorStoppedWebhook'
+      responses:
+        '200':
+          description: Webhook received successfully
 components:
   securitySchemes:
     BearerAuth:
@@ -1850,6 +1898,24 @@ components:
           format: uuid
           description: Message identifier (UUID)
           example: 69a37c7d-af4f-4b5e-af42-e28e98ce873a
+        service:
+          type: string
+          nullable: true
+          description: Service used to send this message
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+          example: iMessage
+        preferred_service:
+          type: string
+          nullable: true
+          description: Preferred service for sending this message
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+          example: iMessage
         parts:
           type: array
           description: Message parts in order (text and media)
@@ -1879,6 +1945,10 @@ components:
             - $ref: '#/components/schemas/MessageEffect'
           nullable: true
           description: iMessage effect applied to this message (screen or bubble effect)
+        from_handle:
+          allOf:
+            - $ref: '#/components/schemas/ChatHandle'
+          description: The sender of this message as a full handle object
         reply_to:
           nullable: true
           allOf:
@@ -1898,6 +1968,24 @@ components:
           format: uuid
           description: Message identifier (UUID)
           example: 69a37c7d-af4f-4b5e-af42-e28e98ce873a
+        service:
+          type: string
+          nullable: true
+          description: Service used to send this message
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+          example: iMessage
+        preferred_service:
+          type: string
+          nullable: true
+          description: Preferred service for sending this message
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+          example: iMessage
         parts:
           type: array
           description: Message parts in order (text and media)
@@ -1927,6 +2015,10 @@ components:
             - $ref: '#/components/schemas/MessageEffect'
           nullable: true
           description: iMessage effect applied to this message (screen or bubble effect)
+        from_handle:
+          allOf:
+            - $ref: '#/components/schemas/ChatHandle'
+          description: The sender of this message as a full handle object
         reply_to:
           allOf:
             - $ref: '#/components/schemas/ReplyTo'
@@ -2031,6 +2123,15 @@ components:
               type: string
               description: Current delivery status
               example: queued
+            service:
+              type: string
+              nullable: true
+              description: Service used to send this voice memo
+              enum:
+                - iMessage
+                - SMS
+                - RCS
+              example: iMessage
             voice_memo:
               $ref: '#/components/schemas/VoiceMemoAttachment'
             created_at:
@@ -2062,8 +2163,13 @@ components:
           example: 94c6bf33-31d9-40e3-a0e9-f94250ecedb9
         from:
           type: string
-          description: Sender phone number
+          description: 'DEPRECATED: Use from_handle instead. Sender phone number.'
+          deprecated: true
           example: '+12052535597'
+        from_handle:
+          allOf:
+            - $ref: '#/components/schemas/ChatHandle'
+          description: The sender of this voice memo as a full handle object
         to:
           type: array
           items:
@@ -2134,19 +2240,7 @@ components:
           type: array
           description: Chat participants
           items:
-            type: object
-            properties:
-              id:
-                type: string
-                format: uuid
-              handle:
-                type: string
-                description: Phone number or email address of the participant
-              service:
-                type: string
-              joined_at:
-                type: string
-                format: date-time
+            $ref: '#/components/schemas/ChatHandle'
         is_group:
           type: boolean
           description: Whether this is a group chat
@@ -2464,9 +2558,7 @@ components:
           description: HTTP status code (e.g., 400, 404, 500)
           example: 400
         code:
-          type: integer
-          description: Linq API error code for programmatic error handling
-          example: 1002
+          $ref: '#/components/schemas/ErrorCode'
         message:
           type: string
           description: Human-readable error message
@@ -2492,10 +2584,33 @@ components:
           description: ID of the chat this message belongs to
           format: uuid
           example: 94c6bf33-31d9-40e3-a0e9-f94250ecedb9
+        service:
+          type: string
+          nullable: true
+          description: Service used to send/receive this message
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+          example: iMessage
+        preferred_service:
+          type: string
+          nullable: true
+          description: Preferred service for sending this message
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+          example: iMessage
         from:
           type: string
-          description: Phone number of the message sender
+          description: 'DEPRECATED: Use from_handle instead. Phone number of the message sender.'
+          deprecated: true
           example: '+12052535597'
+        from_handle:
+          allOf:
+            - $ref: '#/components/schemas/ChatHandle'
+          description: The sender of this message as a full handle object
         parts:
           type: array
           description: Message parts in order (text and media)
@@ -2854,8 +2969,8 @@ components:
           example: 550e8400-e29b-41d4-a716-446655440000
         display_name:
           type: string
-          description: Display name for the chat
-          example: Team Discussion
+          description: Display name for the chat. Defaults to a comma-separated list of recipient handles. Can be updated for group chats.
+          example: +14155551234, +14155559876
           nullable: true
         service:
           type: string
@@ -2868,9 +2983,22 @@ components:
           nullable: true
         handles:
           type: array
-          description: List of chat participants with full handle details
+          description: List of chat participants with full handle details. Always contains at least two handles (your phone number and the other participant).
           items:
             $ref: '#/components/schemas/ChatHandle'
+          example:
+            - id: 550e8400-e29b-41d4-a716-446655440010
+              handle: '+14155551234'
+              service: iMessage
+              status: active
+              joined_at: '2025-05-21T15:30:00.000Z'
+              is_me: true
+            - id: 550e8400-e29b-41d4-a716-446655440011
+              handle: '+14155559876'
+              service: iMessage
+              status: active
+              joined_at: '2025-05-21T15:30:00.000Z'
+              is_me: false
         is_archived:
           type: boolean
           description: Whether the chat is archived
@@ -2977,7 +3105,8 @@ components:
           items:
             type: string
           example:
-            - '+12052532136'
+            - '+14155559876'
+            - '+14155550123'
         message:
           $ref: '#/components/schemas/MessageContent'
     CreateChatResult:
@@ -3003,8 +3132,8 @@ components:
               example: 94c6bf33-31d9-40e3-a0e9-f94250ecedb9
             display_name:
               type: string
-              description: Display name of the chat or primary participant
-              example: John Doe
+              description: Display name for the chat. Defaults to a comma-separated list of recipient handles. Can be updated for group chats.
+              example: +14155551234, +14155559876
               nullable: true
             service:
               type: string
@@ -3016,9 +3145,22 @@ components:
               example: false
             handles:
               type: array
-              description: List of participants in the chat
+              description: List of participants in the chat. Always contains at least two handles (your phone number and the other participant).
               items:
                 $ref: '#/components/schemas/ChatHandle'
+              example:
+                - id: 550e8400-e29b-41d4-a716-446655440010
+                  handle: '+14155551234'
+                  service: iMessage
+                  status: active
+                  joined_at: '2025-05-21T15:30:00.000Z'
+                  is_me: true
+                - id: 550e8400-e29b-41d4-a716-446655440011
+                  handle: '+14155559876'
+                  service: iMessage
+                  status: active
+                  joined_at: '2025-05-21T15:30:00.000Z'
+                  is_me: false
             message:
               $ref: '#/components/schemas/SentMessage'
     UpdateChatRequest:
@@ -3178,7 +3320,7 @@ components:
           example: https://webhooks.example.com/linq/events
         subscribed_events:
           type: array
-          description: List of event types to subscribe to
+          description: 'List of event types to subscribe to. Valid values: message.sent, message.received, message.read, message.delivered, message.failed, reaction.added, reaction.removed, participant.added, participant.removed, chat.created, chat.group_name_updated, chat.group_icon_updated, chat.group_name_update_failed, chat.group_icon_update_failed, chat.typing_indicator.started, chat.typing_indicator.stopped'
           minItems: 1
           items:
             type: string
@@ -3195,7 +3337,7 @@ components:
           example: https://webhooks.example.com/linq/events
         subscribed_events:
           type: array
-          description: Updated list of event types to subscribe to
+          description: 'Updated list of event types to subscribe to. Valid values: message.sent, message.received, message.read, message.delivered, message.failed, reaction.added, reaction.removed, participant.added, participant.removed, chat.created, chat.group_name_updated, chat.group_icon_updated, chat.group_name_update_failed, chat.group_icon_update_failed, chat.typing_indicator.started, chat.typing_indicator.stopped'
           minItems: 1
           items:
             type: string
@@ -3276,6 +3418,162 @@ components:
           type: boolean
           description: Whether voice calls are supported
           example: false
+    ErrorCode:
+      type: integer
+      description: |
+        Linq API error codes for programmatic error handling.
+
+        ## Error Code Ranges
+
+        | Range | Category | Description |
+        |-------|----------|-------------|
+        | 1xxx | Client Errors | Validation failures, malformed requests |
+        | 2xxx | Resource Errors | Not found, permission denied |
+        | 3xxx | Infrastructure | Processing failures, retries exhausted |
+        | 4xxx | Delivery | Message delivery failures |
+        | 5xxx | Attachments | File upload/download failures |
+
+        ## Complete Error Code Reference
+
+        ### 1xxx: Client/Request Errors
+
+        | Code | Name | Description | HTTP |
+        |------|------|-------------|------|
+        | 1001 | `missing_required_field` | A required field is missing from the request | 400 |
+        | 1002 | `invalid_phone_format` | Phone number must be in E.164 format (e.g., +14155551234) | 400 |
+        | 1003 | `invalid_request_body` | Request body is malformed or contains invalid JSON | 400 |
+        | 1004 | `invalid_message_content` | Message content or parts are invalid | 400 |
+        | 1005 | `invalid_parameter` | A parameter value is invalid | 400 |
+        | 1006 | `cannot_update_dm` | Cannot update a direct message chat (only group chats) | 400 |
+        | 1007 | `rate_limit_exceeded` | Daily message limit exceeded for this partner | 429 |
+
+        ### 2xxx: Resource Errors
+
+        | Code | Name | Description | HTTP |
+        |------|------|-------------|------|
+        | 2001 | `chat_not_found` | The requested chat does not exist | 404 |
+        | 2002 | `message_not_found` | The requested message does not exist | 404 |
+        | 2003 | `attachment_not_found` | The requested attachment does not exist | 404 |
+        | 2004 | `unauthorized` | Missing or invalid authentication token | 401 |
+        | 2005 | `access_denied` | You don't have permission to access this resource | 403 |
+        | 2006 | `phone_permission_denied` | You don't have permission to send from this phone number | 403 |
+        | 2007 | `attachment_not_ready` | Attachment is still being processed | 404 |
+        | 2008 | `recipient_not_allowed` | Recipient not in allowed list for this account | 403 |
+
+        ### 3xxx: Infrastructure Errors
+
+        | Code | Name | Description | HTTP |
+        |------|------|-------------|------|
+        | 3001 | `database_connection` | Database connection error (transient) | 500 |
+        | 3002 | `database_query` | Database operation failed | 500 |
+        | 3003 | `event_stream_connection` | Event stream connection error (transient) | 500 |
+        | 3004 | `event_stream_publish` | Failed to publish to event stream | 500 |
+        | 3005 | `network_timeout` | Network operation timed out | 504 |
+        | 3006 | `internal_error` | Internal server error | 500 |
+        | 3007 | `retries_exhausted` | Maximum delivery attempts exceeded | 500 |
+
+        ### 4xxx: Delivery Errors
+
+        | Code | Name | Description | HTTP |
+        |------|------|-------------|------|
+        | 4001 | `delivery_failed` | Request could not be delivered for processing | 500 |
+        | 4002 | `phone_not_available` | Phone number is not available for this operation | 500 |
+        | 4003 | `webhook_delivery_failed` | Webhook delivery to your endpoint failed | 500 |
+        | 4004 | `service_unavailable` | External service is temporarily unavailable | 503 |
+
+        ### 5xxx: Attachment/File Errors
+
+        | Code | Name | Description | HTTP |
+        |------|------|-------------|------|
+        | 5001 | `file_upload_failed` | File upload failed | 500 |
+        | 5002 | `file_download_failed` | File download failed | 500 |
+        | 5003 | `presigned_url_failed` | Failed to generate file access URL | 500 |
+        | 5004 | `invalid_file_type` | File type is not supported | 400 |
+        | 5005 | `file_too_large` | File exceeds the maximum size limit | 400 |
+
+        ## Handling Errors
+
+        ```json
+        {
+          "success": false,
+          "error": {
+            "status": 400,
+            "code": 1002,
+            "message": "Phone number must be in E.164 format"
+          },
+          "trace_id": "abc123"
+        }
+        ```
+
+        **Recommended retry strategy for transient errors (3xxx, 4xxx with 5xx HTTP):**
+        1. Wait 1-5 seconds, retry
+        2. If still failing, wait 30 seconds
+        3. After 3 failed attempts, log and alert
+      example: 1002
+      enum:
+        - 1001
+        - 1002
+        - 1003
+        - 1004
+        - 1005
+        - 1006
+        - 1007
+        - 2001
+        - 2002
+        - 2003
+        - 2004
+        - 2005
+        - 2006
+        - 2007
+        - 2008
+        - 3001
+        - 3002
+        - 3003
+        - 3004
+        - 3005
+        - 3006
+        - 3007
+        - 4001
+        - 4002
+        - 4003
+        - 4004
+        - 5001
+        - 5002
+        - 5003
+        - 5004
+        - 5005
+      x-enum-varnames:
+        - MissingRequiredField
+        - InvalidPhoneFormat
+        - InvalidRequestBody
+        - InvalidMessageContent
+        - InvalidParameterValue
+        - CannotUpdateDM
+        - RateLimitExceeded
+        - ChatNotFound
+        - MessageNotFound
+        - AttachmentNotFound
+        - Unauthorized
+        - AccessDenied
+        - PhonePermissionDenied
+        - AttachmentNotReady
+        - RecipientNotAllowed
+        - DatabaseConnection
+        - DatabaseQuery
+        - EventStreamConnection
+        - EventStreamPublish
+        - NetworkTimeout
+        - InternalServerError
+        - RetriesExhausted
+        - DeliveryFailed
+        - PhoneNotAvailable
+        - WebhookDeliveryFailed
+        - ServiceUnavailable
+        - FileUploadFailed
+        - FileDownloadFailed
+        - PresignedURLFailed
+        - InvalidFileType
+        - FileTooLarge
     WebhookEnvelopeBase:
       type: object
       required:
@@ -3309,6 +3607,54 @@ components:
           type: string
           description: Partner identifier. Present on all webhooks for cross-referencing.
           example: partner_abc123
+    Handle:
+      type: object
+      description: A handle representing a person (phone number or email address) as a participant in a chat
+      required:
+        - handle
+        - is_me
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for this handle
+          example: 550e8400-e29b-41d4-a716-446655440000
+        handle:
+          type: string
+          description: Phone number or email address
+          example: '+14155559876'
+        is_me:
+          type: boolean
+          description: Whether this handle belongs to your account (your phone number)
+          example: false
+        service:
+          type: string
+          description: Service type (iMessage, SMS, RCS)
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+          example: iMessage
+        status:
+          type: string
+          description: Participant status in the chat
+          enum:
+            - active
+            - left
+            - removed
+          default: active
+          example: active
+        joined_at:
+          type: string
+          format: date-time
+          description: When this participant joined the chat
+          example: '2025-05-21T15:30:00.000Z'
+        left_at:
+          type: string
+          format: date-time
+          description: When this participant left the chat (if applicable)
+          nullable: true
+          example: null
     schemas-TextPartResponse:
       type: object
       description: A text message part
@@ -3433,8 +3779,21 @@ components:
           example: 550e8400-e29b-41d4-a716-446655440000
         from:
           type: string
-          description: Phone number of the message sender (the phone number you sent from)
+          description: 'DEPRECATED: Use from_handle instead. Phone number of the message sender (the phone number you sent from).'
           example: '+14155551234'
+          deprecated: true
+        from_handle:
+          allOf:
+            - $ref: '#/components/schemas/Handle'
+          description: The sender of this message as a full handle object
+          example:
+            id: 550e8400-e29b-41d4-a716-446655440010
+            handle: '+14155551234'
+            is_me: true
+            service: iMessage
+            status: active
+            joined_at: '2025-11-23T17:30:00.000Z'
+            left_at: null
         message:
           $ref: '#/components/schemas/MessagePayload'
         is_from_me:
@@ -3443,10 +3802,22 @@ components:
           example: true
         service:
           type: string
-          description: Message service type
+          nullable: true
+          description: The actual service used to deliver the message
           enum:
             - iMessage
             - SMS
+            - RCS
+          example: iMessage
+        preferred_service:
+          type: string
+          nullable: true
+          description: The service that was requested when sending the message
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+            - auto
           example: iMessage
     MessageSentWebhook:
       description: Complete webhook payload for message.sent events
@@ -3471,14 +3842,40 @@ components:
           example: 550e8400-e29b-41d4-a716-446655440000
         from:
           type: string
-          description: Phone number or email address of the message sender
+          description: 'DEPRECATED: Use from_handle instead. Phone number or email address of the message sender.'
           example: '+14155559876'
+          deprecated: true
+        from_handle:
+          allOf:
+            - $ref: '#/components/schemas/Handle'
+          description: The sender of this message as a full handle object
+          example:
+            id: 550e8400-e29b-41d4-a716-446655440011
+            handle: '+14155559876'
+            is_me: false
+            service: iMessage
+            status: active
+            joined_at: '2025-11-23T17:30:00.000Z'
+            left_at: null
         message:
           $ref: '#/components/schemas/MessagePayload'
         recipient_phone:
           type: string
-          description: Our phone number that received the message
+          description: 'DEPRECATED: Use recipient_handle instead. Our phone number that received the message.'
           example: '+14155551234'
+          deprecated: true
+        recipient_handle:
+          allOf:
+            - $ref: '#/components/schemas/Handle'
+          description: Our phone number that received the message as a full handle object
+          example:
+            id: 550e8400-e29b-41d4-a716-446655440010
+            handle: '+14155551234'
+            is_me: true
+            service: iMessage
+            status: active
+            joined_at: '2025-11-23T17:30:00.000Z'
+            left_at: null
         is_from_me:
           type: boolean
           description: Whether the message was sent by us (always false for received events)
@@ -3490,11 +3887,23 @@ components:
           example: '2025-11-23T17:29:55Z'
         service:
           type: string
-          description: Message service type
+          nullable: true
+          description: The service the message was received on
           enum:
             - iMessage
             - SMS
+            - RCS
           example: iMessage
+        preferred_service:
+          type: string
+          nullable: true
+          description: The service preference (only applicable for sent messages, null for received)
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+            - auto
+          example: null
     MessageReceivedWebhook:
       description: Complete webhook payload for message.received events
       allOf:
@@ -3638,8 +4047,21 @@ components:
           example: 550e8400-e29b-41d4-a716-446655440000
         from:
           type: string
-          description: Phone number or email address of the person who added/removed the reaction
+          description: 'DEPRECATED: Use from_handle instead. Phone number or email address of the person who added/removed the reaction.'
           example: '+14155559876'
+          deprecated: true
+        from_handle:
+          allOf:
+            - $ref: '#/components/schemas/Handle'
+          description: The person who added/removed the reaction as a full handle object
+          example:
+            id: 550e8400-e29b-41d4-a716-446655440011
+            handle: '+14155559876'
+            is_me: false
+            service: iMessage
+            status: active
+            joined_at: '2025-11-23T17:30:00.000Z'
+            left_at: null
         message_id:
           type: string
           description: Message identifier (UUID) that the reaction was added to or removed from
@@ -3718,8 +4140,21 @@ components:
           example: 550e8400-e29b-41d4-a716-446655440000
         handle:
           type: string
-          description: Handle (phone number or email address) of the added participant
+          description: 'DEPRECATED: Use participant instead. Handle (phone number or email address) of the added participant.'
+          deprecated: true
           example: '+14155559876'
+        participant:
+          allOf:
+            - $ref: '#/components/schemas/Handle'
+          description: The added participant as a full handle object
+          example:
+            id: 550e8400-e29b-41d4-a716-446655440011
+            handle: '+14155559876'
+            is_me: false
+            service: iMessage
+            status: active
+            joined_at: '2025-11-23T17:40:00.000Z'
+            left_at: null
         added_at:
           type: string
           format: date-time
@@ -3749,8 +4184,21 @@ components:
           example: 550e8400-e29b-41d4-a716-446655440000
         handle:
           type: string
-          description: Handle (phone number or email address) of the removed participant
+          description: 'DEPRECATED: Use participant instead. Handle (phone number or email address) of the removed participant.'
+          deprecated: true
           example: '+14155559876'
+        participant:
+          allOf:
+            - $ref: '#/components/schemas/Handle'
+          description: The removed participant as a full handle object
+          example:
+            id: 550e8400-e29b-41d4-a716-446655440011
+            handle: '+14155559876'
+            is_me: false
+            service: iMessage
+            status: removed
+            joined_at: '2025-11-23T17:30:00.000Z'
+            left_at: '2025-11-23T17:45:00.000Z'
         removed_at:
           type: string
           format: date-time
@@ -3768,54 +4216,6 @@ components:
               example: participant.removed
             data:
               $ref: '#/components/schemas/ParticipantRemovedEvent'
-    Handle:
-      type: object
-      description: A handle representing a person (phone number or email address) as a participant in a chat
-      required:
-        - handle
-        - is_me
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Unique identifier for this handle
-          example: 550e8400-e29b-41d4-a716-446655440000
-        handle:
-          type: string
-          description: Phone number (E.164 format) or email address
-          example: '+14155559876'
-        is_me:
-          type: boolean
-          description: Whether this handle belongs to your account (your phone number)
-          example: false
-        service:
-          type: string
-          description: Service type (iMessage, SMS, RCS)
-          enum:
-            - iMessage
-            - SMS
-            - RCS
-          example: iMessage
-        status:
-          type: string
-          description: Participant status in the chat
-          enum:
-            - active
-            - left
-            - removed
-          default: active
-          example: active
-        joined_at:
-          type: string
-          format: date-time
-          description: When this participant joined the chat
-          example: '2025-05-21T15:30:00.000Z'
-        left_at:
-          type: string
-          format: date-time
-          description: When this participant left the chat (if applicable)
-          nullable: true
-          example: null
     ChatGroupNameUpdatedEvent:
       type: object
       description: Payload for chat.group_name_updated webhook events
@@ -3838,9 +4238,18 @@ components:
           description: New group name (null if the name was removed)
           example: New Group Name
         changed_by_handle:
-          $ref: '#/components/schemas/Handle'
+          allOf:
+            - $ref: '#/components/schemas/Handle'
           nullable: true
           description: The handle who made the change.
+          example:
+            id: 550e8400-e29b-41d4-a716-446655440011
+            handle: '+14155559876'
+            is_me: false
+            service: iMessage
+            status: active
+            joined_at: '2025-11-23T17:30:00.000Z'
+            left_at: null
         updated_at:
           type: string
           format: date-time
@@ -3880,9 +4289,18 @@ components:
           description: New icon URL (null if the icon was removed)
           example: https://example.com/new-icon.png
         changed_by_handle:
-          $ref: '#/components/schemas/Handle'
+          allOf:
+            - $ref: '#/components/schemas/Handle'
           nullable: true
           description: The handle who made the change.
+          example:
+            id: 550e8400-e29b-41d4-a716-446655440011
+            handle: '+14155559876'
+            is_me: false
+            service: iMessage
+            status: active
+            joined_at: '2025-11-23T17:30:00.000Z'
+            left_at: null
         updated_at:
           type: string
           format: date-time
@@ -3966,6 +4384,129 @@ components:
               example: chat.group_icon_update_failed
             data:
               $ref: '#/components/schemas/ChatGroupIconUpdateFailedEvent'
+    ChatCreatedEvent:
+      type: object
+      description: Payload for chat.created webhook events. Matches GET /v3/chats/{chatId} response.
+      required:
+        - id
+        - display_name
+        - handles
+        - is_group
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the chat
+          example: 550e8400-e29b-41d4-a716-446655440000
+        display_name:
+          type: string
+          nullable: true
+          description: Display name for the chat. Defaults to a comma-separated list of recipient handles. Can be updated for group chats.
+          example: +14155551234, +14155559876
+        service:
+          type: string
+          description: Service type for the chat
+          enum:
+            - iMessage
+            - SMS
+            - RCS
+          example: iMessage
+          nullable: true
+        handles:
+          type: array
+          description: List of chat participants with full handle details. Always contains at least two handles (your phone number and the other participant).
+          items:
+            $ref: '#/components/schemas/Handle'
+          example:
+            - id: 550e8400-e29b-41d4-a716-446655440010
+              handle: '+14155551234'
+              is_me: true
+              service: iMessage
+              status: active
+              joined_at: '2025-11-23T17:30:00.000Z'
+              left_at: null
+            - id: 550e8400-e29b-41d4-a716-446655440011
+              handle: '+14155559876'
+              is_me: false
+              service: iMessage
+              status: active
+              joined_at: '2025-11-23T17:30:00.000Z'
+              left_at: null
+        is_group:
+          type: boolean
+          description: Whether this is a group chat
+          default: false
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: When the chat was created
+          example: '2025-11-23T17:30:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          description: When the chat was last updated
+          example: '2025-11-23T17:30:00Z'
+    ChatCreatedWebhook:
+      description: Complete webhook payload for chat.created events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: chat.created
+            data:
+              $ref: '#/components/schemas/ChatCreatedEvent'
+    ChatTypingIndicatorStartedEvent:
+      type: object
+      description: Payload for chat.typing_indicator.started webhook events
+      required:
+        - chat_id
+      properties:
+        chat_id:
+          type: string
+          format: uuid
+          description: Chat identifier
+          example: 550e8400-e29b-41d4-a716-446655440000
+    ChatTypingIndicatorStartedWebhook:
+      description: Complete webhook payload for chat.typing_indicator.started events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: chat.typing_indicator.started
+            data:
+              $ref: '#/components/schemas/ChatTypingIndicatorStartedEvent'
+    ChatTypingIndicatorStoppedEvent:
+      type: object
+      description: Payload for chat.typing_indicator.stopped webhook events
+      required:
+        - chat_id
+      properties:
+        chat_id:
+          type: string
+          format: uuid
+          description: Chat identifier
+          example: 550e8400-e29b-41d4-a716-446655440000
+    ChatTypingIndicatorStoppedWebhook:
+      description: Complete webhook payload for chat.typing_indicator.stopped events
+      allOf:
+        - $ref: '#/components/schemas/WebhookEnvelopeBase'
+        - type: object
+          properties:
+            event_type:
+              type: string
+              description: The type of event
+              example: chat.typing_indicator.stopped
+            data:
+              $ref: '#/components/schemas/ChatTypingIndicatorStoppedEvent'
 x-tagGroups:
   - name: Messaging
     tags:

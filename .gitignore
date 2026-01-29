@@ -1,11 +1,38 @@
-bin/
+# Dependencies
+node_modules/
+
+# Build output
 dist/
+*.tsbuildinfo
+
+# oclif
+oclif.manifest.json
+
+# IDE
 .idea/
-*.exe
-*.dll
-*.so
-*.dylib
-*.test
-*.out
+.vscode/
+*.swp
+*.swo
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+
+# Generated types (regenerated on build)
+src/gen/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Claude
 .claude
