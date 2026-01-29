@@ -1,3 +1,10 @@
+## [0.3.1](https://github.com/linq-team/linq-cli/compare/v0.3.0...v0.3.1) (2026-01-29)
+
+
+### Bug Fixes
+
+* update cli ascii logo ([4153c19](https://github.com/linq-team/linq-cli/commit/4153c19c7498b9db9006a91ecf766be873118ebf))
+
 # [0.3.0](https://github.com/linq-team/linq-cli/compare/v0.2.0...v0.3.0) (2026-01-29)
 
 
