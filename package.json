@@ -42,6 +42,7 @@
       "strategy": "pattern",
       "target": "./dist/commands"
     },
+    "helpClass": "./dist/help.js",
     "plugins": [
       "@oclif/plugin-help",
       "@oclif/plugin-autocomplete"
