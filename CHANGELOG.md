@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/linq-team/linq-cli/compare/v1.0.4...v1.0.5) (2026-01-31)
+
+
+### Bug Fixes
+
+* **ci:** remove tarball builds from release assets ([f18264a](https://github.com/linq-team/linq-cli/commit/f18264ac356b5be61df34f2a02c793e3766a418d))
+
 ## [1.0.4](https://github.com/linq-team/linq-cli/compare/v1.0.3...v1.0.4) (2026-01-31)
 
 
