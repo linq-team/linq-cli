@@ -4,15 +4,32 @@ A command-line interface for the [Linq](https://linqapp.com) messaging API. Send
 
 ## Installation
 
+### npm (all platforms)
+
 ```bash
-npm install -g linq-cli
+npm install -g @linqapp/cli
 ```
 
 Or use directly with npx:
 
 ```bash
-npx linq-cli login
+npx @linqapp/cli login
 ```
+
+### Native Installers
+
+Download the latest installer for your platform from the [Releases](https://github.com/linq-team/linq-cli/releases) page:
+
+| Platform | File | Install Command |
+|----------|------|-----------------|
+| **macOS (Intel)** | `linq-*-x64.pkg` | Double-click to install |
+| **macOS (Apple Silicon)** | `linq-*-arm64.pkg` | Double-click to install |
+| **Windows (x64)** | `linq-*-x64.exe` | Run the installer |
+| **Windows (ARM)** | `linq-*-arm64.exe` | Run the installer |
+| **Debian/Ubuntu (x64)** | `linq_*_amd64.deb` | `sudo dpkg -i linq_*.deb` |
+| **Debian/Ubuntu (ARM)** | `linq_*_arm64.deb` | `sudo dpkg -i linq_*.deb` |
+
+After installation, the `linq` command will be available in your terminal.
 
 ## Quick Start
 
