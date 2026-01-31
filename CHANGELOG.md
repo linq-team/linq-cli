@@ -1,3 +1,15 @@
+# [1.0.0](https://github.com/linq-team/linq-cli/compare/v0.4.1...v1.0.0) (2026-01-31)
+
+
+### Features
+
+* restructure CLI commands to match OpenAPI spec ([193d553](https://github.com/linq-team/linq-cli/commit/193d55330fd80e1cf49adac2cacaae690e28605b))
+
+
+### BREAKING CHANGES
+
+* `linq send` is now `linq chats create`
+
 ## [0.4.1](https://github.com/linq-team/linq-cli/compare/v0.4.0...v0.4.1) (2026-01-31)
 
 
