@@ -22,6 +22,7 @@ export default class Send extends Command {
     }),
     from: Flags.string({
       description: 'Sender phone number (E.164 format)',
+      required: true,
     }),
     message: Flags.string({
       char: 'm',
@@ -43,13 +44,7 @@ export default class Send extends Command {
     const config = await loadConfig();
     const token = requireToken(flags.token, config);
 
-    // Resolve from: flag > config default > error
-    const from = flags.from || config.defaultFrom;
-    if (!from) {
-      this.error(
-        '--from flag required (or set defaultFrom in ~/.linq/config.json)'
-      );
-    }
+    const from = flags.from;
 
     const client = createApiClient(token);
 

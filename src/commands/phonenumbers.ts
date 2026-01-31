@@ -1,8 +1,8 @@
 import { Command, Flags } from '@oclif/core';
-import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { loadConfig, requireToken } from '../lib/config.js';
+import { createApiClient } from '../lib/api-client.js';
 
-export default class NumbersList extends Command {
+export default class PhoneNumbers extends Command {
   static override description = 'List your available phone numbers';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
@@ -15,7 +15,7 @@ export default class NumbersList extends Command {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(NumbersList);
+    const { flags } = await this.parse(PhoneNumbers);
 
     const config = await loadConfig();
     const token = requireToken(flags.token, config);
@@ -25,11 +25,11 @@ export default class NumbersList extends Command {
     const { data, error } = await client.GET('/v3/phonenumbers');
 
     if (error) {
-      this.error(`Failed to list numbers: ${JSON.stringify(error)}`);
+      this.error(`Failed to list phone numbers: ${JSON.stringify(error)}`);
     }
 
     if (!data) {
-      this.error('Failed to list numbers: no response data');
+      this.error('Failed to list phone numbers: no response data');
     }
 
     const numbers = data.phone_numbers;

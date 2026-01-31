@@ -7,7 +7,6 @@ const CONFIG_FILE = 'config.json';
 
 export interface Config {
   token?: string;
-  defaultFrom?: string;
 }
 
 function getHomeDir(): string {
@@ -60,20 +59,13 @@ export async function saveConfig(config: Config): Promise<void> {
   await writeFile(path, data, { mode: 0o600 });
 }
 
-export function resolveToken(
-  flagToken: string | undefined,
-  config: Config
-): string | undefined {
-  return flagToken || config.token;
-}
-
 export function requireToken(
   flagToken: string | undefined,
   config: Config
 ): string {
-  const token = resolveToken(flagToken, config);
+  const token = flagToken || config.token;
   if (!token) {
-    throw new Error("No token found. Run 'linq login' or pass --token");
+    throw new Error("No token found. Run 'linq login' or set LINQ_TOKEN");
   }
   return token;
 }

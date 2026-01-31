@@ -33,7 +33,7 @@ describe('send', () => {
     await fs.mkdir(configDir, { recursive: true });
     await fs.writeFile(
       path.join(configDir, 'config.json'),
-      JSON.stringify({ token: 'test-token', defaultFrom: '+12025551234' })
+      JSON.stringify({ token: 'test-token' })
     );
   });
 
@@ -55,7 +55,7 @@ describe('send', () => {
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new Send(
-      ['--to', '+19876543210', '--message', 'Hello!'],
+      ['--to', '+19876543210', '--from', '+12025551234', '--message', 'Hello!'],
       config
     );
     await cmd.run();
@@ -86,7 +86,7 @@ describe('send', () => {
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new Send(
-      ['--to', '+19876543210', '--message', 'Party!', '--effect', 'confetti'],
+      ['--to', '+19876543210', '--from', '+12025551234', '--message', 'Party!', '--effect', 'confetti'],
       config
     );
     await cmd.run();
@@ -98,19 +98,12 @@ describe('send', () => {
   });
 
   it('requires from address', async () => {
-    // Remove defaultFrom from config
-    const configDir = path.join(tempDir, '.linq');
-    await fs.writeFile(
-      path.join(configDir, 'config.json'),
-      JSON.stringify({ token: 'test-token' })
-    );
-
     const config = await Config.load({ root: process.cwd() });
     const cmd = new Send(
       ['--to', '+19876543210', '--message', 'Hello!'],
       config
     );
 
-    await expect(cmd.run()).rejects.toThrow('--from flag required');
+    await expect(cmd.run()).rejects.toThrow('Missing required flag from');
   });
 });

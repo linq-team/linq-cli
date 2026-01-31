@@ -3,7 +3,7 @@ import { Config } from '@oclif/core';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import NumbersList from '../../src/commands/numbers/list.js';
+import PhoneNumbers from '../../src/commands/phonenumbers.js';
 
 // Mock the fetch globally with proper Response object
 const mockFetch = vi.fn();
@@ -16,7 +16,7 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
-describe('numbers list', () => {
+describe('phonenumbers', () => {
   let tempDir: string;
   let originalHome: string | undefined;
 
@@ -56,7 +56,7 @@ describe('numbers list', () => {
     );
 
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new NumbersList([], config);
+    const cmd = new PhoneNumbers([], config);
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
@@ -71,7 +71,7 @@ describe('numbers list', () => {
     await fs.rm(path.join(tempDir, '.linq', 'config.json'));
 
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new NumbersList([], config);
+    const cmd = new PhoneNumbers([], config);
 
     await expect(cmd.run()).rejects.toThrow('No token found');
   });
