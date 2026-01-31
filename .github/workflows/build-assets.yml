@@ -4,6 +4,7 @@ on:
   workflow_run:
     workflows: ["Release"]
     types: [completed]
+  workflow_dispatch:  # Allow manual trigger
 
 permissions:
   contents: write
@@ -12,7 +13,7 @@ jobs:
   # Get the latest release tag
   get-release:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     outputs:
       tag: ${{ steps.get-tag.outputs.tag }}
       has_release: ${{ steps.get-tag.outputs.has_release }}
