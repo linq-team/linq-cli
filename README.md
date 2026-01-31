@@ -25,7 +25,7 @@ npx linq-cli login
 2. **List your phone numbers**:
 
    ```bash
-   linq numbers list
+   linq phonenumbers
    ```
 
 3. **Send a message**:
@@ -38,7 +38,7 @@ npx linq-cli login
 
 ### `linq login`
 
-Authenticate with Linq and save your API token.
+Authenticate with Linq and save your API token. Get your token from [Integration Details](https://zero.linqapp.com/api-tooling/) in the Linq dashboard.
 
 ```bash
 # Interactive prompt
@@ -49,6 +49,18 @@ linq login --token YOUR_API_TOKEN
 ```
 
 Your token is saved to `~/.linq/config.json`.
+
+### `linq config get|set`
+
+Manage configuration values.
+
+```bash
+# View current token (masked)
+linq config get
+
+# Set a new token
+linq config set token YOUR_API_TOKEN
+```
 
 ### `linq send`
 
@@ -63,17 +75,17 @@ linq send --to +19876543210 --from +12025551234 --message "Party time!" --effect
 
 **Flags:**
 - `--to` (required): Recipient phone number in E.164 format
-- `--from`: Sender phone number (uses default if set in config)
+- `--from` (required): Sender phone number in E.164 format
 - `--message`, `-m` (required): Message text
 - `--effect`: iMessage effect (confetti, fireworks, lasers, balloons, etc.)
 - `--token`, `-t`: Override stored API token
 
-### `linq numbers list`
+### `linq phonenumbers`
 
 List your available phone numbers.
 
 ```bash
-linq numbers list
+linq phonenumbers
 ```
 
 ### `linq listen`
@@ -147,31 +159,6 @@ pnpm format
 
 # Generate API types from OpenAPI spec
 pnpm generate:types
-```
-
-### Project Structure
-
-```
-linq-cli/
-├── bin/
-│   ├── run.js          # Production entry point
-│   └── dev.js          # Development entry point
-├── src/
-│   ├── commands/       # oclif commands
-│   │   ├── login.ts
-│   │   ├── send.ts
-│   │   ├── listen.ts
-│   │   └── numbers/
-│   │       └── list.ts
-│   ├── gen/                # Generated (do not edit)
-│   │   └── api-types.ts    # Generated from OpenAPI spec
-│   └── lib/
-│       ├── api-client.ts   # Type-safe API client
-│       └── config.ts       # Config management
-├── test/
-│   └── commands/       # Command tests
-├── openapi.yaml        # Linq Partner API spec
-└── package.json
 ```
 
 ## License
