@@ -1,3 +1,10 @@
+## [0.4.1](https://github.com/linq-team/linq-cli/compare/v0.4.0...v0.4.1) (2026-01-31)
+
+
+### Bug Fixes
+
+* banner ascii ¯\_(ツ)_/¯ ([a2c89de](https://github.com/linq-team/linq-cli/commit/a2c89de4e475ed1b0cdd3a2cd12c358de6913e0d))
+
 # [0.4.0](https://github.com/linq-team/linq-cli/compare/v0.3.1...v0.4.0) (2026-01-31)
 
 
