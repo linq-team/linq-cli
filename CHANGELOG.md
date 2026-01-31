@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/linq-team/linq-cli/compare/v1.0.0...v1.0.1) (2026-01-31)
+
+
+### Bug Fixes
+
+* **ci:** trigger build-assets after Release workflow completes ([72552ac](https://github.com/linq-team/linq-cli/commit/72552aca3139fcbc4d0cedfdee389cea3ff07680))
+* remove redundant CLI description from banner ([02c727e](https://github.com/linq-team/linq-cli/commit/02c727e21d18d61f1c39dc73dae7abb5fa26ff9e))
+
 # [1.0.0](https://github.com/linq-team/linq-cli/compare/v0.4.1...v1.0.0) (2026-01-31)
 
 
