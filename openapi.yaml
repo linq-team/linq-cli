@@ -735,7 +735,7 @@ paths:
 
         Only one effect type can be applied per message.
       tags:
-        - Chats
+        - Messages
       security:
         - BearerAuth: []
       parameters:
@@ -809,7 +809,7 @@ paths:
       description: |
         Retrieve messages from a specific chat with pagination support.
       tags:
-        - Chats
+        - Messages
       security:
         - BearerAuth: []
       parameters:
@@ -923,7 +923,7 @@ paths:
         - AIFF (audio/aiff, audio/x-aiff)
         - AMR (audio/amr)
       tags:
-        - Chats
+        - Messages
       security:
         - BearerAuth: []
       parameters:
@@ -1946,6 +1946,7 @@ components:
           nullable: true
           description: iMessage effect applied to this message (screen or bubble effect)
         from_handle:
+          nullable: true
           allOf:
             - $ref: '#/components/schemas/ChatHandle'
           description: The sender of this message as a full handle object
@@ -1953,77 +1954,6 @@ components:
           nullable: true
           allOf:
             - $ref: '#/components/schemas/ReplyTo'
-    ThreadMessage:
-      type: object
-      description: A message within a thread (includes reply_to field)
-      required:
-        - id
-        - parts
-        - sent_at
-        - delivery_status
-        - is_read
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Message identifier (UUID)
-          example: 69a37c7d-af4f-4b5e-af42-e28e98ce873a
-        service:
-          type: string
-          nullable: true
-          description: Service used to send this message
-          enum:
-            - iMessage
-            - SMS
-            - RCS
-          example: iMessage
-        preferred_service:
-          type: string
-          nullable: true
-          description: Preferred service for sending this message
-          enum:
-            - iMessage
-            - SMS
-            - RCS
-          example: iMessage
-        parts:
-          type: array
-          description: Message parts in order (text and media)
-          items:
-            oneOf:
-              - $ref: '#/components/schemas/TextPartResponse'
-              - $ref: '#/components/schemas/MediaPartResponse'
-        sent_at:
-          type: string
-          format: date-time
-          description: When the message was sent
-          example: '2025-10-23T13:07:55.019-05:00'
-        delivered_at:
-          type: string
-          format: date-time
-          description: When the message was delivered
-          example: null
-          nullable: true
-        delivery_status:
-          $ref: '#/components/schemas/DeliveryStatus'
-        is_read:
-          type: boolean
-          description: Whether the message has been read
-          example: false
-        effect:
-          allOf:
-            - $ref: '#/components/schemas/MessageEffect'
-          nullable: true
-          description: iMessage effect applied to this message (screen or bubble effect)
-        from_handle:
-          allOf:
-            - $ref: '#/components/schemas/ChatHandle'
-          description: The sender of this message as a full handle object
-        reply_to:
-          allOf:
-            - $ref: '#/components/schemas/ReplyTo'
-          nullable: true
-          description: Which message and part this is replying to (null for thread originator)
     SendMessageResponse:
       type: object
       description: Response for sending a message to a chat
@@ -2048,7 +1978,7 @@ components:
           type: array
           description: Messages in the thread, ordered by the specified order parameter
           items:
-            $ref: '#/components/schemas/ThreadMessage'
+            $ref: '#/components/schemas/Message'
         next_cursor:
           type: string
           description: Cursor for fetching the next page of results (null if no more results)
@@ -2604,15 +2534,18 @@ components:
           example: iMessage
         from:
           type: string
+          nullable: true
           description: 'DEPRECATED: Use from_handle instead. Phone number of the message sender.'
           deprecated: true
           example: '+12052535597'
         from_handle:
+          nullable: true
           allOf:
             - $ref: '#/components/schemas/ChatHandle'
           description: The sender of this message as a full handle object
         parts:
           type: array
+          nullable: true
           description: Message parts in order (text and media)
           items:
             oneOf:
@@ -2647,16 +2580,19 @@ components:
         sent_at:
           type: string
           format: date-time
+          nullable: true
           description: When the message was sent
           example: '2024-01-15T10:30:05Z'
         delivered_at:
           type: string
           format: date-time
+          nullable: true
           description: When the message was delivered
           example: '2024-01-15T10:30:10Z'
         read_at:
           type: string
           format: date-time
+          nullable: true
           description: When the message was read
           example: '2024-01-15T10:35:00Z'
         effect:
@@ -3044,6 +2980,7 @@ components:
           example: iMessage
         status:
           type: string
+          nullable: true
           description: Participant status
           enum:
             - active
@@ -3062,6 +2999,7 @@ components:
           nullable: true
         is_me:
           type: boolean
+          nullable: true
           description: Whether this handle belongs to the sender (your phone number)
           example: false
     ListChatsResult:
@@ -3607,54 +3545,6 @@ components:
           type: string
           description: Partner identifier. Present on all webhooks for cross-referencing.
           example: partner_abc123
-    Handle:
-      type: object
-      description: A handle representing a person (phone number or email address) as a participant in a chat
-      required:
-        - handle
-        - is_me
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Unique identifier for this handle
-          example: 550e8400-e29b-41d4-a716-446655440000
-        handle:
-          type: string
-          description: Phone number or email address
-          example: '+14155559876'
-        is_me:
-          type: boolean
-          description: Whether this handle belongs to your account (your phone number)
-          example: false
-        service:
-          type: string
-          description: Service type (iMessage, SMS, RCS)
-          enum:
-            - iMessage
-            - SMS
-            - RCS
-          example: iMessage
-        status:
-          type: string
-          description: Participant status in the chat
-          enum:
-            - active
-            - left
-            - removed
-          default: active
-          example: active
-        joined_at:
-          type: string
-          format: date-time
-          description: When this participant joined the chat
-          example: '2025-05-21T15:30:00.000Z'
-        left_at:
-          type: string
-          format: date-time
-          description: When this participant left the chat (if applicable)
-          nullable: true
-          example: null
     schemas-TextPartResponse:
       type: object
       description: A text message part
@@ -3768,42 +3658,91 @@ components:
               minimum: 0
               description: Index of the message part being replied to (0-based)
               example: 0
-    MessageSentEvent:
+        is_delivered:
+          type: boolean
+          description: Whether the message has been delivered
+          example: false
+        is_read:
+          type: boolean
+          description: Whether the message has been read
+          example: false
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the message was sent
+          example: '2024-01-15T10:30:05Z'
+        delivered_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the message was delivered
+          example: null
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the message was read
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          description: When the message record was created
+          example: '2024-01-15T10:30:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          description: When the message record was last updated
+          example: '2024-01-15T10:30:00Z'
+    MessageEvent:
       type: object
-      description: Payload for message.sent webhook events
+      description: Unified payload for message.sent and message.received webhook events
       properties:
         chat_id:
           type: string
           format: uuid
           description: Chat identifier
           example: 550e8400-e29b-41d4-a716-446655440000
+        is_group:
+          type: boolean
+          description: Whether this is a group chat
+          example: false
         from:
           type: string
-          description: 'DEPRECATED: Use from_handle instead. Phone number of the message sender (the phone number you sent from).'
+          description: 'DEPRECATED: Use from_handle instead. Phone number or email address of the message sender.'
           example: '+14155551234'
           deprecated: true
         from_handle:
           allOf:
-            - $ref: '#/components/schemas/Handle'
+            - $ref: '#/components/schemas/ChatHandle'
           description: The sender of this message as a full handle object
-          example:
-            id: 550e8400-e29b-41d4-a716-446655440010
-            handle: '+14155551234'
-            is_me: true
-            service: iMessage
-            status: active
-            joined_at: '2025-11-23T17:30:00.000Z'
-            left_at: null
         message:
           $ref: '#/components/schemas/MessagePayload'
+        recipient_phone:
+          type: string
+          nullable: true
+          description: 'DEPRECATED: Use recipient_handle instead. Our phone number that received the message. Null for sent events.'
+          example: '+14155551234'
+          deprecated: true
+        recipient_handle:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ChatHandle'
+          description: Our phone number that received the message as a full handle object. Null for sent events.
         is_from_me:
           type: boolean
-          description: Whether the message was sent by us (always true for sent events)
+          description: Whether the message was sent by us (true for sent events, false for received events)
           example: true
+        received_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the message was received. Null for sent events.
+          example: '2025-11-23T17:29:55Z'
         service:
           type: string
           nullable: true
-          description: The actual service used to deliver the message
+          description: The service used to send/receive the message
           enum:
             - iMessage
             - SMS
@@ -3812,7 +3751,7 @@ components:
         preferred_service:
           type: string
           nullable: true
-          description: The service that was requested when sending the message
+          description: The service that was requested when sending the message. Null for received events.
           enum:
             - iMessage
             - SMS
@@ -3830,80 +3769,7 @@ components:
               description: The type of event
               example: message.sent
             data:
-              $ref: '#/components/schemas/MessageSentEvent'
-    MessageReceivedEvent:
-      type: object
-      description: Payload for message.received webhook events
-      properties:
-        chat_id:
-          type: string
-          format: uuid
-          description: Chat identifier
-          example: 550e8400-e29b-41d4-a716-446655440000
-        from:
-          type: string
-          description: 'DEPRECATED: Use from_handle instead. Phone number or email address of the message sender.'
-          example: '+14155559876'
-          deprecated: true
-        from_handle:
-          allOf:
-            - $ref: '#/components/schemas/Handle'
-          description: The sender of this message as a full handle object
-          example:
-            id: 550e8400-e29b-41d4-a716-446655440011
-            handle: '+14155559876'
-            is_me: false
-            service: iMessage
-            status: active
-            joined_at: '2025-11-23T17:30:00.000Z'
-            left_at: null
-        message:
-          $ref: '#/components/schemas/MessagePayload'
-        recipient_phone:
-          type: string
-          description: 'DEPRECATED: Use recipient_handle instead. Our phone number that received the message.'
-          example: '+14155551234'
-          deprecated: true
-        recipient_handle:
-          allOf:
-            - $ref: '#/components/schemas/Handle'
-          description: Our phone number that received the message as a full handle object
-          example:
-            id: 550e8400-e29b-41d4-a716-446655440010
-            handle: '+14155551234'
-            is_me: true
-            service: iMessage
-            status: active
-            joined_at: '2025-11-23T17:30:00.000Z'
-            left_at: null
-        is_from_me:
-          type: boolean
-          description: Whether the message was sent by us (always false for received events)
-          example: false
-        received_at:
-          type: string
-          format: date-time
-          description: When the message was received
-          example: '2025-11-23T17:29:55Z'
-        service:
-          type: string
-          nullable: true
-          description: The service the message was received on
-          enum:
-            - iMessage
-            - SMS
-            - RCS
-          example: iMessage
-        preferred_service:
-          type: string
-          nullable: true
-          description: The service preference (only applicable for sent messages, null for received)
-          enum:
-            - iMessage
-            - SMS
-            - RCS
-            - auto
-          example: null
+              $ref: '#/components/schemas/MessageEvent'
     MessageReceivedWebhook:
       description: Complete webhook payload for message.received events
       allOf:
@@ -3915,26 +3781,24 @@ components:
               description: The type of event
               example: message.received
             data:
-              $ref: '#/components/schemas/MessageReceivedEvent'
+              $ref: '#/components/schemas/MessageEvent'
     MessageReadEvent:
-      type: object
-      description: Payload for message.read webhook events
-      required:
-        - read_at
-      properties:
-        chat_id:
-          type: string
-          description: Chat identifier (UUID)
-          example: 550e8400-e29b-41d4-a716-446655440000
-        message_id:
-          type: string
-          description: Message identifier (UUID)
-          example: 550e8400-e29b-41d4-a716-446655440001
-        read_at:
-          type: string
-          format: date-time
-          description: When the message was read
-          example: '2025-11-23T17:35:00Z'
+      description: Payload for message.read webhook events. Extends MessageEvent with read_at and message_id.
+      allOf:
+        - $ref: '#/components/schemas/MessageEvent'
+        - type: object
+          required:
+            - read_at
+          properties:
+            message_id:
+              type: string
+              description: Message identifier (UUID)
+              example: 550e8400-e29b-41d4-a716-446655440001
+            read_at:
+              type: string
+              format: date-time
+              description: When the message was read
+              example: '2025-11-23T17:35:00Z'
     MessageReadWebhook:
       description: Complete webhook payload for message.read events
       allOf:
@@ -3948,24 +3812,22 @@ components:
             data:
               $ref: '#/components/schemas/MessageReadEvent'
     MessageDeliveredEvent:
-      type: object
-      description: Payload for message.delivered webhook events
-      required:
-        - delivered_at
-      properties:
-        chat_id:
-          type: string
-          description: Chat identifier (UUID)
-          example: 550e8400-e29b-41d4-a716-446655440000
-        message_id:
-          type: string
-          description: Message identifier (UUID)
-          example: 550e8400-e29b-41d4-a716-446655440001
-        delivered_at:
-          type: string
-          format: date-time
-          description: When the message was delivered to the recipient's device
-          example: '2025-11-23T17:32:00Z'
+      description: Payload for message.delivered webhook events. Extends MessageEvent with delivered_at and message_id.
+      allOf:
+        - $ref: '#/components/schemas/MessageEvent'
+        - type: object
+          required:
+            - delivered_at
+          properties:
+            message_id:
+              type: string
+              description: Message identifier (UUID)
+              example: 550e8400-e29b-41d4-a716-446655440001
+            delivered_at:
+              type: string
+              format: date-time
+              description: When the message was delivered to the recipient's device
+              example: '2025-11-23T17:32:00Z'
     MessageDeliveredWebhook:
       description: Complete webhook payload for message.delivered events
       allOf:
@@ -4052,7 +3914,7 @@ components:
           deprecated: true
         from_handle:
           allOf:
-            - $ref: '#/components/schemas/Handle'
+            - $ref: '#/components/schemas/ChatHandle'
           description: The person who added/removed the reaction as a full handle object
           example:
             id: 550e8400-e29b-41d4-a716-446655440011
@@ -4145,7 +4007,7 @@ components:
           example: '+14155559876'
         participant:
           allOf:
-            - $ref: '#/components/schemas/Handle'
+            - $ref: '#/components/schemas/ChatHandle'
           description: The added participant as a full handle object
           example:
             id: 550e8400-e29b-41d4-a716-446655440011
@@ -4189,7 +4051,7 @@ components:
           example: '+14155559876'
         participant:
           allOf:
-            - $ref: '#/components/schemas/Handle'
+            - $ref: '#/components/schemas/ChatHandle'
           description: The removed participant as a full handle object
           example:
             id: 550e8400-e29b-41d4-a716-446655440011
@@ -4239,7 +4101,7 @@ components:
           example: New Group Name
         changed_by_handle:
           allOf:
-            - $ref: '#/components/schemas/Handle'
+            - $ref: '#/components/schemas/ChatHandle'
           nullable: true
           description: The handle who made the change.
           example:
@@ -4290,7 +4152,7 @@ components:
           example: https://example.com/new-icon.png
         changed_by_handle:
           allOf:
-            - $ref: '#/components/schemas/Handle'
+            - $ref: '#/components/schemas/ChatHandle'
           nullable: true
           description: The handle who made the change.
           example:
@@ -4418,7 +4280,7 @@ components:
           type: array
           description: List of chat participants with full handle details. Always contains at least two handles (your phone number and the other participant).
           items:
-            $ref: '#/components/schemas/Handle'
+            $ref: '#/components/schemas/ChatHandle'
           example:
             - id: 550e8400-e29b-41d4-a716-446655440010
               handle: '+14155551234'
