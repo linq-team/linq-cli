@@ -1,16 +1,41 @@
 name: Build Release Assets
 
 on:
-  release:
-    types: [published]
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
 
 permissions:
   contents: write
 
 jobs:
+  # Get the latest release tag
+  get-release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      tag: ${{ steps.get-tag.outputs.tag }}
+      has_release: ${{ steps.get-tag.outputs.has_release }}
+    steps:
+      - name: Get latest release tag
+        id: get-tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=$(gh release list --repo ${{ github.repository }} --limit 1 --json tagName -q '.[0].tagName')
+          if [ -n "$TAG" ]; then
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "has_release=true" >> $GITHUB_OUTPUT
+            echo "Latest release: $TAG"
+          else
+            echo "has_release=false" >> $GITHUB_OUTPUT
+            echo "No releases found"
+          fi
+
   # Build standalone tarballs for each platform
-  # These include Node.js bundled so users don't need Node installed
   build-tarballs:
+    needs: get-release
+    if: ${{ needs.get-release.outputs.has_release == 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -52,12 +77,14 @@ jobs:
         run: |
           for file in dist/*.tar.gz dist/*.tar.xz; do
             if [ -f "$file" ]; then
-              gh release upload "${{ github.event.release.tag_name }}" "$file" --clobber
+              gh release upload "${{ needs.get-release.outputs.tag }}" "$file" --clobber
             fi
           done
 
   # Build Debian packages (.deb) for apt install
   build-deb:
+    needs: get-release
+    if: ${{ needs.get-release.outputs.has_release == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -88,12 +115,14 @@ jobs:
         run: |
           for file in dist/deb/*.deb; do
             if [ -f "$file" ]; then
-              gh release upload "${{ github.event.release.tag_name }}" "$file" --clobber
+              gh release upload "${{ needs.get-release.outputs.tag }}" "$file" --clobber
             fi
           done
 
   # Build Windows installer (.exe)
   build-windows:
+    needs: get-release
+    if: ${{ needs.get-release.outputs.has_release == 'true' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -128,12 +157,14 @@ jobs:
         run: |
           for file in dist/win32/*.exe; do
             if [ -f "$file" ]; then
-              gh release upload "${{ github.event.release.tag_name }}" "$file" --clobber
+              gh release upload "${{ needs.get-release.outputs.tag }}" "$file" --clobber
             fi
           done
 
   # Build macOS installer (.pkg) - unsigned for now
   build-macos:
+    needs: get-release
+    if: ${{ needs.get-release.outputs.has_release == 'true' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -164,6 +195,6 @@ jobs:
         run: |
           for file in dist/macos/*.pkg; do
             if [ -f "$file" ]; then
-              gh release upload "${{ github.event.release.tag_name }}" "$file" --clobber
+              gh release upload "${{ needs.get-release.outputs.tag }}" "$file" --clobber
             fi
           done
