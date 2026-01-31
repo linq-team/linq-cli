@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/linq-team/linq-cli/compare/v1.0.1...v1.0.2) (2026-01-31)
+
+
+### Bug Fixes
+
+* make lefthook install optional for production builds ([0425a2a](https://github.com/linq-team/linq-cli/commit/0425a2a82105b12fd9854ab2c26190ba33f44156))
+
 ## [1.0.1](https://github.com/linq-team/linq-cli/compare/v1.0.0...v1.0.1) (2026-01-31)
 
 
