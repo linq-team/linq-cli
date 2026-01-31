@@ -69,7 +69,13 @@ jobs:
         run: pnpm build
 
       - name: Pack tarballs
-        run: pnpm exec oclif pack tarballs --targets=${{ matrix.targets }}
+        shell: bash
+        run: |
+          # On Windows, use Git's GNU tar instead of Windows tar
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            export PATH="/c/Program Files/Git/usr/bin:$PATH"
+          fi
+          pnpm exec oclif pack tarballs --targets=${{ matrix.targets }}
 
       - name: Upload Release Assets
         env:
@@ -149,7 +155,11 @@ jobs:
         run: pnpm build
 
       - name: Pack Windows installer
-        run: pnpm exec oclif pack win
+        shell: bash
+        run: |
+          # Use Git's GNU tar instead of Windows tar (which doesn't support --force-local)
+          export PATH="/c/Program Files/Git/usr/bin:$PATH"
+          pnpm exec oclif pack win
 
       - name: Upload Release Assets
         env:
