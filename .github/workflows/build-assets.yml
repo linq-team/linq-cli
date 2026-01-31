@@ -8,7 +8,56 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  # Build standalone tarballs for each platform
+  # These include Node.js bundled so users don't need Node installed
+  build-tarballs:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            targets: linux-x64,linux-arm64
+          - os: macos-latest
+            targets: darwin-x64,darwin-arm64
+          - os: windows-latest
+            targets: win32-x64,win32-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Pack tarballs
+        run: pnpm exec oclif pack tarballs --targets=${{ matrix.targets }}
+
+      - name: Upload Release Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          for file in dist/*.tar.gz dist/*.tar.xz; do
+            if [ -f "$file" ]; then
+              gh release upload "${{ github.event.release.tag_name }}" "$file" --clobber
+            fi
+          done
+
+  # Build Debian packages (.deb) for apt install
+  build-deb:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,8 +73,44 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
 
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y p7zip-full
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Pack deb
+        run: pnpm exec oclif pack deb
+
+      - name: Upload Release Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for file in dist/deb/*.deb; do
+            if [ -f "$file" ]; then
+              gh release upload "${{ github.event.release.tag_name }}" "$file" --clobber
+            fi
+          done
+
+  # Build Windows installer (.exe)
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install NSIS
+        run: choco install nsis -y
 
       - name: Install dependencies
         run: pnpm install
@@ -33,13 +118,52 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Pack tarballs
-        run: pnpm exec oclif pack tarballs
+      - name: Pack Windows installer
+        run: pnpm exec oclif pack win
+
+      - name: Upload Release Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          for file in dist/win32/*.exe; do
+            if [ -f "$file" ]; then
+              gh release upload "${{ github.event.release.tag_name }}" "$file" --clobber
+            fi
+          done
+
+  # Build macOS installer (.pkg) - unsigned for now
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Pack macOS installer
+        run: pnpm exec oclif pack macos
 
       - name: Upload Release Assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for file in dist/*.tar.gz dist/*.tar.xz; do
-            gh release upload "${{ github.event.release.tag_name }}" "$file" --clobber
+          for file in dist/macos/*.pkg; do
+            if [ -f "$file" ]; then
+              gh release upload "${{ github.event.release.tag_name }}" "$file" --clobber
+            fi
           done
