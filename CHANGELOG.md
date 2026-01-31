@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/linq-team/linq-cli/compare/v1.0.3...v1.0.4) (2026-01-31)
+
+
+### Bug Fixes
+
+* **ci:** add NSIS to PATH for Windows installer build ([c2668ad](https://github.com/linq-team/linq-cli/commit/c2668adbe09356e89ba30cde42be423a4c105ffa))
+
 ## [1.0.3](https://github.com/linq-team/linq-cli/compare/v1.0.2...v1.0.3) (2026-01-31)
 
 
