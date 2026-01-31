@@ -158,7 +158,8 @@ jobs:
         shell: bash
         run: |
           # Use Git's GNU tar instead of Windows tar (which doesn't support --force-local)
-          export PATH="/c/Program Files/Git/usr/bin:$PATH"
+          # Also add NSIS to PATH for makensis command
+          export PATH="/c/Program Files/Git/usr/bin:/c/Program Files (x86)/NSIS:$PATH"
           pnpm exec oclif pack win
 
       - name: Upload Release Assets
