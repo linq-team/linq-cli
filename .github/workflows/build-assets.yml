@@ -33,61 +33,6 @@ jobs:
             echo "No releases found"
           fi
 
-  # Build standalone tarballs for each platform
-  build-tarballs:
-    needs: get-release
-    if: ${{ needs.get-release.outputs.has_release == 'true' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            targets: linux-x64,linux-arm64
-          - os: macos-latest
-            targets: darwin-x64,darwin-arm64
-          - os: windows-latest
-            targets: win32-x64,win32-arm64
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build
-        run: pnpm build
-
-      - name: Pack tarballs
-        shell: bash
-        run: |
-          # On Windows, use Git's GNU tar instead of Windows tar
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            export PATH="/c/Program Files/Git/usr/bin:$PATH"
-          fi
-          pnpm exec oclif pack tarballs --targets=${{ matrix.targets }}
-
-      - name: Upload Release Assets
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          for file in dist/*.tar.gz dist/*.tar.xz; do
-            if [ -f "$file" ]; then
-              gh release upload "${{ needs.get-release.outputs.tag }}" "$file" --clobber
-            fi
-          done
-
   # Build Debian packages (.deb) for apt install
   build-deb:
     needs: get-release

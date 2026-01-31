@@ -29,7 +29,6 @@
     "prepack": "pnpm run build && oclif manifest",
     "test": "vitest run",
     "test:watch": "vitest",
-    "pack": "oclif pack tarballs",
     "pack:macos": "oclif pack macos",
     "pack:win": "oclif pack win",
     "pack:deb": "oclif pack deb",
