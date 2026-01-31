@@ -33,7 +33,7 @@
     "pack:macos": "oclif pack macos",
     "pack:win": "oclif pack win",
     "pack:deb": "oclif pack deb",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install || true"
   },
   "oclif": {
     "bin": "linq",
