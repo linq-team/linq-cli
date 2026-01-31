@@ -16,4 +16,3 @@ export const LOGO = `
         ::::
 `;
 
-export const BANNER = LOGO + '\n  Linq CLI for iMessage & SMS\n';
