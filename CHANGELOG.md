@@ -1,3 +1,10 @@
+# [0.4.0](https://github.com/linq-team/linq-cli/compare/v0.3.1...v0.4.0) (2026-01-31)
+
+
+### Features
+
+* simplify CLI with config commands and streamlined auth ([594b098](https://github.com/linq-team/linq-cli/commit/594b098eb248520bb0ab15b409db3640908b2785))
+
 ## [0.3.1](https://github.com/linq-team/linq-cli/compare/v0.3.0...v0.3.1) (2026-01-29)
 
 
