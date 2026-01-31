@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/linq-team/linq-cli/compare/v1.0.2...v1.0.3) (2026-01-31)
+
+
+### Bug Fixes
+
+* **ci:** fix Windows tar and add macOS identifier for oclif pack ([0faafd2](https://github.com/linq-team/linq-cli/commit/0faafd2c643248c5c3eff32e527dd9a381ecae65))
+
 ## [1.0.2](https://github.com/linq-team/linq-cli/compare/v1.0.1...v1.0.2) (2026-01-31)
 
 
