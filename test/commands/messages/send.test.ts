@@ -3,9 +3,8 @@ import { Config } from '@oclif/core';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import Send from '../../src/commands/send.js';
+import MessagesSend from '../../../src/commands/messages/send.js';
 
-// Mock the fetch globally with proper Response object
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
@@ -16,7 +15,7 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
-describe('send', () => {
+describe('messages send', () => {
   let tempDir: string;
   let originalHome: string | undefined;
   let lastRequestBody: unknown;
@@ -28,7 +27,6 @@ describe('send', () => {
     mockFetch.mockReset();
     lastRequestBody = null;
 
-    // Create config with token
     const configDir = path.join(tempDir, '.linq');
     await fs.mkdir(configDir, { recursive: true });
     await fs.writeFile(
@@ -42,36 +40,31 @@ describe('send', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  it('sends message successfully', async () => {
+  it('sends message to existing chat', async () => {
     mockFetch.mockImplementation(async (request: Request) => {
       lastRequestBody = await request.json();
       return createMockResponse(201, {
-        chat: {
-          id: 'chat-123',
-          message: { id: 'msg-456' },
-        },
+        chat_id: 'chat-123',
+        message: { id: 'msg-456' },
       });
     });
 
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new Send(
-      ['--to', '+19876543210', '--from', '+12025551234', '--message', 'Hello!'],
+    const cmd = new MessagesSend(
+      ['chat-123', '--from', '+12025551234', '--message', 'Hello!'],
       config
     );
     await cmd.run();
 
-    // Verify the API call
     expect(mockFetch).toHaveBeenCalledOnce();
     const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/chats');
+    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123/messages');
     expect(request.method).toBe('POST');
 
     const body = lastRequestBody as {
-      to: string[];
       from: string;
       message: { parts: { value: string }[] };
     };
-    expect(body.to).toEqual(['+19876543210']);
     expect(body.from).toBe('+12025551234');
     expect(body.message.parts[0].value).toBe('Hello!');
   });
@@ -80,13 +73,14 @@ describe('send', () => {
     mockFetch.mockImplementation(async (request: Request) => {
       lastRequestBody = await request.json();
       return createMockResponse(201, {
-        chat: { id: 'chat-123', message: { id: 'msg-456' } },
+        chat_id: 'chat-123',
+        message: { id: 'msg-456' },
       });
     });
 
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new Send(
-      ['--to', '+19876543210', '--from', '+12025551234', '--message', 'Party!', '--effect', 'confetti'],
+    const cmd = new MessagesSend(
+      ['chat-123', '--from', '+12025551234', '--message', 'Wow!', '--effect', 'fireworks'],
       config
     );
     await cmd.run();
@@ -94,16 +88,35 @@ describe('send', () => {
     const body = lastRequestBody as {
       message: { effect: { type: string; name: string } };
     };
-    expect(body.message.effect).toEqual({ type: 'screen', name: 'confetti' });
+    expect(body.message.effect).toEqual({ type: 'screen', name: 'fireworks' });
   });
 
-  it('requires from address', async () => {
+  it('includes reply-to when specified', async () => {
+    mockFetch.mockImplementation(async (request: Request) => {
+      lastRequestBody = await request.json();
+      return createMockResponse(201, {
+        chat_id: 'chat-123',
+        message: { id: 'msg-456' },
+      });
+    });
+
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new Send(
-      ['--to', '+19876543210', '--message', 'Hello!'],
+    const cmd = new MessagesSend(
+      ['chat-123', '--from', '+12025551234', '--message', 'Reply', '--reply-to', 'original-msg-id'],
       config
     );
+    await cmd.run();
 
-    await expect(cmd.run()).rejects.toThrow('Missing required flag from');
+    const body = lastRequestBody as {
+      message: { reply_to: { message_id: string; part_index: number } };
+    };
+    expect(body.message.reply_to).toEqual({ message_id: 'original-msg-id', part_index: 0 });
+  });
+
+  it('requires chat ID argument', async () => {
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new MessagesSend(['--from', '+12025551234', '--message', 'Hello!'], config);
+
+    await expect(cmd.run()).rejects.toThrow('Missing 1 required arg');
   });
 });
