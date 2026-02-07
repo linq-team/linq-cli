@@ -12,7 +12,7 @@ importers:
         specifier: ^8.2.0
         version: 8.2.0(@types/node@25.1.0)
       '@ngrok/ngrok':
-        specifier: ^1.4.1
+        specifier: ^1.7.0
         version: 1.7.0
       '@oclif/core':
         specifier: ^4.8.0
