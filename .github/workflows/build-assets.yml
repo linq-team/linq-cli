@@ -100,11 +100,10 @@ jobs:
         run: pnpm build
 
       - name: Pack Windows installer
-        shell: bash
+        shell: pwsh
         run: |
-          # Use Git's GNU tar instead of Windows tar (which doesn't support --force-local)
-          # Also add NSIS to PATH for makensis command
-          export PATH="/c/Program Files/Git/usr/bin:/c/Program Files (x86)/NSIS:$PATH"
+          # Add NSIS to PATH for makensis command
+          $env:PATH = "C:\Program Files (x86)\NSIS;$env:PATH"
           pnpm exec oclif pack win
 
       - name: Upload Release Assets
