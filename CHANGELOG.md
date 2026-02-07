@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/linq-team/linq-cli/compare/v1.2.3...v1.3.0) (2026-02-07)
+
+
+### Features
+
+* rename release packages for clarity (win/mac/linux instead of sha) ([8d924bc](https://github.com/linq-team/linq-cli/commit/8d924bcdeb977e53de629c91ff2e2eb095ed7265))
+
 ## [1.2.3](https://github.com/linq-team/linq-cli/compare/v1.2.2...v1.2.3) (2026-02-07)
 
 
