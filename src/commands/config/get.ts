@@ -1,7 +1,7 @@
 import { Args, Command } from '@oclif/core';
-import { loadConfig, type Config } from '../../lib/config.js';
+import { loadConfig } from '../../lib/config.js';
 
-const VALID_KEYS: (keyof Config)[] = ['token'];
+const VALID_KEYS = ['token'] as const;
 
 export default class ConfigGet extends Command {
   static override description = 'Get a configuration value';
@@ -24,15 +24,20 @@ export default class ConfigGet extends Command {
     const config = await loadConfig();
 
     if (args.key) {
-      if (!VALID_KEYS.includes(args.key as keyof Config)) {
-        this.error(`Invalid key: ${args.key}. Valid keys: ${VALID_KEYS.join(', ')}`);
+      if (!VALID_KEYS.includes(args.key as (typeof VALID_KEYS)[number])) {
+        this.error(
+          `Invalid key: ${args.key}. Valid keys: ${VALID_KEYS.join(', ')}`
+        );
       }
 
-      const value = config[args.key as keyof Config];
-      if (value === undefined) {
-        this.log(`${args.key} is not set`);
-      } else {
-        this.log(`${args.key}=${this.maskToken(value)}`);
+      // Only handle string keys (token)
+      if (args.key === 'token') {
+        const value = config.token;
+        if (value === undefined) {
+          this.log(`${args.key} is not set`);
+        } else {
+          this.log(`${args.key}=${this.maskToken(value)}`);
+        }
       }
     } else {
       if (!config.token) {

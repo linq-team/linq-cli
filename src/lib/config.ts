@@ -7,6 +7,12 @@ const CONFIG_FILE = 'config.json';
 
 export interface Config {
   token?: string;
+  sandbox?: {
+    phone: string;
+    userPhone: string;
+    expiresAt: string;
+    githubLogin: string;
+  };
 }
 
 function getHomeDir(): string {
