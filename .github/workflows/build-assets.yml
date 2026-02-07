@@ -102,8 +102,9 @@ jobs:
       - name: Pack Windows installer
         shell: pwsh
         run: |
-          # Add NSIS to PATH for makensis command
-          $env:PATH = "C:\Program Files (x86)\NSIS;$env:PATH"
+          # Use Git's GNU tar (Windows tar doesn't support --force-local)
+          # Also add NSIS to PATH for makensis command
+          $env:PATH = "C:\Program Files\Git\usr\bin;C:\Program Files (x86)\NSIS;$env:PATH"
           pnpm exec oclif pack win
 
       - name: Upload Release Assets
