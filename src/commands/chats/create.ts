@@ -1,5 +1,5 @@
 import { Command, Flags } from '@oclif/core';
-import { loadConfig, requireToken } from '../../lib/config.js';
+import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import type { components } from '../../gen/api-types.js';
 
@@ -27,9 +27,11 @@ export default class ChatsCreate extends Command {
   static override description = 'Create a new chat and send an initial message';
 
   static override examples = [
+    '<%= config.bin %> <%= command.id %> --to +19876543210 --message "Hello"',
     '<%= config.bin %> <%= command.id %> --to +19876543210 --from +12025551234 --message "Hello"',
-    '<%= config.bin %> <%= command.id %> --to +19876543210 --from +12025551234 --message "Party!" --effect confetti',
-    '<%= config.bin %> <%= command.id %> --to +1111111111 --to +2222222222 --from +12025551234 --message "Group chat"',
+    '<%= config.bin %> <%= command.id %> --to +19876543210 --message "Party!" --effect confetti',
+    '<%= config.bin %> <%= command.id %> --to +1111111111 --to +2222222222 --message "Group chat"',
+    '<%= config.bin %> <%= command.id %> --to +19876543210 --message "Hello" --profile work',
   ];
 
   static override flags = {
@@ -40,8 +42,7 @@ export default class ChatsCreate extends Command {
       multiple: true,
     }),
     from: Flags.string({
-      description: 'Sender phone number (E.164 format)',
-      required: true,
+      description: 'Sender phone number (E.164 format). Uses config fromPhone if not specified.',
     }),
     message: Flags.string({
       char: 'm',
@@ -51,21 +52,22 @@ export default class ChatsCreate extends Command {
     effect: Flags.string({
       description: `iMessage effect (${ALL_EFFECTS.join(', ')})`,
     }),
+    profile: Flags.string({
+      char: 'p',
+      description: 'Config profile to use',
+    }),
     token: Flags.string({
       char: 't',
       description: 'API token (overrides stored token)',
-    }),
-    json: Flags.boolean({
-      description: 'Output response as JSON',
-      default: false,
     }),
   };
 
   async run(): Promise<void> {
     const { flags } = await this.parse(ChatsCreate);
 
-    const config = await loadConfig();
+    const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
+    const fromPhone = requireFromPhone(flags.from, config);
     const client = createApiClient(token);
 
     // Build message parts
@@ -88,7 +90,7 @@ export default class ChatsCreate extends Command {
 
     const { data, error } = await client.POST('/v3/chats', {
       body: {
-        from: flags.from,
+        from: fromPhone,
         to: flags.to,
         message: {
           parts: [textPart],
@@ -105,13 +107,6 @@ export default class ChatsCreate extends Command {
       this.error('Failed to create chat: no response data');
     }
 
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      const recipients = flags.to.join(', ');
-      this.log(
-        `Chat created with ${recipients} (chat: ${data.chat.id}, message: ${data.chat.message.id})`
-      );
-    }
+    this.log(JSON.stringify(data, null, 2));
   }
 }

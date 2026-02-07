@@ -31,20 +31,20 @@ export default class MessagesList extends Command {
       options: ['asc', 'desc'],
       default: 'desc',
     }),
+    profile: Flags.string({
+      char: 'p',
+      description: 'Config profile to use',
+    }),
     token: Flags.string({
       char: 't',
       description: 'API token (overrides stored token)',
-    }),
-    json: Flags.boolean({
-      description: 'Output response as JSON',
-      default: false,
     }),
   };
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesList);
 
-    const config = await loadConfig();
+    const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
@@ -69,45 +69,6 @@ export default class MessagesList extends Command {
       this.error('Failed to list messages: no response data');
     }
 
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-      return;
-    }
-
-    const messages = data.messages;
-
-    if (messages.length === 0) {
-      this.log('No messages found.');
-      return;
-    }
-
-    for (const msg of messages) {
-      const sender = msg.from_handle?.handle || msg.from || 'Unknown';
-      const time = msg.sent_at ? new Date(msg.sent_at).toLocaleString() : 'N/A';
-      // Derive status from boolean fields
-      const status = msg.is_read ? 'read' : msg.is_delivered ? 'delivered' : 'sent';
-
-      // Extract text content from parts
-      let textContent = '';
-      let mediaCount = 0;
-      if (msg.parts) {
-        for (const part of msg.parts) {
-          if (part.type === 'text' && 'value' in part) {
-            textContent += part.value + ' ';
-          } else if (part.type === 'media') {
-            mediaCount++;
-          }
-        }
-      }
-      textContent = textContent.trim() || '[no text]';
-      const mediaInfo = mediaCount > 0 ? ` [${mediaCount} attachment(s)]` : '';
-
-      this.log(`[${time}] ${sender} (${status}): ${textContent}${mediaInfo}`);
-      this.log(`  ID: ${msg.id}`);
-    }
-
-    if (data.next_cursor) {
-      this.log(`\nMore messages available. Use --cursor ${data.next_cursor} to see more.`);
-    }
+    this.log(JSON.stringify(data, null, 2));
   }
 }

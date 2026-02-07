@@ -15,6 +15,10 @@ export default class WebhooksDelete extends Command {
   };
 
   static override flags = {
+    profile: Flags.string({
+      char: 'p',
+      description: 'Config profile to use',
+    }),
     token: Flags.string({
       char: 't',
       description: 'API token (overrides stored token)',
@@ -24,7 +28,7 @@ export default class WebhooksDelete extends Command {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(WebhooksDelete);
 
-    const config = await loadConfig();
+    const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 

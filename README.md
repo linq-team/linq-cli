@@ -74,12 +74,63 @@ Your token is saved to `~/.linq/config.json`.
 Manage configuration values.
 
 ```bash
-# View current token (masked)
+# View current config
 linq config get
 
-# Set a new token
+# Set your API token
 linq config set token YOUR_API_TOKEN
+
+# Set default sender phone (must be one from `linq phonenumbers`)
+linq config set fromPhone +12025551234
+
+# Set ngrok auth token
+linq config set ngrokAuthtoken YOUR_NGROK_TOKEN
 ```
+
+#### `linq config list`
+
+List all configuration profiles.
+
+```bash
+linq config list
+# Output:
+# Profiles:
+#   default (active)
+#   personal
+#   work
+```
+
+#### `linq config use`
+
+Switch to a different profile.
+
+```bash
+linq config use work
+```
+
+### Profiles
+
+Profiles work like AWS CLI profiles - switch between different accounts or phone numbers easily.
+
+```bash
+# Create a work profile
+linq config set token WORK_TOKEN --profile work
+linq config set fromPhone +18005551234 --profile work
+
+# Create a personal profile
+linq config set token PERSONAL_TOKEN --profile personal
+linq config set fromPhone +12025551234 --profile personal
+
+# Switch default profile
+linq config use work
+
+# Or use --profile flag with any command
+linq chats create --to +19876543210 --message "Hello" --profile personal
+```
+
+Environment variables:
+- `LINQ_PROFILE` - Override the active profile
+- `LINQ_FROM_PHONE` - Override the sender phone number
 
 ### Phone Numbers
 
@@ -98,7 +149,10 @@ linq phonenumbers
 Create a new chat and send an initial message.
 
 ```bash
-# Send to a single recipient
+# Send to a single recipient (uses fromPhone from config)
+linq chats create --to +19876543210 --message "Hello!"
+
+# Or specify --from explicitly
 linq chats create --to +19876543210 --from +12025551234 --message "Hello!"
 
 # Send to multiple recipients (group chat)
@@ -110,26 +164,31 @@ linq chats create --to +19876543210 --from +12025551234 --message "Party!" --eff
 
 **Flags:**
 - `--to` (required): Recipient phone number or email. Can be specified multiple times for group chats.
-- `--from` (required): Sender phone number (E.164 format)
+- `--from`: Your sender phone number (must be one from `linq phonenumbers`). Uses config `fromPhone` if not specified.
 - `--message`, `-m` (required): Message text
 - `--effect`: iMessage effect (confetti, fireworks, lasers, balloons, etc.)
+- `--profile`, `-p`: Config profile to use
 - `--token`, `-t`: Override stored API token
-- `--json`: Output response as JSON
 
 #### `linq chats list`
 
 List chats for a phone number.
 
 ```bash
-linq chats list +12025551234
-linq chats list +12025551234 --limit 50
+# Uses fromPhone from config
+linq chats list
+
+# Specify phone number explicitly
+linq chats list --from +12025551234
+linq chats list --from +12025551234 --limit 50
 ```
 
 **Flags:**
-- `--limit`: Maximum number of chats to return (default: 20)
+- `--from`: Your phone number to list chats for (must be one from `linq phonenumbers`). Uses config `fromPhone` if not specified.
+- `--limit`: Maximum number of chats to return (default: 20, max: 100)
 - `--cursor`: Pagination cursor from previous response
+- `--profile`, `-p`: Config profile to use
 - `--token`, `-t`: Override stored API token
-- `--json`: Output response as JSON
 
 #### `linq chats get`
 
@@ -146,16 +205,22 @@ linq chats get CHAT_ID
 Send a message to an existing chat.
 
 ```bash
+# Uses fromPhone from config
+linq messages send CHAT_ID --message "Hello!"
+
+# Specify sender explicitly
 linq messages send CHAT_ID --from +12025551234 --message "Hello!"
-linq messages send CHAT_ID --from +12025551234 --message "Surprise!" --effect fireworks
+
+# With iMessage effect
+linq messages send CHAT_ID --message "Surprise!" --effect fireworks
 ```
 
 **Flags:**
-- `--from` (required): Sender phone number (E.164 format)
+- `--from`: Your sender phone number (must be one from `linq phonenumbers`). Uses config `fromPhone` if not specified.
 - `--message`, `-m` (required): Message text
 - `--effect`: iMessage effect
+- `--profile`, `-p`: Config profile to use
 - `--token`, `-t`: Override stored API token
-- `--json`: Output response as JSON
 
 #### `linq messages list`
 
@@ -171,8 +236,8 @@ linq messages list CHAT_ID --order asc
 - `--limit`: Maximum number of messages to return (default: 20, max: 100)
 - `--cursor`: Pagination cursor from previous response
 - `--order`: Sort order (asc or desc, default: desc)
+- `--profile`, `-p`: Config profile to use
 - `--token`, `-t`: Override stored API token
-- `--json`: Output response as JSON
 
 #### `linq messages get`
 
@@ -267,32 +332,159 @@ linq webhooks delete SUBSCRIPTION_ID
 
 ### Local Development
 
-#### `linq listen`
+#### `linq webhooks listen`
 
-Start a local webhook server to receive incoming messages (for development).
+Start a local server with automatic ngrok tunnel and webhook registration. This is the easiest way to test webhooks locally.
 
 ```bash
-# Default port 4040
-linq listen
+# Listen for all events (creates new subscription, deletes on exit)
+linq webhooks listen
+
+# Listen for specific events only
+linq webhooks listen --events message.received,message.sent
+
+# Reuse an existing webhook subscription (updates its URL)
+linq webhooks listen --subscription wh_abc123
+
+# Keep the subscription after exit (don't delete it)
+linq webhooks listen --no-cleanup
+
+# Use a reserved ngrok domain (paid ngrok plans)
+linq webhooks listen --ngrok-domain myapp.ngrok.io
 
 # Custom port
-linq listen --port 8080
+linq webhooks listen --port 8080
 
-# Output as JSON
-linq listen --json
-
-# Filter by event type
-linq listen --events message.received,message.delivered
+# Output raw JSON instead of structured logs
+linq webhooks listen --json
 ```
+
+**Output Format:**
+
+By default, events are displayed in a structured log format that's easy to read when tailing:
+
+```
+2024-01-15T10:30:45.123Z [message.received] message.id=msg_123 message.body="Hello world" message.chat_id=chat_456
+```
+
+Use `--json` for raw JSON output (useful for piping to other tools like `jq`).
 
 **Flags:**
 - `--port`, `-p`: Local port to listen on (default: 4040)
-- `--json`: Output events as JSON lines
-- `--events`: Comma-separated list of event types to filter
+- `--events`: Comma-separated list of events to subscribe to (default: all)
+- `--subscription`, `-s`: Existing webhook subscription ID to update (instead of creating new)
+- `--no-cleanup`: Don't delete the webhook subscription on exit
+- `--ngrok-domain`: Reserved ngrok domain (for paid ngrok plans with static URLs)
+- `--json`: Output raw JSON instead of structured log format
+- `--profile`: Config profile to use
+- `--token`, `-t`: Override stored API token
+- `--ngrok-authtoken`: Override stored ngrok auth token
+
+## Testing Webhooks
+
+This guide walks you through setting up webhook testing from scratch.
+
+### 1. Get Your ngrok Auth Token
+
+1. Create a free account at [ngrok.com](https://ngrok.com)
+2. Go to [Your Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken)
+3. Copy your auth token
+
+### 2. Configure the CLI
+
+```bash
+# Log in with your Linq API token
+linq login
+
+# Set your ngrok auth token
+linq config set ngrokAuthtoken YOUR_NGROK_AUTHTOKEN
+```
+
+Or use environment variables:
+
+```bash
+export LINQ_TOKEN=your_linq_token
+export NGROK_AUTHTOKEN=your_ngrok_authtoken
+```
+
+### 3. Start Listening for Webhooks
+
+```bash
+linq webhooks listen
+```
+
+You'll see output like:
+
+```
+Local server started on port 4040
+ngrok tunnel: https://abc123.ngrok-free.app
+
+Webhook created: wh_abc123
+Events: message.sent, message.received, message.read, ...
+
+Listening for events... (Ctrl+C to stop)
+```
+
+### 4. Send a Test Message
+
+Open a new terminal and send a message:
+
+```bash
+# List your phone numbers
+linq phonenumbers
+
+# Create a chat and send a message
+linq chats create --to +19876543210 --from +12025551234 --message "Hello from Linq!"
+```
+
+### 5. Watch Events Arrive
+
+Back in your first terminal, you'll see webhook events in structured log format:
+
+```
+2024-01-15T10:30:00.123Z [message.sent] message.id=msg_abc123 message.body="Hello from Linq!"
+2024-01-15T10:30:01.456Z [message.delivered] message.id=msg_abc123
+2024-01-15T10:30:05.789Z [message.received] message.id=msg_def456 message.body="Hi there!" message.chat_id=chat_xyz
+```
+
+### 6. Clean Up
+
+Press `Ctrl+C` to stop. The CLI automatically:
+- Deletes the webhook subscription (unless using `--subscription` or `--no-cleanup`)
+- Closes the ngrok tunnel
+- Stops the local server
+
+### Reusing a Webhook Subscription
+
+By default, `linq webhooks listen` creates a new subscription each time (with a random ngrok URL) and deletes it on exit. For a more persistent setup:
+
+**Option 1: Reuse an existing subscription**
+
+```bash
+# First time: create subscription and note the ID, or use --no-cleanup
+linq webhooks listen --no-cleanup
+# Output: Webhook created: wh_abc123
+
+# Next time: reuse that subscription (just updates the URL)
+linq webhooks listen --subscription wh_abc123
+```
+
+**Option 2: Use a reserved ngrok domain (paid ngrok plans)**
+
+With a [reserved domain](https://dashboard.ngrok.com/cloud-edge/domains), your URL stays the same:
+
+```bash
+linq webhooks listen --ngrok-domain myapp.ngrok.io --no-cleanup
+```
+
+This way your webhook URL is always `https://myapp.ngrok.io/webhook`.
 
 ## Environment Variables
 
 - `LINQ_TOKEN`: API token (overrides config file)
+- `LINQ_FROM_PHONE`: Default sender phone number (overrides config file)
+- `LINQ_PROFILE`: Profile to use (overrides config file)
+- `NGROK_AUTHTOKEN`: ngrok auth token for `webhooks listen` command
 
 ## Development
 

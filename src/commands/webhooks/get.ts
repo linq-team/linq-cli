@@ -5,10 +5,7 @@ import { createApiClient } from '../../lib/api-client.js';
 export default class WebhooksGet extends Command {
   static override description = 'Get a webhook subscription by ID';
 
-  static override examples = [
-    '<%= config.bin %> <%= command.id %> SUBSCRIPTION_ID',
-    '<%= config.bin %> <%= command.id %> SUBSCRIPTION_ID --json',
-  ];
+  static override examples = ['<%= config.bin %> <%= command.id %> SUBSCRIPTION_ID'];
 
   static override args = {
     subscriptionId: Args.string({
@@ -18,20 +15,20 @@ export default class WebhooksGet extends Command {
   };
 
   static override flags = {
+    profile: Flags.string({
+      char: 'p',
+      description: 'Config profile to use',
+    }),
     token: Flags.string({
       char: 't',
       description: 'API token (overrides stored token)',
-    }),
-    json: Flags.boolean({
-      description: 'Output response as JSON',
-      default: false,
     }),
   };
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(WebhooksGet);
 
-    const config = await loadConfig();
+    const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
@@ -54,21 +51,6 @@ export default class WebhooksGet extends Command {
       this.error('Failed to get webhook: no response data');
     }
 
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-      return;
-    }
-
-    // data IS the subscription directly
-    this.log(`Webhook Subscription`);
-    this.log(`  ID: ${data.id}`);
-    this.log(`  URL: ${data.target_url}`);
-    this.log(`  Active: ${data.is_active}`);
-    this.log(`  Created: ${new Date(data.created_at).toLocaleString()}`);
-    this.log(`  Updated: ${new Date(data.updated_at).toLocaleString()}`);
-    this.log(`  Events:`);
-    for (const event of data.subscribed_events) {
-      this.log(`    - ${event}`);
-    }
+    this.log(JSON.stringify(data, null, 2));
   }
 }

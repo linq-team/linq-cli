@@ -48,13 +48,13 @@ export default class MessagesReact extends Command {
       description: 'Index of the message part to react to (default: 0)',
       default: 0,
     }),
+    profile: Flags.string({
+      char: 'p',
+      description: 'Config profile to use',
+    }),
     token: Flags.string({
       char: 't',
       description: 'API token (overrides stored token)',
-    }),
-    json: Flags.boolean({
-      description: 'Output response as JSON',
-      default: false,
     }),
   };
 
@@ -73,7 +73,7 @@ export default class MessagesReact extends Command {
       this.error('--emoji is required when using --type custom');
     }
 
-    const config = await loadConfig();
+    const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
@@ -99,13 +99,6 @@ export default class MessagesReact extends Command {
       this.error(`Failed to ${flags.operation} reaction: no response data`);
     }
 
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      const emoji = flags.type === 'custom' ? flags.emoji : flags.type;
-      this.log(
-        `Reaction ${flags.operation === 'add' ? 'added' : 'removed'}: ${emoji} on message ${args.messageId}`
-      );
-    }
+    this.log(JSON.stringify(data, null, 2));
   }
 }

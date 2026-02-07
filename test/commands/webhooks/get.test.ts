@@ -29,7 +29,7 @@ describe('webhooks get', () => {
     await fs.mkdir(configDir, { recursive: true });
     await fs.writeFile(
       path.join(configDir, 'config.json'),
-      JSON.stringify({ token: 'test-token' })
+      JSON.stringify({ profile: 'default', profiles: { default: { token: 'test-token' } } })
     );
   });
 
@@ -60,25 +60,6 @@ describe('webhooks get', () => {
       'https://api.linqapp.com/api/partner/v3/webhook-subscriptions/webhook-123'
     );
     expect(request.method).toBe('GET');
-  });
-
-  it('outputs JSON when flag is set', async () => {
-    mockFetch.mockResolvedValueOnce(
-      createMockResponse(200, {
-        id: 'webhook-123',
-        target_url: 'https://example.com/webhook',
-        is_active: true,
-        created_at: '2024-01-15T10:00:00Z',
-        updated_at: '2024-01-15T10:00:00Z',
-        subscribed_events: ['message.received'],
-      })
-    );
-
-    const config = await Config.load({ root: process.cwd() });
-    const cmd = new WebhooksGet(['webhook-123', '--json'], config);
-    await cmd.run();
-
-    expect(mockFetch).toHaveBeenCalledOnce();
   });
 
   it('requires subscription ID argument', async () => {

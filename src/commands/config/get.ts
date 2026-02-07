@@ -1,46 +1,73 @@
-import { Args, Command } from '@oclif/core';
-import { loadConfig, type Config } from '../../lib/config.js';
+import { Args, Command, Flags } from '@oclif/core';
+import {
+  loadConfig,
+  getCurrentProfile,
+  type Profile,
+} from '../../lib/config.js';
 
-const VALID_KEYS: (keyof Config)[] = ['token'];
+const VALID_KEYS: (keyof Profile)[] = ['token', 'ngrokAuthtoken', 'fromPhone'];
 
 export default class ConfigGet extends Command {
   static override description = 'Get a configuration value';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> token',
+    '<%= config.bin %> <%= command.id %> fromPhone',
     '<%= config.bin %> <%= command.id %>',
+    '<%= config.bin %> <%= command.id %> --profile work',
   ];
 
   static override args = {
     key: Args.string({
-      description: 'Configuration key to get (token)',
+      description: 'Configuration key to get (token, ngrokAuthtoken, fromPhone)',
       required: false,
     }),
   };
 
-  async run(): Promise<void> {
-    const { args } = await this.parse(ConfigGet);
+  static override flags = {
+    profile: Flags.string({
+      char: 'p',
+      description: 'Profile to read from',
+    }),
+  };
 
-    const config = await loadConfig();
+  async run(): Promise<void> {
+    const { args, flags } = await this.parse(ConfigGet);
+
+    const currentProfile = await getCurrentProfile();
+    const profileName = flags.profile || currentProfile;
+    const config = await loadConfig(profileName);
 
     if (args.key) {
-      if (!VALID_KEYS.includes(args.key as keyof Config)) {
-        this.error(`Invalid key: ${args.key}. Valid keys: ${VALID_KEYS.join(', ')}`);
+      if (!VALID_KEYS.includes(args.key as keyof Profile)) {
+        this.error(
+          `Invalid key: ${args.key}. Valid keys: ${VALID_KEYS.join(', ')}`
+        );
       }
 
-      const value = config[args.key as keyof Config];
+      const value = config[args.key as keyof Profile];
       if (value === undefined) {
         this.log(`${args.key} is not set`);
       } else {
         this.log(`${args.key}=${this.maskToken(value)}`);
       }
     } else {
-      if (!config.token) {
+      this.log(`Profile: ${profileName}`);
+
+      if (!config.token && !config.ngrokAuthtoken && !config.fromPhone) {
         this.log('No configuration set');
         return;
       }
 
-      this.log(`token=${this.maskToken(config.token)}`);
+      if (config.token) {
+        this.log(`token=${this.maskToken(config.token)}`);
+      }
+      if (config.fromPhone) {
+        this.log(`fromPhone=${config.fromPhone}`);
+      }
+      if (config.ngrokAuthtoken) {
+        this.log(`ngrokAuthtoken=${this.maskToken(config.ngrokAuthtoken)}`);
+      }
     }
   }
 

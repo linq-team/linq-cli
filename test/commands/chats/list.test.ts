@@ -29,7 +29,7 @@ describe('chats list', () => {
     await fs.mkdir(configDir, { recursive: true });
     await fs.writeFile(
       path.join(configDir, 'config.json'),
-      JSON.stringify({ token: 'test-token' })
+      JSON.stringify({ profile: 'default', profiles: { default: { token: 'test-token' } } })
     );
   });
 
@@ -82,10 +82,10 @@ describe('chats list', () => {
     expect(request.url).toContain('cursor=prev-cursor');
   });
 
-  it('requires from flag', async () => {
+  it('requires from flag or config fromPhone', async () => {
     const config = await Config.load({ root: process.cwd() });
     const cmd = new ChatsList([], config);
 
-    await expect(cmd.run()).rejects.toThrow('Missing required flag from');
+    await expect(cmd.run()).rejects.toThrow('No sender phone found');
   });
 });

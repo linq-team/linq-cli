@@ -1,8 +1,11 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
+import type { components } from '../../gen/api-types.js';
 
-const WEBHOOK_EVENTS = [
+type WebhookEventType = components['schemas']['WebhookEventType'];
+
+const WEBHOOK_EVENTS: WebhookEventType[] = [
   'message.sent',
   'message.received',
   'message.read',
@@ -19,7 +22,7 @@ const WEBHOOK_EVENTS = [
   'chat.group_icon_update_failed',
   'chat.typing_indicator.started',
   'chat.typing_indicator.stopped',
-] as const;
+];
 
 export default class WebhooksUpdate extends Command {
   static override description = 'Update a webhook subscription';
@@ -52,13 +55,13 @@ export default class WebhooksUpdate extends Command {
       description: 'Deactivate the webhook subscription',
       exclusive: ['activate'],
     }),
+    profile: Flags.string({
+      char: 'p',
+      description: 'Config profile to use',
+    }),
     token: Flags.string({
       char: 't',
       description: 'API token (overrides stored token)',
-    }),
-    json: Flags.boolean({
-      description: 'Output response as JSON',
-      default: false,
     }),
   };
 
@@ -70,14 +73,15 @@ export default class WebhooksUpdate extends Command {
     }
 
     // Validate events if provided
-    let subscribedEvents: string[] | undefined;
+    let subscribedEvents: WebhookEventType[] | undefined;
     if (flags.events) {
-      subscribedEvents = flags.events.split(',').map((e) => e.trim());
-      for (const event of subscribedEvents) {
-        if (!WEBHOOK_EVENTS.includes(event as (typeof WEBHOOK_EVENTS)[number])) {
+      const eventList = flags.events.split(',').map((e) => e.trim());
+      for (const event of eventList) {
+        if (!WEBHOOK_EVENTS.includes(event as WebhookEventType)) {
           this.error(`Invalid event: ${event}. Valid events: ${WEBHOOK_EVENTS.join(', ')}`);
         }
       }
+      subscribedEvents = eventList as WebhookEventType[];
     }
 
     // Determine is_active value
@@ -88,7 +92,7 @@ export default class WebhooksUpdate extends Command {
       isActive = false;
     }
 
-    const config = await loadConfig();
+    const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
@@ -116,16 +120,6 @@ export default class WebhooksUpdate extends Command {
       this.error('Failed to update webhook: no response data');
     }
 
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-      return;
-    }
-
-    // data IS the subscription directly
-    this.log(`Webhook subscription updated!`);
-    this.log(`  ID: ${data.id}`);
-    this.log(`  URL: ${data.target_url}`);
-    this.log(`  Active: ${data.is_active}`);
-    this.log(`  Events: ${data.subscribed_events.join(', ')}`);
+    this.log(JSON.stringify(data, null, 2));
   }
 }
