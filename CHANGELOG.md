@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/linq-team/linq-cli/compare/v1.2.0...v1.2.1) (2026-02-07)
+
+
+### Bug Fixes
+
+* restore semantic-release git plugin with PAT for branch protection bypass ([6dd76cf](https://github.com/linq-team/linq-cli/commit/6dd76cfcfc831b68fa024b686942e3ca665a719d))
+
 ## [1.0.5](https://github.com/linq-team/linq-cli/compare/v1.0.4...v1.0.5) (2026-01-31)
 
 
