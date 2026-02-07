@@ -42,8 +42,6 @@ export default class WebhooksListen extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --events message.received,message.sent',
-    '<%= config.bin %> <%= command.id %> --subscription wh_abc123',
-    '<%= config.bin %> <%= command.id %> --ngrok-domain myapp.ngrok.io',
     '<%= config.bin %> <%= command.id %> --json',
   ];
 
@@ -56,18 +54,6 @@ export default class WebhooksListen extends Command {
     events: Flags.string({
       description:
         'Comma-separated list of events to subscribe to (default: all)',
-    }),
-    subscription: Flags.string({
-      char: 's',
-      description:
-        'Existing webhook subscription ID to update (instead of creating new)',
-    }),
-    'no-cleanup': Flags.boolean({
-      description: "Don't delete the webhook subscription on exit",
-      default: false,
-    }),
-    'ngrok-domain': Flags.string({
-      description: 'Reserved ngrok domain (paid plans)',
     }),
     profile: Flags.string({
       description: 'Config profile to use',
@@ -88,8 +74,6 @@ export default class WebhooksListen extends Command {
   private server: ReturnType<typeof createServer> | null = null;
   private listener: ngrok.Listener | null = null;
   private webhookId: string | null = null;
-  private createdWebhook = false;
-  private shouldCleanup = true;
   private client: ReturnType<typeof createApiClient> | null = null;
 
   async run(): Promise<void> {
@@ -98,7 +82,6 @@ export default class WebhooksListen extends Command {
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
     this.client = createApiClient(token);
-    this.shouldCleanup = !flags['no-cleanup'];
 
     const ngrokAuthtoken = flags['ngrok-authtoken'] || config.ngrokAuthtoken;
 
@@ -142,11 +125,10 @@ export default class WebhooksListen extends Command {
         this.log(`Local server started on port ${flags.port}`);
 
         try {
-          // Start ngrok tunnel using the new @ngrok/ngrok SDK
+          // Start ngrok tunnel
           const listenerBuilder = await ngrok.forward({
             addr: flags.port,
             authtoken: ngrokAuthtoken,
-            domain: flags['ngrok-domain'],
           });
 
           this.listener = listenerBuilder;
@@ -160,17 +142,7 @@ export default class WebhooksListen extends Command {
           this.log(`ngrok tunnel: ${url}`);
           this.log('');
 
-          if (flags.subscription) {
-            // Update existing subscription with new URL
-            await this.updateWebhook(
-              flags.subscription,
-              webhookUrl,
-              flags.events ? subscribedEvents : undefined
-            );
-          } else {
-            // Create new webhook subscription
-            await this.createWebhook(webhookUrl, subscribedEvents);
-          }
+          await this.createWebhook(webhookUrl, subscribedEvents);
 
           this.log('');
           this.log('Listening for events... (Ctrl+C to stop)');
@@ -216,54 +188,14 @@ export default class WebhooksListen extends Command {
     }
 
     this.webhookId = data.id;
-    this.createdWebhook = true;
     this.log(`Webhook created: ${data.id}`);
     this.log(`URL: ${data.target_url}`);
     this.log(`Events: ${data.subscribed_events.join(', ')}`);
   }
 
-  private async updateWebhook(
-    subscriptionId: string,
-    webhookUrl: string,
-    subscribedEvents?: WebhookEventType[]
-  ): Promise<void> {
-    const { data, error } = await this.client!.PUT(
-      '/v3/webhook-subscriptions/{subscriptionId}',
-      {
-        params: {
-          path: { subscriptionId },
-        },
-        body: {
-          target_url: webhookUrl,
-          subscribed_events: subscribedEvents,
-          is_active: true,
-        },
-      }
-    );
-
-    if (error) {
-      this.error(`Failed to update webhook: ${JSON.stringify(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to update webhook: no response data');
-    }
-
-    this.webhookId = data.id;
-    this.createdWebhook = false;
-    this.log(`Webhook updated: ${data.id}`);
-    this.log(`URL: ${data.target_url}`);
-    this.log(`Events: ${data.subscribed_events.join(', ')}`);
-  }
-
   private async cleanup(): Promise<void> {
-    // Only delete webhook if we created it and cleanup is enabled
-    if (
-      this.webhookId &&
-      this.client &&
-      this.createdWebhook &&
-      this.shouldCleanup
-    ) {
+    // Delete webhook subscription
+    if (this.webhookId && this.client) {
       try {
         await this.client.DELETE('/v3/webhook-subscriptions/{subscriptionId}', {
           params: { path: { subscriptionId: this.webhookId } },
@@ -272,10 +204,6 @@ export default class WebhooksListen extends Command {
       } catch {
         // Ignore cleanup errors
       }
-    } else if (this.webhookId && !this.createdWebhook) {
-      this.log(
-        `Webhook ${this.webhookId} preserved (use 'linq webhooks update' to change URL)`
-      );
     }
 
     // Close ngrok listener

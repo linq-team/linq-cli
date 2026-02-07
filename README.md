@@ -334,26 +334,14 @@ linq webhooks delete SUBSCRIPTION_ID
 
 #### `linq webhooks listen`
 
-Start a local server with automatic ngrok tunnel and webhook registration. This is the easiest way to test webhooks locally.
+Start a local server with automatic ngrok tunnel and webhook registration. Creates a temporary webhook subscription that's automatically deleted when you stop.
 
 ```bash
-# Listen for all events (creates new subscription, deletes on exit)
+# Listen for all events
 linq webhooks listen
 
 # Listen for specific events only
 linq webhooks listen --events message.received,message.sent
-
-# Reuse an existing webhook subscription (updates its URL)
-linq webhooks listen --subscription wh_abc123
-
-# Keep the subscription after exit (don't delete it)
-linq webhooks listen --no-cleanup
-
-# Use a reserved ngrok domain (paid ngrok plans)
-linq webhooks listen --ngrok-domain myapp.ngrok.io
-
-# Custom port
-linq webhooks listen --port 8080
 
 # Output raw JSON instead of structured logs
 linq webhooks listen --json
@@ -361,24 +349,13 @@ linq webhooks listen --json
 
 **Output Format:**
 
-By default, events are displayed in a structured log format that's easy to read when tailing:
+Events are displayed in a structured log format:
 
 ```
 2024-01-15T10:30:45.123Z [message.received] message.id=msg_123 message.body="Hello world" message.chat_id=chat_456
 ```
 
-Use `--json` for raw JSON output (useful for piping to other tools like `jq`).
-
-**Flags:**
-- `--port`, `-p`: Local port to listen on (default: 4040)
-- `--events`: Comma-separated list of events to subscribe to (default: all)
-- `--subscription`, `-s`: Existing webhook subscription ID to update (instead of creating new)
-- `--no-cleanup`: Don't delete the webhook subscription on exit
-- `--ngrok-domain`: Reserved ngrok domain (for paid ngrok plans with static URLs)
-- `--json`: Output raw JSON instead of structured log format
-- `--profile`: Config profile to use
-- `--token`, `-t`: Override stored API token
-- `--ngrok-authtoken`: Override stored ngrok auth token
+Use `--json` for raw JSON output (useful for piping to `jq`).
 
 ## Testing Webhooks
 
@@ -449,35 +426,7 @@ Back in your first terminal, you'll see webhook events in structured log format:
 
 ### 6. Clean Up
 
-Press `Ctrl+C` to stop. The CLI automatically:
-- Deletes the webhook subscription (unless using `--subscription` or `--no-cleanup`)
-- Closes the ngrok tunnel
-- Stops the local server
-
-### Reusing a Webhook Subscription
-
-By default, `linq webhooks listen` creates a new subscription each time (with a random ngrok URL) and deletes it on exit. For a more persistent setup:
-
-**Option 1: Reuse an existing subscription**
-
-```bash
-# First time: create subscription and note the ID, or use --no-cleanup
-linq webhooks listen --no-cleanup
-# Output: Webhook created: wh_abc123
-
-# Next time: reuse that subscription (just updates the URL)
-linq webhooks listen --subscription wh_abc123
-```
-
-**Option 2: Use a reserved ngrok domain (paid ngrok plans)**
-
-With a [reserved domain](https://dashboard.ngrok.com/cloud-edge/domains), your URL stays the same:
-
-```bash
-linq webhooks listen --ngrok-domain myapp.ngrok.io --no-cleanup
-```
-
-This way your webhook URL is always `https://myapp.ngrok.io/webhook`.
+Press `Ctrl+C` to stop. The CLI automatically cleans up the webhook subscription and ngrok tunnel.
 
 ## Environment Variables
 
