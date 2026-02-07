@@ -7,6 +7,7 @@ import {
 import ngrok from '@ngrok/ngrok';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
+import { formatLogLine } from '../../lib/webhook-format.js';
 import type { components } from '../../gen/api-types.js';
 
 type WebhookEventType = components['schemas']['WebhookEventType'];
@@ -256,7 +257,7 @@ export default class WebhooksListen extends Command {
           this.log(JSON.stringify(event, null, 2));
         } else {
           // Structured log format
-          this.log(this.formatLogLine(event));
+          this.log(formatLogLine(event));
         }
 
         res.writeHead(200);
@@ -266,58 +267,5 @@ export default class WebhooksListen extends Command {
         res.end('Invalid JSON');
       }
     });
-  }
-
-  private formatLogLine(event: Record<string, unknown>): string {
-    const timestamp = new Date().toISOString();
-    const eventType = event.event_type || 'unknown';
-
-    // Flatten the event into key=value pairs
-    const pairs: string[] = [];
-    this.flattenObject(event, '', pairs);
-
-    return `${timestamp} [${eventType}] ${pairs.join(' ')}`;
-  }
-
-  private flattenObject(
-    obj: Record<string, unknown>,
-    prefix: string,
-    pairs: string[]
-  ): void {
-    for (const [key, value] of Object.entries(obj)) {
-      if (key === 'event_type') continue;
-
-      const fullKey = prefix ? `${prefix}.${key}` : key;
-
-      if (value === null || value === undefined) {
-        continue;
-      }
-
-      if (Array.isArray(value)) {
-        if (value.length === 0) {
-          pairs.push(`${fullKey}=[]`);
-        } else if (typeof value[0] === 'object') {
-          // Array of objects - show count
-          pairs.push(`${fullKey}=[${value.length}]`);
-        } else {
-          // Array of primitives - show values
-          pairs.push(`${fullKey}=[${value.join(',')}]`);
-        }
-      } else if (typeof value === 'object') {
-        // Recursively flatten nested objects
-        this.flattenObject(value as Record<string, unknown>, fullKey, pairs);
-      } else if (typeof value === 'string') {
-        // Quote strings, truncate long ones
-        const truncated = this.truncate(value, 80);
-        pairs.push(`${fullKey}="${truncated}"`);
-      } else {
-        pairs.push(`${fullKey}=${value}`);
-      }
-    }
-  }
-
-  private truncate(str: string, maxLen: number): string {
-    if (str.length <= maxLen) return str;
-    return str.slice(0, maxLen - 3) + '...';
   }
 }

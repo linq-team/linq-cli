@@ -33,10 +33,10 @@ After installation, the `linq` command will be available in your terminal.
 
 ## Quick Start
 
-1. **Authenticate** with your Linq API token:
+1. **Run the setup wizard**:
 
    ```bash
-   linq login
+   linq init
    ```
 
 2. **List your phone numbers**:
@@ -52,6 +52,24 @@ After installation, the `linq` command will be available in your terminal.
    ```
 
 ## Commands
+
+### Setup
+
+#### `linq init`
+
+Interactive setup wizard. Validates your API token, selects a default phone number, and optionally configures ngrok for webhook testing.
+
+```bash
+linq init
+```
+
+#### `linq doctor`
+
+Check your CLI configuration and API connectivity. Runs 5 diagnostic checks and reports any issues.
+
+```bash
+linq doctor
+```
 
 ### Authentication
 
@@ -427,6 +445,19 @@ Back in your first terminal, you'll see webhook events in structured log format:
 ### 6. Clean Up
 
 Press `Ctrl+C` to stop. The CLI automatically cleans up the webhook subscription and ngrok tunnel.
+
+## Shell Autocomplete
+
+Enable tab completion for all commands and flags:
+
+```bash
+# Setup for your shell (bash, zsh, or fish)
+linq autocomplete
+
+# Follow the printed instructions, then restart your terminal
+```
+
+After setup, press `<TAB>` to autocomplete commands, subcommands, and flags.
 
 ## Environment Variables
 
