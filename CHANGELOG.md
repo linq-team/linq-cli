@@ -1,3 +1,10 @@
+## [1.2.3](https://github.com/linq-team/linq-cli/compare/v1.2.2...v1.2.3) (2026-02-07)
+
+
+### Bug Fixes
+
+* run oclif directly instead of via pnpm exec on Windows ([ad814fb](https://github.com/linq-team/linq-cli/commit/ad814fbc4f32955ab31e00fdbfc7bedd43d83b50))
+
 ## [1.2.2](https://github.com/linq-team/linq-cli/compare/v1.2.1...v1.2.2) (2026-02-07)
 
 
