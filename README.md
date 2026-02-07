@@ -486,51 +486,9 @@ This way your webhook URL is always `https://myapp.ngrok.io/webhook`.
 - `LINQ_PROFILE`: Profile to use (overrides config file)
 - `NGROK_AUTHTOKEN`: ngrok auth token for `webhooks listen` command
 
-## Development
+## Contributing
 
-### Prerequisites
-
-- Node.js 22 or higher (LTS)
-- pnpm
-
-### Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/linq-team/linq-cli.git
-cd linq-cli
-
-# Install dependencies
-pnpm install
-
-# Build the project
-pnpm build
-
-# Run in development mode
-./bin/dev.js login
-```
-
-### Scripts
-
-```bash
-# Build (generates types from OpenAPI spec + compiles TypeScript)
-pnpm build
-
-# Run tests
-pnpm test
-
-# Run tests in watch mode
-pnpm test:watch
-
-# Lint code
-pnpm lint
-
-# Format code
-pnpm format
-
-# Generate API types from OpenAPI spec
-pnpm generate:types
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and contribution guidelines.
 
 ## License
 
