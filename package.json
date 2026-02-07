@@ -1,6 +1,6 @@
 {
   "name": "@linqapp/cli",
-  "version": "1.0.5",
+  "version": "0.0.0-development",
   "description": "CLI for Linq messaging API",
   "type": "module",
   "bin": {
@@ -61,10 +61,10 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^8.2.0",
+    "@ngrok/ngrok": "^1.7.0",
     "@oclif/core": "^4.8.0",
     "@oclif/plugin-autocomplete": "^3.2.40",
     "@oclif/plugin-help": "^6.2.37",
-    "@ngrok/ngrok": "^1.7.0",
     "openapi-fetch": "^0.15.0"
   },
   "devDependencies": {
@@ -73,8 +73,6 @@
     "@eslint/js": "^9.39.2",
     "@oclif/test": "^4.1.16",
     "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/exec": "^7.1.0",
-    "@semantic-release/git": "^10.0.1",
     "@types/node": "^25.1.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",

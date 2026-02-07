@@ -10,19 +10,6 @@
       }
     ],
     ["@semantic-release/npm", { "npmPublish": false }],
-    [
-      "@semantic-release/exec",
-      {
-        "prepareCmd": "pnpm install --lockfile-only"
-      }
-    ],
-    [
-      "@semantic-release/git",
-      {
-        "assets": ["package.json", "pnpm-lock.yaml", "CHANGELOG.md"],
-        "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
-      }
-    ],
     "@semantic-release/github"
   ]
 }
