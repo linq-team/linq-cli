@@ -1,3 +1,11 @@
+# [1.4.0](https://github.com/linq-team/linq-cli/compare/v1.3.0...v1.4.0) (2026-02-09)
+
+
+### Features
+
+* improve signup flow and webhooks listen UX ([932f14a](https://github.com/linq-team/linq-cli/commit/932f14a86f89999fa7b51ae9221a5ecbbe150f44))
+* wip signup ([64fc903](https://github.com/linq-team/linq-cli/commit/64fc903ca92f4342026c92713127deb7dffe6b47))
+
 # [1.3.0](https://github.com/linq-team/linq-cli/compare/v1.2.3...v1.3.0) (2026-02-07)
 
 
