@@ -48,8 +48,10 @@ export default class ConfigGet extends Command {
       const value = config[args.key as keyof Profile];
       if (value === undefined) {
         this.log(`${args.key} is not set`);
-      } else {
+      } else if (typeof value === 'string') {
         this.log(`${args.key}=${this.maskToken(value)}`);
+      } else {
+        this.log(`${args.key}=${JSON.stringify(value)}`);
       }
     } else {
       this.log(`Profile: ${profileName}`);

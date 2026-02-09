@@ -66,6 +66,7 @@
     "@oclif/plugin-autocomplete": "^3.2.40",
     "@oclif/plugin-help": "^6.2.37",
     "chalk": "^5.6.2",
+    "open": "^11.0.0",
     "openapi-fetch": "^0.15.0"
   },
   "devDependencies": {
