@@ -87,11 +87,11 @@ export default class WebhooksListen extends Command {
     const ngrokAuthtoken = flags['ngrok-authtoken'] || config.ngrokAuthtoken;
 
     if (!ngrokAuthtoken) {
-      this.error(
-        "No ngrok auth token found. Get one at https://dashboard.ngrok.com/get-started/your-authtoken\n" +
-          "Then run: linq config set ngrokAuthtoken YOUR_TOKEN\n" +
-          'Or set NGROK_AUTHTOKEN environment variable'
-      );
+      this.log('\n  ngrok auth token required to create a webhook tunnel.\n');
+      this.log('  1. Sign up at https://ngrok.com (free)');
+      this.log('  2. Copy your auth token from https://dashboard.ngrok.com/get-started/your-authtoken');
+      this.log('  3. Run: linq config set ngrokAuthtoken YOUR_TOKEN\n');
+      return;
     }
 
     // Validate events if specified

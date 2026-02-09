@@ -1,7 +1,9 @@
 import { Command, Flags } from '@oclif/core';
 import { input } from '@inquirer/prompts';
+import chalk from 'chalk';
 import open from 'open';
 import { loadConfig, saveConfig } from '../lib/config.js';
+import { createApiClient } from '../lib/api-client.js';
 import { LOGO } from '../lib/banner.js';
 
 // TODO: Create GitHub OAuth App and update this
@@ -47,7 +49,8 @@ export default class Signup extends Command {
 
     const githubToken = await this.githubAuth();
     if (!githubToken) {
-      this.error('GitHub authentication failed or was cancelled.');
+      this.log(chalk.red('\n  GitHub authentication failed or was cancelled.\n'));
+      this.exit(1);
     }
 
     // Get GitHub user for display
@@ -58,7 +61,7 @@ export default class Signup extends Command {
     let phone = flags.phone;
     if (!phone) {
       phone = await input({
-        message: 'Your phone number (e.g. +1 205-441-1188):',
+        message: 'Your phone number (e.g. +1 123-456-7890):',
         validate: (v) => {
           const digits = v.replace(/\D/g, '');
           if (digits.length === 10) {
@@ -86,8 +89,21 @@ export default class Signup extends Command {
     });
 
     if (!res.ok) {
-      const err = (await res.json()) as { message?: string; error?: string };
-      this.error(err.message || err.error || 'Signup failed');
+      let message = 'Signup failed';
+      try {
+        const err = (await res.json()) as { message?: string; error?: string };
+        message = err.message || err.error || message;
+      } catch {
+        // non-JSON response
+      }
+
+      if (message.toLowerCase().includes('no sandbox phones')) {
+        message =
+          'All sandbox phones are currently in use. Please try again in 30 minutes.';
+      }
+
+      this.log(chalk.red(`\n  ${message}\n`));
+      this.exit(1);
     }
 
     const data = (await res.json()) as {
@@ -100,6 +116,7 @@ export default class Signup extends Command {
 
     // Save to config
     config.token = data.token;
+    config.fromPhone = data.sandboxPhone;
     config.sandbox = {
       phone: data.sandboxPhone,
       userPhone: data.userPhone,
@@ -108,12 +125,39 @@ export default class Signup extends Command {
     };
     await saveConfig(config);
 
-    this.log('✓ Sandbox ready!\n');
-    this.log(`  Your sandbox number: ${data.sandboxPhone}`);
-    this.log(
-      `  Expires: ${new Date(data.expiresAt).toLocaleTimeString()}\n`
-    );
-    this.log('  Try: linq listen\n');
+    this.log(`  Your sandbox number: ${chalk.bold(data.sandboxPhone)}\n`);
+    this.log(`  Send a text from your phone to ${chalk.bold(data.sandboxPhone)} to activate it.\n`);
+
+    await input({ message: 'Press Enter once you\'ve sent a message...' });
+
+    // Send welcome message (requires inbound message first)
+    try {
+      const client = createApiClient(data.token);
+      await client.POST('/v3/chats', {
+        body: {
+          from: data.sandboxPhone,
+          to: [data.userPhone],
+          message: {
+            parts: [
+              {
+                type: 'text',
+                value: `Hey! 👋 Your Linq sandbox is live! This number is yours for the next 3 hours. Happy hacking!`,
+              },
+            ],
+            effect: { type: 'screen', name: 'confetti' },
+          },
+        },
+      });
+    } catch {
+      // Non-fatal
+    }
+
+    this.log('\n✓ Sandbox ready!\n');
+    this.log(`  Phone:   ${data.sandboxPhone}`);
+    this.log(`  Expires: ${new Date(data.expiresAt).toLocaleTimeString()}\n`);
+    this.log(`  Next steps:\n`);
+    this.log(`    ${chalk.cyan('linq webhooks listen')}`);
+    this.log(`    ${chalk.cyan(`linq chats create --to ${data.userPhone} -m "First message with Linq CLI!"`)}\n`);
   }
 
   private async githubAuth(): Promise<string | null> {
