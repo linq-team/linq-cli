@@ -29,7 +29,7 @@ describe('messages get', () => {
     await fs.mkdir(configDir, { recursive: true });
     await fs.writeFile(
       path.join(configDir, 'config.json'),
-      JSON.stringify({ token: 'test-token' })
+      JSON.stringify({ profile: 'default', profiles: { default: { token: 'test-token' } } })
     );
   });
 
@@ -60,24 +60,6 @@ describe('messages get', () => {
     const [request] = mockFetch.mock.calls[0] as [Request];
     expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/messages/msg-123');
     expect(request.method).toBe('GET');
-  });
-
-  it('outputs JSON when flag is set', async () => {
-    const messageData = {
-      id: 'msg-123',
-      chat_id: 'chat-456',
-      from: '+19876543210',
-      is_delivered: true,
-      is_read: true,
-      parts: [{ type: 'text', value: 'Hello!' }],
-    };
-    mockFetch.mockResolvedValueOnce(createMockResponse(200, messageData));
-
-    const config = await Config.load({ root: process.cwd() });
-    const cmd = new MessagesGet(['msg-123', '--json'], config);
-    await cmd.run();
-
-    expect(mockFetch).toHaveBeenCalledOnce();
   });
 
   it('requires message ID argument', async () => {

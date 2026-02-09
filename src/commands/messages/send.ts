@@ -1,5 +1,5 @@
 import { Args, Command, Flags } from '@oclif/core';
-import { loadConfig, requireToken } from '../../lib/config.js';
+import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import type { components } from '../../gen/api-types.js';
 
@@ -27,9 +27,11 @@ export default class MessagesSend extends Command {
   static override description = 'Send a message to an existing chat';
 
   static override examples = [
+    '<%= config.bin %> <%= command.id %> CHAT_ID --message "Hello"',
     '<%= config.bin %> <%= command.id %> CHAT_ID --from +12025551234 --message "Hello"',
-    '<%= config.bin %> <%= command.id %> CHAT_ID --from +12025551234 --message "Wow!" --effect fireworks',
-    '<%= config.bin %> <%= command.id %> CHAT_ID --from +12025551234 --message "Reply" --reply-to MSG_ID',
+    '<%= config.bin %> <%= command.id %> CHAT_ID --message "Wow!" --effect fireworks',
+    '<%= config.bin %> <%= command.id %> CHAT_ID --message "Reply" --reply-to MSG_ID',
+    '<%= config.bin %> <%= command.id %> CHAT_ID --message "Hello" --profile work',
   ];
 
   static override args = {
@@ -41,8 +43,7 @@ export default class MessagesSend extends Command {
 
   static override flags = {
     from: Flags.string({
-      description: 'Sender phone number (E.164 format)',
-      required: true,
+      description: 'Sender phone number (E.164 format). Uses config fromPhone if not specified.',
     }),
     message: Flags.string({
       char: 'm',
@@ -55,21 +56,22 @@ export default class MessagesSend extends Command {
     'reply-to': Flags.string({
       description: 'Message ID to reply to (creates a thread)',
     }),
+    profile: Flags.string({
+      char: 'p',
+      description: 'Config profile to use',
+    }),
     token: Flags.string({
       char: 't',
       description: 'API token (overrides stored token)',
-    }),
-    json: Flags.boolean({
-      description: 'Output response as JSON',
-      default: false,
     }),
   };
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesSend);
 
-    const config = await loadConfig();
+    const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
+    const fromPhone = requireFromPhone(flags.from, config);
     const client = createApiClient(token);
 
     // Build message parts
@@ -97,7 +99,7 @@ export default class MessagesSend extends Command {
         },
       },
       body: {
-        from: flags.from,
+        from: fromPhone,
         message: {
           parts: [textPart],
           effect,
@@ -116,10 +118,6 @@ export default class MessagesSend extends Command {
       this.error('Failed to send message: no response data');
     }
 
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(`Message sent (id: ${data.message.id}, chat: ${data.chat_id})`);
-    }
+    this.log(JSON.stringify(data, null, 2));
   }
 }

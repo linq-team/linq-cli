@@ -61,6 +61,18 @@ jobs:
       - name: Pack deb
         run: pnpm exec oclif pack deb
 
+      - name: Rename packages
+        run: |
+          VERSION="${{ needs.get-release.outputs.tag }}"
+          VERSION="${VERSION#v}"
+          cd dist/deb
+          for file in *.deb; do
+            [ -f "$file" ] || continue
+            arch=$(echo "$file" | grep -oE '(amd64|arm64|armel)')
+            mv "$file" "linq_${VERSION}_linux-${arch}.deb"
+          done
+          ls -la
+
       - name: Upload Release Assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -102,10 +114,23 @@ jobs:
       - name: Pack Windows installer
         shell: bash
         run: |
-          # Use Git's GNU tar instead of Windows tar (which doesn't support --force-local)
+          # Use Git's GNU tar (Windows tar doesn't support --force-local)
           # Also add NSIS to PATH for makensis command
           export PATH="/c/Program Files/Git/usr/bin:/c/Program Files (x86)/NSIS:$PATH"
-          pnpm exec oclif pack win
+          ./node_modules/.bin/oclif pack win
+
+      - name: Rename packages
+        shell: bash
+        run: |
+          VERSION="${{ needs.get-release.outputs.tag }}"
+          VERSION="${VERSION#v}"
+          cd dist/win32
+          for file in *.exe; do
+            [ -f "$file" ] || continue
+            arch=$(echo "$file" | grep -oE '(x64|x86|arm64)')
+            mv "$file" "linq-${VERSION}-win-${arch}.exe"
+          done
+          ls -la
 
       - name: Upload Release Assets
         env:
@@ -145,6 +170,18 @@ jobs:
 
       - name: Pack macOS installer
         run: pnpm exec oclif pack macos
+
+      - name: Rename packages
+        run: |
+          VERSION="${{ needs.get-release.outputs.tag }}"
+          VERSION="${VERSION#v}"
+          cd dist/macos
+          for file in *.pkg; do
+            [ -f "$file" ] || continue
+            arch=$(echo "$file" | grep -oE '(x64|arm64)')
+            mv "$file" "linq-${VERSION}-mac-${arch}.pkg"
+          done
+          ls -la
 
       - name: Upload Release Assets
         env:

@@ -27,7 +27,7 @@ describe('login', () => {
 
     const configPath = path.join(tempDir, '.linq', 'config.json');
     const savedConfig = JSON.parse(await fs.readFile(configPath, 'utf-8'));
-    expect(savedConfig.token).toBe('test-token-123');
+    expect(savedConfig.profiles.default.token).toBe('test-token-123');
   });
 
   it('creates config directory with correct permissions', async () => {

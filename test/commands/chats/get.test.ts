@@ -29,7 +29,7 @@ describe('chats get', () => {
     await fs.mkdir(configDir, { recursive: true });
     await fs.writeFile(
       path.join(configDir, 'config.json'),
-      JSON.stringify({ token: 'test-token' })
+      JSON.stringify({ profile: 'default', profiles: { default: { token: 'test-token' } } })
     );
   });
 
@@ -59,22 +59,6 @@ describe('chats get', () => {
     const [request] = mockFetch.mock.calls[0] as [Request];
     expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123');
     expect(request.method).toBe('GET');
-  });
-
-  it('outputs JSON when flag is set', async () => {
-    const chatData = {
-      id: 'chat-123',
-      display_name: 'Test Chat',
-      service: 'iMessage',
-      handles: [{ handle: '+19876543210', service: 'iMessage' }],
-    };
-    mockFetch.mockResolvedValueOnce(createMockResponse(200, chatData));
-
-    const config = await Config.load({ root: process.cwd() });
-    const cmd = new ChatsGet(['chat-123', '--json'], config);
-    await cmd.run();
-
-    expect(mockFetch).toHaveBeenCalledOnce();
   });
 
   it('requires chat ID argument', async () => {

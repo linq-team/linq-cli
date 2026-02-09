@@ -29,7 +29,7 @@ describe('webhooks list', () => {
     await fs.mkdir(configDir, { recursive: true });
     await fs.writeFile(
       path.join(configDir, 'config.json'),
-      JSON.stringify({ token: 'test-token' })
+      JSON.stringify({ profile: 'default', profiles: { default: { token: 'test-token' } } })
     );
   });
 
@@ -82,24 +82,4 @@ describe('webhooks list', () => {
     expect(mockFetch).toHaveBeenCalledOnce();
   });
 
-  it('outputs JSON when flag is set', async () => {
-    mockFetch.mockResolvedValueOnce(
-      createMockResponse(200, {
-        subscriptions: [
-          {
-            id: 'webhook-123',
-            target_url: 'https://example.com/webhook',
-            is_active: true,
-            subscribed_events: ['message.received'],
-          },
-        ],
-      })
-    );
-
-    const config = await Config.load({ root: process.cwd() });
-    const cmd = new WebhooksList(['--json'], config);
-    await cmd.run();
-
-    expect(mockFetch).toHaveBeenCalledOnce();
-  });
 });

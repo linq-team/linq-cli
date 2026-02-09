@@ -21,6 +21,10 @@ export default class MessagesDelete extends Command {
       description: 'Chat ID the message belongs to (UUID)',
       required: true,
     }),
+    profile: Flags.string({
+      char: 'p',
+      description: 'Config profile to use',
+    }),
     token: Flags.string({
       char: 't',
       description: 'API token (overrides stored token)',
@@ -30,7 +34,7 @@ export default class MessagesDelete extends Command {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MessagesDelete);
 
-    const config = await loadConfig();
+    const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 

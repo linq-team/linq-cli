@@ -33,7 +33,7 @@ describe('chats create', () => {
     await fs.mkdir(configDir, { recursive: true });
     await fs.writeFile(
       path.join(configDir, 'config.json'),
-      JSON.stringify({ token: 'test-token' })
+      JSON.stringify({ profile: 'default', profiles: { default: { token: 'test-token' } } })
     );
   });
 
@@ -122,13 +122,13 @@ describe('chats create', () => {
     expect(body.message.parts[0].value).toBe('Group message');
   });
 
-  it('requires from address', async () => {
+  it('requires from address or config fromPhone', async () => {
     const config = await Config.load({ root: process.cwd() });
     const cmd = new ChatsCreate(
       ['--to', '+19876543210', '--message', 'Hello!'],
       config
     );
 
-    await expect(cmd.run()).rejects.toThrow('Missing required flag from');
+    await expect(cmd.run()).rejects.toThrow('No sender phone found');
   });
 });

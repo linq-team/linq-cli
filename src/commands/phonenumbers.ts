@@ -8,6 +8,10 @@ export default class PhoneNumbers extends Command {
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
   static override flags = {
+    profile: Flags.string({
+      char: 'p',
+      description: 'Config profile to use',
+    }),
     token: Flags.string({
       char: 't',
       description: 'API token (overrides stored token)',
@@ -17,7 +21,7 @@ export default class PhoneNumbers extends Command {
   async run(): Promise<void> {
     const { flags } = await this.parse(PhoneNumbers);
 
-    const config = await loadConfig();
+    const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
 
     const client = createApiClient(token);
@@ -32,25 +36,6 @@ export default class PhoneNumbers extends Command {
       this.error('Failed to list phone numbers: no response data');
     }
 
-    const numbers = data.phone_numbers;
-
-    if (numbers.length === 0) {
-      this.log(
-        'No phone numbers available. Contact Linq to provision numbers for your account.'
-      );
-      return;
-    }
-
-    // Print table header
-    this.log(`${'NUMBER'.padEnd(18)} ${'TYPE'.padEnd(10)} ${'SMS'.padEnd(5)}`);
-    this.log(`${'------'.padEnd(18)} ${'----'.padEnd(10)} ${'---'.padEnd(5)}`);
-
-    // Print each number
-    for (const n of numbers) {
-      const sms = n.capabilities.sms ? 'yes' : 'no';
-      this.log(
-        `${n.phone_number.padEnd(18)} ${n.type.padEnd(10)} ${sms.padEnd(5)}`
-      );
-    }
+    this.log(JSON.stringify(data, null, 2));
   }
 }

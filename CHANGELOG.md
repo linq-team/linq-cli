@@ -1,3 +1,32 @@
+# [1.3.0](https://github.com/linq-team/linq-cli/compare/v1.2.3...v1.3.0) (2026-02-07)
+
+
+### Features
+
+* rename release packages for clarity (win/mac/linux instead of sha) ([8d924bc](https://github.com/linq-team/linq-cli/commit/8d924bcdeb977e53de629c91ff2e2eb095ed7265))
+
+## [1.2.3](https://github.com/linq-team/linq-cli/compare/v1.2.2...v1.2.3) (2026-02-07)
+
+
+### Bug Fixes
+
+* run oclif directly instead of via pnpm exec on Windows ([ad814fb](https://github.com/linq-team/linq-cli/commit/ad814fbc4f32955ab31e00fdbfc7bedd43d83b50))
+
+## [1.2.2](https://github.com/linq-team/linq-cli/compare/v1.2.1...v1.2.2) (2026-02-07)
+
+
+### Bug Fixes
+
+* add Git usr/bin to PATH for GNU tar on Windows ([25ff872](https://github.com/linq-team/linq-cli/commit/25ff872072054c71a55c857486f407bea761bc18))
+* use PowerShell for Windows build and add [skip ci] to release commits ([ccd2f41](https://github.com/linq-team/linq-cli/commit/ccd2f412255afef8f33710510c3edacfade72780))
+
+## [1.2.1](https://github.com/linq-team/linq-cli/compare/v1.2.0...v1.2.1) (2026-02-07)
+
+
+### Bug Fixes
+
+* restore semantic-release git plugin with PAT for branch protection bypass ([6dd76cf](https://github.com/linq-team/linq-cli/commit/6dd76cfcfc831b68fa024b686942e3ca665a719d))
+
 ## [1.0.5](https://github.com/linq-team/linq-cli/compare/v1.0.4...v1.0.5) (2026-01-31)
 
 
