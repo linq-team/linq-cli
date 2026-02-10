@@ -1,0 +1,99 @@
+name: Build Installers
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Release tag to rename and upload assets to (skip upload if empty)'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Pack deb
+        run: pnpm exec oclif pack deb
+
+      - name: Rename and upload
+        if: ${{ inputs.tag != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ inputs.tag }}"
+          VERSION="${VERSION#v}"
+          cd dist/deb
+          for file in *.deb; do
+            [ -f "$file" ] || continue
+            arch=$(echo "$file" | grep -oE '(amd64|arm64|armel)')
+            mv "$file" "linq_${VERSION}_linux-${arch}.deb"
+          done
+          ls -la
+          for file in *.deb; do
+            [ -f "$file" ] && gh release upload "${{ inputs.tag }}" "$file" --clobber
+          done
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      - name: Pack Windows installer
+        shell: bash
+        run: |
+          export PATH="/c/Program Files/Git/usr/bin:/c/Program Files (x86)/NSIS:$PATH"
+          ./node_modules/.bin/oclif pack win
+
+      - name: Rename and upload
+        if: ${{ inputs.tag != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          VERSION="${{ inputs.tag }}"
+          VERSION="${VERSION#v}"
+          cd dist/win32
+          for file in *.exe; do
+            [ -f "$file" ] || continue
+            arch=$(echo "$file" | grep -oE '(x64|x86|arm64)')
+            mv "$file" "linq-${VERSION}-win-${arch}.exe"
+          done
+          ls -la
+          for file in *.exe; do
+            [ -f "$file" ] && gh release upload "${{ inputs.tag }}" "$file" --clobber
+          done
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Pack macOS installer
+        run: pnpm exec oclif pack macos
+
+      - name: Rename and upload
+        if: ${{ inputs.tag != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ inputs.tag }}"
+          VERSION="${VERSION#v}"
+          cd dist/macos
+          for file in *.pkg; do
+            [ -f "$file" ] || continue
+            arch=$(echo "$file" | grep -oE '(x64|arm64)')
+            mv "$file" "linq-${VERSION}-mac-${arch}.pkg"
+          done
+          ls -la
+          for file in *.pkg; do
+            [ -f "$file" ] && gh release upload "${{ inputs.tag }}" "$file" --clobber
+          done
