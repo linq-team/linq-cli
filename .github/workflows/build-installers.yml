@@ -17,7 +17,7 @@ jobs:
       - uses: ./.github/actions/setup
 
       - name: Pack deb
-        run: pnpm exec oclif pack deb
+        run: npx oclif pack deb
 
       - name: Rename and upload
         if: ${{ inputs.tag != '' }}
@@ -50,7 +50,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/Program Files/Git/usr/bin:/c/Program Files (x86)/NSIS:$PATH"
-          ./node_modules/.bin/oclif pack win
+          npx oclif pack win
 
       - name: Rename and upload
         if: ${{ inputs.tag != '' }}
@@ -103,7 +103,7 @@ jobs:
           rm -f "$RUNNER_TEMP/app_cert.p12" "$RUNNER_TEMP/installer_cert.p12"
 
       - name: Pack macOS installer
-        run: pnpm exec oclif pack macos
+        run: npx oclif pack macos
 
       - name: Sign, notarize, and staple
         if: ${{ inputs.tag != '' }}

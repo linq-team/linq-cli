@@ -11,7 +11,7 @@ Please be respectful and constructive in all interactions. We're building someth
 ### Prerequisites
 
 - Node.js 22 or higher (LTS)
-- pnpm
+- npm (comes with Node.js)
 
 ### Setup
 
@@ -21,10 +21,10 @@ git clone https://github.com/linq-team/linq-cli.git
 cd linq-cli
 
 # Install dependencies
-pnpm install
+npm install
 
 # Build the project
-pnpm build
+npm run build
 
 # Run in development mode
 ./bin/dev.js --help
@@ -33,12 +33,12 @@ pnpm build
 ### Development Scripts
 
 ```bash
-pnpm build        # Generate types from OpenAPI spec + compile TypeScript
-pnpm test         # Run tests
-pnpm test:watch   # Run tests in watch mode
-pnpm lint         # Lint code
-pnpm format       # Format code
-pnpm generate:types  # Regenerate API types from OpenAPI spec
+npm run build        # Generate types from OpenAPI spec + compile TypeScript
+npm test         # Run tests
+npm test:watch   # Run tests in watch mode
+npm run lint         # Lint code
+npm run format       # Format code
+npm run generate:types  # Regenerate API types from OpenAPI spec
 ```
 
 ## Making Changes
@@ -72,13 +72,13 @@ We use Conventional Commits for semantic versioning:
 
 - TypeScript strict mode is enabled
 - ESLint and Prettier are configured
-- Run `pnpm lint` and `pnpm format` before committing
+- Run `npm run lint` and `npm run format` before committing
 - Pre-commit hooks will run automatically via lefthook
 
 ### Testing
 
 - Write tests for new features
-- Ensure all tests pass: `pnpm test`
+- Ensure all tests pass: `npm test`
 - Tests are located in `test/commands/`
 
 ## Project Structure
@@ -149,7 +149,7 @@ export default class MyCommand extends Command {
 When the Linq API changes:
 
 1. Update `openapi.yaml` with the new specification
-2. Run `pnpm generate:types` to regenerate TypeScript types
+2. Run `npm run generate:types` to regenerate TypeScript types
 3. Update affected commands
 4. Add/update tests
 
@@ -158,7 +158,7 @@ When the Linq API changes:
 1. Ensure your branch is up to date with `main`
 2. Run all checks locally:
    ```bash
-   pnpm build && pnpm test && pnpm lint
+   npm run build && npm test && npm run lint
    ```
 3. Push your branch and open a PR
 4. Fill out the PR template with a clear description

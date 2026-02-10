@@ -14,10 +14,11 @@
     "/oclif.manifest.json"
   ],
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
   },
   "scripts": {
-    "build": "pnpm run generate:types && tsc",
+    "build": "npm run generate:types && tsc",
     "clean": "rm -rf dist",
     "dev": "./bin/dev.js",
     "generate:types": "openapi-typescript openapi.yaml -o src/gen/api-types.ts",
@@ -26,7 +27,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "postpack": "rm -f oclif.manifest.json",
-    "prepack": "pnpm run build && oclif manifest",
+    "prepack": "npm run build && oclif manifest",
     "test": "vitest run",
     "test:watch": "vitest",
     "pack:macos": "oclif pack macos",

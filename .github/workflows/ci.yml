@@ -12,10 +12,10 @@ jobs:
       - uses: ./.github/actions/setup
 
       - name: Lint
-        run: pnpm lint
+        run: npm run lint
 
       - name: Test
-        run: pnpm test
+        run: npm test
 
   build-installers:
     uses: ./.github/workflows/build-installers.yml
