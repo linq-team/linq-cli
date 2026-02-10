@@ -77,8 +77,66 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
 
+      - name: Import signing certificates
+        if: ${{ inputs.tag != '' }}
+        env:
+          APP_CERT_BASE64: ${{ secrets.APPLE_DEV_ID_APP_CERT }}
+          INSTALLER_CERT_BASE64: ${{ secrets.APPLE_DEV_ID_INSTALLER_CERT }}
+          CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          echo "$APP_CERT_BASE64" | base64 --decode > "$RUNNER_TEMP/app_cert.p12"
+          echo "$INSTALLER_CERT_BASE64" | base64 --decode > "$RUNNER_TEMP/installer_cert.p12"
+
+          security import "$RUNNER_TEMP/app_cert.p12" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security import "$RUNNER_TEMP/installer_cert.p12" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
+          rm -f "$RUNNER_TEMP/app_cert.p12" "$RUNNER_TEMP/installer_cert.p12"
+
       - name: Pack macOS installer
         run: pnpm exec oclif pack macos
+
+      - name: Sign, notarize, and staple
+        if: ${{ inputs.tag != '' }}
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+          INSTALLER_IDENTITY="Developer ID Installer: Linq, LLC ($APPLE_TEAM_ID)"
+
+          cd dist/macos
+          for pkg in *.pkg; do
+            [ -f "$pkg" ] || continue
+            echo "=== Signing $pkg ==="
+            mv "$pkg" "unsigned_$pkg"
+            productsign --sign "$INSTALLER_IDENTITY" --keychain "$KEYCHAIN_PATH" "unsigned_$pkg" "$pkg"
+            rm "unsigned_$pkg"
+
+            echo "=== Notarizing $pkg ==="
+            xcrun notarytool submit "$pkg" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_APP_PASSWORD" \
+              --team-id "$APPLE_TEAM_ID" \
+              --wait
+
+            echo "=== Stapling $pkg ==="
+            xcrun stapler staple "$pkg"
+          done
+
+      - name: Cleanup keychain
+        if: ${{ always() && inputs.tag != '' }}
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
 
       - name: Rename and upload
         if: ${{ inputs.tag != '' }}
