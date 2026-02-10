@@ -113,25 +113,87 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+          APP_IDENTITY="Developer ID Application: Linq, LLC ($APPLE_TEAM_ID)"
           INSTALLER_IDENTITY="Developer ID Installer: Linq, LLC ($APPLE_TEAM_ID)"
+          ENTITLEMENTS="${GITHUB_WORKSPACE}/.github/entitlements.plist"
+          PKG_DIR="$(pwd)/dist/macos"
 
-          cd dist/macos
+          cd "$PKG_DIR"
           for pkg in *.pkg; do
             [ -f "$pkg" ] || continue
-            echo "=== Signing $pkg ==="
-            mv "$pkg" "unsigned_$pkg"
-            productsign --sign "$INSTALLER_IDENTITY" --keychain "$KEYCHAIN_PATH" "unsigned_$pkg" "$pkg"
-            rm "unsigned_$pkg"
+            PKG_PATH="${PKG_DIR}/${pkg}"
+            EXPANDED="${PKG_PATH}_expanded"
+            PAYLOAD_DIR=$(mktemp -d)
 
+            # --- Step 1: Expand .pkg and sign internal binaries ---
+            echo "=== Expanding $pkg ==="
+            pkgutil --expand "$PKG_PATH" "$EXPANDED"
+
+            # oclif produces flat component packages (Payload at top level)
+            if [ -f "${EXPANDED}/Payload" ]; then
+              COMP_DIR="$EXPANDED"
+            else
+              COMP_DIR=$(find "$EXPANDED" -name "*.pkg" -type d | head -1)
+            fi
+
+            if [ -z "$COMP_DIR" ] || [ ! -f "${COMP_DIR}/Payload" ]; then
+              echo "ERROR: Cannot find Payload in expanded package"
+              exit 1
+            fi
+
+            cd "$PAYLOAD_DIR"
+            gunzip -dc < "${COMP_DIR}/Payload" | cpio -id 2>/dev/null
+
+            echo "=== Signing Mach-O binaries ==="
+            find . -type f | while read f; do
+              if file "$f" | grep -qE "Mach-O"; then
+                echo "  codesign: $f"
+                codesign --sign "$APP_IDENTITY" \
+                  --keychain "$KEYCHAIN_PATH" \
+                  --options runtime \
+                  --entitlements "$ENTITLEMENTS" \
+                  --timestamp \
+                  --force "$f"
+              fi
+            done
+
+            find . | cpio -o --format odc 2>/dev/null | gzip -c > "${COMP_DIR}/Payload"
+            mkbom . "${COMP_DIR}/Bom"
+
+            cd "$PKG_DIR"
+            rm -rf "$PAYLOAD_DIR"
+
+            # --- Step 2: Flatten and sign installer ---
+            echo "=== Flattening and signing installer ==="
+            pkgutil --flatten "$EXPANDED" "${PKG_PATH}_unsigned"
+            rm -rf "$EXPANDED"
+
+            productsign --sign "$INSTALLER_IDENTITY" --keychain "$KEYCHAIN_PATH" "${PKG_PATH}_unsigned" "$PKG_PATH"
+            rm "${PKG_PATH}_unsigned"
+
+            # --- Step 3: Notarize ---
             echo "=== Notarizing $pkg ==="
-            xcrun notarytool submit "$pkg" \
+            NOTARIZE_OUTPUT=$(xcrun notarytool submit "$PKG_PATH" \
               --apple-id "$APPLE_ID" \
               --password "$APPLE_APP_PASSWORD" \
               --team-id "$APPLE_TEAM_ID" \
-              --wait
+              --wait 2>&1) || true
+            echo "$NOTARIZE_OUTPUT"
 
+            SUBMISSION_ID=$(echo "$NOTARIZE_OUTPUT" | grep "id:" | head -1 | awk '{print $2}')
+
+            if echo "$NOTARIZE_OUTPUT" | grep -q "status: Invalid"; then
+              echo "=== Notarization FAILED — fetching log ==="
+              xcrun notarytool log "$SUBMISSION_ID" \
+                --apple-id "$APPLE_ID" \
+                --password "$APPLE_APP_PASSWORD" \
+                --team-id "$APPLE_TEAM_ID" || true
+              exit 1
+            fi
+
+            # --- Step 4: Staple ---
             echo "=== Stapling $pkg ==="
-            xcrun stapler staple "$pkg"
+            xcrun stapler staple "$PKG_PATH"
           done
 
       - name: Cleanup keychain
