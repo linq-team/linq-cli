@@ -1,3 +1,10 @@
+## [1.5.2](https://github.com/linq-team/linq-cli/compare/v1.5.1...v1.5.2) (2026-02-10)
+
+
+### Bug Fixes
+
+* codesign internal binaries before notarization ([b7256e3](https://github.com/linq-team/linq-cli/commit/b7256e382c34d26f8487d86d14d12eebf75c2183))
+
 ## [1.5.1](https://github.com/linq-team/linq-cli/compare/v1.5.0...v1.5.1) (2026-02-10)
 
 
