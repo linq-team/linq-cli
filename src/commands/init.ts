@@ -103,11 +103,11 @@ export default class Init extends Command {
 
     this.log('\n\u2713 Configuration saved to ~/.linq/config.json\n');
     this.log('Next steps:');
-    this.log('  linq phonenumbers          List your phone numbers');
+    this.log('  linq phonenumbers                                     List your phone numbers');
     this.log(
-      '  linq chats create          Create a chat and send a message'
+      '  linq chats create --to +1XXXXXXXXXX -m "Hello!"       Create a chat and send a message'
     );
-    this.log('  linq doctor                Check your setup');
+    this.log('  linq doctor                                           Check your setup');
     if (!ngrokAuthtoken) {
       this.log(
         '  linq config set ngrokAuthtoken TOKEN   Set up ngrok later'

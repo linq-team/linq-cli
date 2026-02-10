@@ -58,6 +58,13 @@
     ],
     "macos": {
       "identifier": "com.linqapp.cli"
+    },
+    "topics": {
+      "chats": { "description": "Manage chats and conversations" },
+      "messages": { "description": "Send and manage messages" },
+      "webhooks": { "description": "Manage webhook subscriptions" },
+      "config": { "description": "Manage CLI configuration and profiles" },
+      "attachments": { "description": "Manage file attachments" }
     }
   },
   "dependencies": {
@@ -67,6 +74,7 @@
     "@oclif/plugin-autocomplete": "^3.2.40",
     "@oclif/plugin-help": "^6.2.37",
     "chalk": "^5.6.2",
+    "linq": "^4.0.3",
     "open": "^11.0.0",
     "openapi-fetch": "^0.16.0"
   },

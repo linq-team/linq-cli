@@ -1,6 +1,8 @@
 import { Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
+import { formatChatsList } from '../../lib/format.js';
+import { parseApiError } from '../../lib/errors.js';
 
 export default class ChatsList extends Command {
   static override description = 'List all chats for a phone number';
@@ -22,6 +24,10 @@ export default class ChatsList extends Command {
     }),
     cursor: Flags.string({
       description: 'Pagination cursor from previous response',
+    }),
+    json: Flags.boolean({
+      description: 'Output as JSON',
+      default: false,
     }),
     profile: Flags.string({
       char: 'p',
@@ -52,13 +58,17 @@ export default class ChatsList extends Command {
     });
 
     if (error) {
-      this.error(`Failed to list chats: ${JSON.stringify(error)}`);
+      this.error(`Failed to list chats: ${parseApiError(error)}`);
     }
 
     if (!data) {
       this.error('Failed to list chats: no response data');
     }
 
-    this.log(JSON.stringify(data, null, 2));
+    if (flags.json) {
+      this.log(JSON.stringify(data, null, 2));
+    } else {
+      this.log(formatChatsList(data));
+    }
   }
 }

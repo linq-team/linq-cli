@@ -1,6 +1,8 @@
 import { Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
+import { formatWebhookDetail } from '../../lib/format.js';
+import { parseApiError } from '../../lib/errors.js';
 import type { components } from '../../gen/api-types.js';
 
 type WebhookEventType = components['schemas']['WebhookEventType'];
@@ -44,6 +46,10 @@ export default class WebhooksCreate extends Command {
       description: 'Subscribe to all event types',
       default: false,
     }),
+    json: Flags.boolean({
+      description: 'Output as JSON',
+      default: false,
+    }),
     profile: Flags.string({
       char: 'p',
       description: 'Config profile to use',
@@ -85,13 +91,17 @@ export default class WebhooksCreate extends Command {
     });
 
     if (error) {
-      this.error(`Failed to create webhook: ${JSON.stringify(error)}`);
+      this.error(`Failed to create webhook: ${parseApiError(error)}`);
     }
 
     if (!data) {
       this.error('Failed to create webhook: no response data');
     }
 
-    this.log(JSON.stringify(data, null, 2));
+    if (flags.json) {
+      this.log(JSON.stringify(data, null, 2));
+    } else {
+      this.log(formatWebhookDetail(data));
+    }
   }
 }

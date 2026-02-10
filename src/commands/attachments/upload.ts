@@ -1,6 +1,8 @@
 import { Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
+import { formatUploadUrl } from '../../lib/format.js';
+import { parseApiError } from '../../lib/errors.js';
 import type { components } from '../../gen/api-types.js';
 
 export default class AttachmentsUpload extends Command {
@@ -22,6 +24,10 @@ export default class AttachmentsUpload extends Command {
     size: Flags.integer({
       description: 'File size in bytes',
       required: true,
+    }),
+    json: Flags.boolean({
+      description: 'Output as JSON',
+      default: false,
     }),
     profile: Flags.string({
       char: 'p',
@@ -49,13 +55,17 @@ export default class AttachmentsUpload extends Command {
     });
 
     if (error) {
-      this.error(`Failed to request upload: ${JSON.stringify(error)}`);
+      this.error(`Failed to request upload: ${parseApiError(error)}`);
     }
 
     if (!data) {
       this.error('Failed to request upload: no response data');
     }
 
-    this.log(JSON.stringify(data, null, 2));
+    if (flags.json) {
+      this.log(JSON.stringify(data, null, 2));
+    } else {
+      this.log(formatUploadUrl(data));
+    }
   }
 }

@@ -1,6 +1,8 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
+import { formatMessagesList } from '../../lib/format.js';
+import { parseApiError } from '../../lib/errors.js';
 
 export default class MessagesThread extends Command {
   static override description = 'Get all messages in a thread';
@@ -27,6 +29,10 @@ export default class MessagesThread extends Command {
     order: Flags.string({
       description: 'Sort order (asc or desc)',
       options: ['asc', 'desc'],
+    }),
+    json: Flags.boolean({
+      description: 'Output as JSON',
+      default: false,
     }),
     profile: Flags.string({
       char: 'p',
@@ -57,13 +63,17 @@ export default class MessagesThread extends Command {
     });
 
     if (error) {
-      this.error(`Failed to get thread: ${JSON.stringify(error)}`);
+      this.error(`Failed to get thread: ${parseApiError(error)}`);
     }
 
     if (!data) {
       this.error('Failed to get thread: no response data');
     }
 
-    this.log(JSON.stringify(data, null, 2));
+    if (flags.json) {
+      this.log(JSON.stringify(data, null, 2));
+    } else {
+      this.log(formatMessagesList(data));
+    }
   }
 }

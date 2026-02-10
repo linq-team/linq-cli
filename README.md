@@ -281,16 +281,24 @@ linq messages delete MESSAGE_ID --chat CHAT_ID
 Add or remove a reaction on a message.
 
 ```bash
-# Add a reaction
-linq messages react MESSAGE_ID --operation add --type heart
+# Add a reaction (--operation defaults to "add")
+linq messages react MESSAGE_ID --type love
 
 # Remove a reaction
-linq messages react MESSAGE_ID --operation remove --type thumbs_up
+linq messages react MESSAGE_ID --operation remove --type like
+
+# Custom emoji reaction
+linq messages react MESSAGE_ID --type custom --emoji "🎉"
+
+# React to a specific message part
+linq messages react MESSAGE_ID --type laugh --part-index 1
 ```
 
 **Flags:**
-- `--operation` (required): Operation to perform (add or remove)
-- `--type` (required): Reaction type (heart, thumbs_up, thumbs_down, ha_ha, exclamation, question)
+- `--type` (required): Reaction type (love, like, dislike, laugh, emphasize, question, custom)
+- `--operation`: Operation to perform — `add` (default) or `remove`
+- `--emoji`: Custom emoji (required when type is `custom`)
+- `--part-index`: Index of the message part to react to (default: 0)
 
 ### Webhooks
 

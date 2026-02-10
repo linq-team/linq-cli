@@ -1,6 +1,8 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
+import { formatMessageSent } from '../../lib/format.js';
+import { parseApiError } from '../../lib/errors.js';
 import type { components } from '../../gen/api-types.js';
 
 type MessagePart = components['schemas']['MessagePart'];
@@ -55,6 +57,10 @@ export default class MessagesSend extends Command {
     }),
     'reply-to': Flags.string({
       description: 'Message ID to reply to (creates a thread)',
+    }),
+    json: Flags.boolean({
+      description: 'Output as JSON',
+      default: false,
     }),
     profile: Flags.string({
       char: 'p',
@@ -111,13 +117,17 @@ export default class MessagesSend extends Command {
     });
 
     if (error) {
-      this.error(`Failed to send message: ${JSON.stringify(error)}`);
+      this.error(`Failed to send message: ${parseApiError(error)}`);
     }
 
     if (!data) {
       this.error('Failed to send message: no response data');
     }
 
-    this.log(JSON.stringify(data, null, 2));
+    if (flags.json) {
+      this.log(JSON.stringify(data, null, 2));
+    } else {
+      this.log(formatMessageSent(data));
+    }
   }
 }

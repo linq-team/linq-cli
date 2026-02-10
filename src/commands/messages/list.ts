@@ -1,6 +1,8 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
+import { formatMessagesList } from '../../lib/format.js';
+import { parseApiError } from '../../lib/errors.js';
 
 export default class MessagesList extends Command {
   static override description = 'List messages in a chat';
@@ -30,6 +32,10 @@ export default class MessagesList extends Command {
       description: 'Sort order (asc or desc)',
       options: ['asc', 'desc'],
       default: 'desc',
+    }),
+    json: Flags.boolean({
+      description: 'Output as JSON',
+      default: false,
     }),
     profile: Flags.string({
       char: 'p',
@@ -62,13 +68,17 @@ export default class MessagesList extends Command {
     });
 
     if (error) {
-      this.error(`Failed to list messages: ${JSON.stringify(error)}`);
+      this.error(`Failed to list messages: ${parseApiError(error)}`);
     }
 
     if (!data) {
       this.error('Failed to list messages: no response data');
     }
 
-    this.log(JSON.stringify(data, null, 2));
+    if (flags.json) {
+      this.log(JSON.stringify(data, null, 2));
+    } else {
+      this.log(formatMessagesList(data));
+    }
   }
 }
