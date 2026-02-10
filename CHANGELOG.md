@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/linq-team/linq-cli/compare/v1.4.0...v1.5.0) (2026-02-10)
+
+
+### Features
+
+* add missing API commands and refactor CI workflows ([#2](https://github.com/linq-team/linq-cli/issues/2)) ([e244312](https://github.com/linq-team/linq-cli/commit/e24431263ed96fd0a0b8ee5ca475bc2f99f4dc5b))
+
 # [1.4.0](https://github.com/linq-team/linq-cli/compare/v1.3.0...v1.4.0) (2026-02-09)
 
 
