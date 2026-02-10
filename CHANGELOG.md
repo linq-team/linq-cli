@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/linq-team/linq-cli/compare/v1.5.0...v1.5.1) (2026-02-10)
+
+
+### Bug Fixes
+
+* migrate from pnpm to npm and fix macOS installer packaging ([e23dc03](https://github.com/linq-team/linq-cli/commit/e23dc035c078995eb19e02ef67cb5ac6154731da))
+
 # [1.5.0](https://github.com/linq-team/linq-cli/compare/v1.4.0...v1.5.0) (2026-02-10)
 
 
