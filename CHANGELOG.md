@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/linq-team/linq-cli/compare/v1.5.2...v1.6.0) (2026-02-12)
+
+
+### Features
+
+* add human-readable CLI output and UX polish ([#3](https://github.com/linq-team/linq-cli/issues/3)) ([a625a1c](https://github.com/linq-team/linq-cli/commit/a625a1cd2feac919fe3eb7b1763c93be80a0c2f5))
+
 ## [1.5.2](https://github.com/linq-team/linq-cli/compare/v1.5.1...v1.5.2) (2026-02-10)
 
 
