@@ -1,6 +1,8 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
+import { formatWebhookDetail } from '../../lib/format.js';
+import { parseApiError } from '../../lib/errors.js';
 import type { components } from '../../gen/api-types.js';
 
 type WebhookEventType = components['schemas']['WebhookEventType'];
@@ -54,6 +56,10 @@ export default class WebhooksUpdate extends Command {
     deactivate: Flags.boolean({
       description: 'Deactivate the webhook subscription',
       exclusive: ['activate'],
+    }),
+    json: Flags.boolean({
+      description: 'Output as JSON',
+      default: false,
     }),
     profile: Flags.string({
       char: 'p',
@@ -113,13 +119,17 @@ export default class WebhooksUpdate extends Command {
     );
 
     if (error) {
-      this.error(`Failed to update webhook: ${JSON.stringify(error)}`);
+      this.error(`Failed to update webhook: ${parseApiError(error)}`);
     }
 
     if (!data) {
       this.error('Failed to update webhook: no response data');
     }
 
-    this.log(JSON.stringify(data, null, 2));
+    if (flags.json) {
+      this.log(JSON.stringify(data, null, 2));
+    } else {
+      this.log(formatWebhookDetail(data));
+    }
   }
 }

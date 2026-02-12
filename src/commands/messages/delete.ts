@@ -1,6 +1,8 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
+import { formatDeleted } from '../../lib/format.js';
+import { parseApiError } from '../../lib/errors.js';
 
 export default class MessagesDelete extends Command {
   static override description = 'Delete a message from API records';
@@ -20,6 +22,10 @@ export default class MessagesDelete extends Command {
     chat: Flags.string({
       description: 'Chat ID the message belongs to (UUID)',
       required: true,
+    }),
+    json: Flags.boolean({
+      description: 'Output as JSON',
+      default: false,
     }),
     profile: Flags.string({
       char: 'p',
@@ -50,9 +56,13 @@ export default class MessagesDelete extends Command {
     });
 
     if (error) {
-      this.error(`Failed to delete message: ${JSON.stringify(error)}`);
+      this.error(`Failed to delete message: ${parseApiError(error)}`);
     }
 
-    this.log(`Message ${args.messageId} deleted successfully.`);
+    if (flags.json) {
+      this.log(JSON.stringify({ deleted: true, messageId: args.messageId }));
+    } else {
+      this.log(formatDeleted('Message', args.messageId));
+    }
   }
 }

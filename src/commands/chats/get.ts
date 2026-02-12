@@ -1,6 +1,8 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
+import { formatChatDetail } from '../../lib/format.js';
+import { parseApiError } from '../../lib/errors.js';
 
 export default class ChatsGet extends Command {
   static override description = 'Get a chat by ID';
@@ -17,6 +19,10 @@ export default class ChatsGet extends Command {
   };
 
   static override flags = {
+    json: Flags.boolean({
+      description: 'Output as JSON',
+      default: false,
+    }),
     profile: Flags.string({
       char: 'p',
       description: 'Config profile to use',
@@ -43,13 +49,17 @@ export default class ChatsGet extends Command {
     });
 
     if (error) {
-      this.error(`Failed to get chat: ${JSON.stringify(error)}`);
+      this.error(`Failed to get chat: ${parseApiError(error)}`);
     }
 
     if (!data) {
       this.error('Failed to get chat: no response data');
     }
 
-    this.log(JSON.stringify(data, null, 2));
+    if (flags.json) {
+      this.log(JSON.stringify(data, null, 2));
+    } else {
+      this.log(formatChatDetail(data));
+    }
   }
 }

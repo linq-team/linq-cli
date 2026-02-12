@@ -1,6 +1,8 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
+import { formatReaction } from '../../lib/format.js';
+import { parseApiError } from '../../lib/errors.js';
 import type { components } from '../../gen/api-types.js';
 
 type ReactionType = components['schemas']['ReactionType'];
@@ -48,6 +50,10 @@ export default class MessagesReact extends Command {
       description: 'Index of the message part to react to (default: 0)',
       default: 0,
     }),
+    json: Flags.boolean({
+      description: 'Output as JSON',
+      default: false,
+    }),
     profile: Flags.string({
       char: 'p',
       description: 'Config profile to use',
@@ -92,13 +98,17 @@ export default class MessagesReact extends Command {
     });
 
     if (error) {
-      this.error(`Failed to ${flags.operation} reaction: ${JSON.stringify(error)}`);
+      this.error(`Failed to ${flags.operation} reaction: ${parseApiError(error)}`);
     }
 
     if (!data) {
       this.error(`Failed to ${flags.operation} reaction: no response data`);
     }
 
-    this.log(JSON.stringify(data, null, 2));
+    if (flags.json) {
+      this.log(JSON.stringify(data, null, 2));
+    } else {
+      this.log(formatReaction(flags.operation!, flags.type, args.messageId));
+    }
   }
 }

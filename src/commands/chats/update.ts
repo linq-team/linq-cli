@@ -1,6 +1,8 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
+import { formatChatDetail } from '../../lib/format.js';
+import { parseApiError } from '../../lib/errors.js';
 
 export default class ChatsUpdate extends Command {
   static override description = 'Update a chat (display name, group icon)';
@@ -23,6 +25,10 @@ export default class ChatsUpdate extends Command {
     }),
     icon: Flags.string({
       description: 'URL for group chat icon',
+    }),
+    json: Flags.boolean({
+      description: 'Output as JSON',
+      default: false,
     }),
     profile: Flags.string({
       char: 'p',
@@ -55,13 +61,17 @@ export default class ChatsUpdate extends Command {
     });
 
     if (error) {
-      this.error(`Failed to update chat: ${JSON.stringify(error)}`);
+      this.error(`Failed to update chat: ${parseApiError(error)}`);
     }
 
     if (!data) {
       this.error('Failed to update chat: no response data');
     }
 
-    this.log(JSON.stringify(data, null, 2));
+    if (flags.json) {
+      this.log(JSON.stringify(data, null, 2));
+    } else {
+      this.log(formatChatDetail(data));
+    }
   }
 }
