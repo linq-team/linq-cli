@@ -74,7 +74,6 @@
     "@oclif/plugin-autocomplete": "^3.2.40",
     "@oclif/plugin-help": "^6.2.37",
     "chalk": "^5.6.2",
-    "linq": "^4.0.3",
     "open": "^11.0.0",
     "openapi-fetch": "^0.16.0"
   },
