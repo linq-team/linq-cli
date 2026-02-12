@@ -1,10 +1,4 @@
 import { Command, Flags } from '@oclif/core';
-import {
-  createServer,
-  type IncomingMessage,
-  type ServerResponse,
-} from 'node:http';
-import ngrok from '@ngrok/ngrok';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatLogLine } from '../../lib/webhook-format.js';
@@ -36,9 +30,13 @@ const WEBHOOK_EVENTS: WebhookEventType[] = [
   'chat.typing_indicator.stopped',
 ];
 
+const DEFAULT_WS_URL = 'wss://relay-ws.linqapp.com';
+const DEFAULT_RELAY_URL = 'https://webhook.linqapp.com';
+const MAX_RECONNECT_DELAY = 30_000;
+
 export default class WebhooksListen extends Command {
   static override description =
-    'Start a local server with ngrok tunnel to receive webhook events';
+    'Listen for webhook events';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -47,11 +45,6 @@ export default class WebhooksListen extends Command {
   ];
 
   static override flags = {
-    port: Flags.integer({
-      char: 'p',
-      description: 'Local port to listen on',
-      default: 4040,
-    }),
     events: Flags.string({
       description:
         'Comma-separated list of events to subscribe to (default: all)',
@@ -63,19 +56,16 @@ export default class WebhooksListen extends Command {
       char: 't',
       description: 'API token (overrides stored token)',
     }),
-    'ngrok-authtoken': Flags.string({
-      description: 'ngrok auth token (overrides stored token)',
-    }),
     json: Flags.boolean({
       description: 'Output raw JSON instead of structured log format',
       default: false,
     }),
   };
 
-  private server: ReturnType<typeof createServer> | null = null;
-  private listener: ngrok.Listener | null = null;
   private webhookId: string | null = null;
   private client: ReturnType<typeof createApiClient> | null = null;
+  private ws: WebSocket | null = null;
+  private shuttingDown = false;
 
   async run(): Promise<void> {
     const { flags } = await this.parse(WebhooksListen);
@@ -83,16 +73,6 @@ export default class WebhooksListen extends Command {
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
     this.client = createApiClient(token);
-
-    const ngrokAuthtoken = flags['ngrok-authtoken'] || config.ngrokAuthtoken;
-
-    if (!ngrokAuthtoken) {
-      this.log('\n  ngrok auth token required to create a webhook tunnel.\n');
-      this.log('  1. Sign up at https://ngrok.com (free)');
-      this.log('  2. Copy your auth token from https://dashboard.ngrok.com/get-started/your-authtoken');
-      this.log('  3. Run: linq config set ngrokAuthtoken YOUR_TOKEN\n');
-      return;
-    }
 
     // Validate events if specified
     let subscribedEvents: WebhookEventType[];
@@ -112,57 +92,151 @@ export default class WebhooksListen extends Command {
 
     const eventFilter = flags.events?.split(',').map((e) => e.trim()) || null;
 
-    // Start local server
-    await new Promise<void>((resolve, reject) => {
-      this.server = createServer((req, res) => {
-        this.handleRequest(req, res, eventFilter, flags.json);
+    const wsUrl = process.env.LINQ_RELAY_WS_URL || DEFAULT_WS_URL;
+    const relayUrl = process.env.LINQ_RELAY_URL || DEFAULT_RELAY_URL;
+
+    // Handle graceful shutdown
+    const shutdown = async () => {
+      this.log('\nShutting down...');
+      await this.cleanup();
+    };
+
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
+
+    try {
+      this.log('Connecting to relay...');
+      const connectionId = await this.connectWebSocket(wsUrl, token);
+      this.log('Connected to relay');
+
+      // Create webhook subscription pointing to relay
+      const webhookTarget = `${relayUrl}/relay/${connectionId}`;
+      await this.createWebhook(webhookTarget, subscribedEvents);
+
+      this.log('');
+      this.log('Listening for events... (Ctrl+C to stop)');
+      this.log('');
+
+      // Listen for events with auto-reconnect
+      await this.listenLoop(wsUrl, token, relayUrl, subscribedEvents, eventFilter, flags.json);
+    } catch (error) {
+      if (this.shuttingDown) return;
+      await this.cleanup();
+      throw error;
+    }
+  }
+
+  private connectWebSocket(wsUrl: string, token: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const url = `${wsUrl}?token=${encodeURIComponent(token)}`;
+      const ws = new WebSocket(url);
+      this.ws = ws;
+
+      const timeout = setTimeout(() => {
+        ws.close();
+        reject(new Error('WebSocket connection timed out'));
+      }, 10_000);
+
+      ws.addEventListener('open', () => {
+        ws.send(JSON.stringify({ action: 'init' }));
       });
 
-      this.server.on('error', (err) => {
-        reject(err);
-      });
-
-      this.server.listen(flags.port, async () => {
-        this.log(`Local server started on port ${flags.port}`);
-
+      ws.addEventListener('message', (event) => {
         try {
-          // Start ngrok tunnel
-          const listenerBuilder = await ngrok.forward({
-            addr: flags.port,
-            authtoken: ngrokAuthtoken,
-          });
-
-          this.listener = listenerBuilder;
-          const url = listenerBuilder.url();
-
-          if (!url) {
-            throw new Error('Failed to get ngrok tunnel URL');
+          const data = JSON.parse(typeof event.data === 'string' ? event.data : '');
+          if (data.connectionId) {
+            clearTimeout(timeout);
+            resolve(data.connectionId);
           }
-
-          const webhookUrl = `${url}/webhook`;
-          this.log(`ngrok tunnel: ${url}`);
-          this.log('');
-
-          await this.createWebhook(webhookUrl, subscribedEvents);
-
-          this.log('');
-          this.log('Listening for events... (Ctrl+C to stop)');
-          this.log('');
-        } catch (err) {
-          await this.cleanup();
-          reject(err);
+        } catch {
+          // Ignore malformed messages during init
         }
       });
 
-      // Handle graceful shutdown
-      const shutdown = async () => {
-        this.log('\nShutting down...');
-        await this.cleanup();
-        resolve();
-      };
+      ws.addEventListener('error', () => {
+        clearTimeout(timeout);
+        reject(new Error('Failed to connect to relay'));
+      });
 
-      process.on('SIGINT', shutdown);
-      process.on('SIGTERM', shutdown);
+      ws.addEventListener('close', (event) => {
+        clearTimeout(timeout);
+        if (event.code === 4001) {
+          reject(new Error('Authentication failed. Check your API token.'));
+        }
+      });
+    });
+  }
+
+  private async listenLoop(
+    wsUrl: string,
+    token: string,
+    relayUrl: string,
+    subscribedEvents: WebhookEventType[],
+    eventFilter: string[] | null,
+    jsonOutput: boolean
+  ): Promise<void> {
+    let reconnectDelay = 1000;
+
+    this.setupMessageHandler(eventFilter, jsonOutput);
+
+    while (!this.shuttingDown) {
+      // Wait for WebSocket to close
+      await new Promise<void>((resolve) => {
+        if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
+          resolve();
+          return;
+        }
+        this.ws.addEventListener('close', () => resolve(), { once: true });
+      });
+
+      if (this.shuttingDown) return;
+
+      this.log(`Disconnected. Reconnecting in ${reconnectDelay / 1000}s...`);
+      await new Promise((r) => setTimeout(r, reconnectDelay));
+      reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY);
+
+      if (this.shuttingDown) return;
+
+      try {
+        const connectionId = await this.connectWebSocket(wsUrl, token);
+        this.log('Reconnected to relay');
+        reconnectDelay = 1000;
+
+        // Update webhook target with new connectionId
+        const webhookTarget = `${relayUrl}/relay/${connectionId}`;
+        await this.updateWebhookTarget(webhookTarget);
+
+        this.setupMessageHandler(eventFilter, jsonOutput);
+      } catch (error) {
+        if (this.shuttingDown) return;
+        this.log(`Reconnect failed: ${(error as Error).message}`);
+      }
+    }
+  }
+
+  private setupMessageHandler(eventFilter: string[] | null, jsonOutput: boolean): void {
+    if (!this.ws) return;
+
+    this.ws.addEventListener('message', (event) => {
+      try {
+        const data = JSON.parse(typeof event.data === 'string' ? event.data : '') as WebhookEvent;
+
+        // Skip init response
+        if ('connectionId' in data) return;
+
+        // Apply event filter
+        if (eventFilter && data.event_type && !eventFilter.includes(data.event_type)) {
+          return;
+        }
+
+        if (jsonOutput) {
+          this.log(JSON.stringify(data, null, 2));
+        } else {
+          this.log(formatLogLine(data));
+        }
+      } catch {
+        // Skip malformed messages
+      }
     });
   }
 
@@ -194,7 +268,30 @@ export default class WebhooksListen extends Command {
     this.log(`Events: ${data.subscribed_events.join(', ')}`);
   }
 
+  private async updateWebhookTarget(webhookUrl: string): Promise<void> {
+    if (!this.webhookId || !this.client) return;
+
+    const { error } = await this.client.PUT(
+      '/v3/webhook-subscriptions/{subscriptionId}',
+      {
+        params: { path: { subscriptionId: this.webhookId } },
+        body: { target_url: webhookUrl },
+      }
+    );
+
+    if (error) {
+      this.log(`Warning: Failed to update webhook target: ${JSON.stringify(error)}`);
+    }
+  }
+
   private async cleanup(): Promise<void> {
+    this.shuttingDown = true;
+
+    // Close WebSocket
+    if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
+      this.ws.close();
+    }
+
     // Delete webhook subscription
     if (this.webhookId && this.client) {
       try {
@@ -206,66 +303,5 @@ export default class WebhooksListen extends Command {
         // Ignore cleanup errors
       }
     }
-
-    // Close ngrok listener
-    if (this.listener) {
-      try {
-        await this.listener.close();
-      } catch {
-        // Ignore
-      }
-    }
-
-    // Close server
-    this.server?.close();
-  }
-
-  private handleRequest(
-    req: IncomingMessage,
-    res: ServerResponse,
-    eventFilter: string[] | null,
-    jsonOutput: boolean
-  ): void {
-    if (req.method !== 'POST' || req.url !== '/webhook') {
-      res.writeHead(req.url === '/webhook' ? 405 : 404);
-      res.end();
-      return;
-    }
-
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk;
-    });
-
-    req.on('end', () => {
-      try {
-        const event = JSON.parse(body) as WebhookEvent;
-
-        // Apply event filter if specified
-        if (
-          eventFilter &&
-          event.event_type &&
-          !eventFilter.includes(event.event_type)
-        ) {
-          res.writeHead(200);
-          res.end();
-          return;
-        }
-
-        if (jsonOutput) {
-          // Raw JSON output
-          this.log(JSON.stringify(event, null, 2));
-        } else {
-          // Structured log format
-          this.log(formatLogLine(event));
-        }
-
-        res.writeHead(200);
-        res.end();
-      } catch {
-        res.writeHead(400);
-        res.end('Invalid JSON');
-      }
-    });
   }
 }

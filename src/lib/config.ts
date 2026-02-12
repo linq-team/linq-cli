@@ -13,7 +13,6 @@ export interface Profile {
     expiresAt: string;
     githubLogin: string;
   };
-  ngrokAuthtoken?: string;
   fromPhone?: string;
 }
 
@@ -91,9 +90,6 @@ export async function loadConfig(profileName?: string): Promise<Config> {
   // Environment variables override profile settings
   if (process.env.LINQ_TOKEN) {
     config.token = process.env.LINQ_TOKEN;
-  }
-  if (process.env.NGROK_AUTHTOKEN) {
-    config.ngrokAuthtoken = process.env.NGROK_AUTHTOKEN;
   }
   if (process.env.LINQ_FROM_PHONE) {
     config.fromPhone = process.env.LINQ_FROM_PHONE;

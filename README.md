@@ -57,7 +57,7 @@ After installation, the `linq` command will be available in your terminal.
 
 #### `linq init`
 
-Interactive setup wizard. Validates your API token, selects a default phone number, and optionally configures ngrok for webhook testing.
+Interactive setup wizard. Validates your API token and selects a default phone number.
 
 ```bash
 linq init
@@ -65,7 +65,7 @@ linq init
 
 #### `linq doctor`
 
-Check your CLI configuration and API connectivity. Runs 5 diagnostic checks and reports any issues.
+Check your CLI configuration and API connectivity. Runs diagnostic checks and reports any issues.
 
 ```bash
 linq doctor
@@ -100,9 +100,6 @@ linq config set token YOUR_API_TOKEN
 
 # Set default sender phone (must be one from `linq phonenumbers`)
 linq config set fromPhone +12025551234
-
-# Set ngrok auth token
-linq config set ngrokAuthtoken YOUR_NGROK_TOKEN
 ```
 
 #### `linq config list`
@@ -356,11 +353,9 @@ Delete a webhook subscription.
 linq webhooks delete SUBSCRIPTION_ID
 ```
 
-### Local Development
-
 #### `linq webhooks listen`
 
-Start a local server with automatic ngrok tunnel and webhook registration. Creates a temporary webhook subscription that's automatically deleted when you stop.
+Listen for webhook events in real time. Creates a temporary webhook subscription that's automatically deleted when you stop.
 
 ```bash
 # Listen for all events
@@ -373,8 +368,6 @@ linq webhooks listen --events message.received,message.sent
 linq webhooks listen --json
 ```
 
-**Output Format:**
-
 Events are displayed in a structured log format:
 
 ```
@@ -383,76 +376,7 @@ Events are displayed in a structured log format:
 
 Use `--json` for raw JSON output (useful for piping to `jq`).
 
-## Testing Webhooks
-
-This guide walks you through setting up webhook testing from scratch.
-
-### 1. Get Your ngrok Auth Token
-
-1. Create a free account at [ngrok.com](https://ngrok.com)
-2. Go to [Your Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken)
-3. Copy your auth token
-
-### 2. Configure the CLI
-
-```bash
-# Log in with your Linq API token
-linq login
-
-# Set your ngrok auth token
-linq config set ngrokAuthtoken YOUR_NGROK_AUTHTOKEN
-```
-
-Or use environment variables:
-
-```bash
-export LINQ_TOKEN=your_linq_token
-export NGROK_AUTHTOKEN=your_ngrok_authtoken
-```
-
-### 3. Start Listening for Webhooks
-
-```bash
-linq webhooks listen
-```
-
-You'll see output like:
-
-```
-Local server started on port 4040
-ngrok tunnel: https://abc123.ngrok-free.app
-
-Webhook created: wh_abc123
-Events: message.sent, message.received, message.read, ...
-
-Listening for events... (Ctrl+C to stop)
-```
-
-### 4. Send a Test Message
-
-Open a new terminal and send a message:
-
-```bash
-# List your phone numbers
-linq phonenumbers
-
-# Create a chat and send a message
-linq chats create --to +19876543210 --from +12025551234 --message "Hello from Linq!"
-```
-
-### 5. Watch Events Arrive
-
-Back in your first terminal, you'll see webhook events in structured log format:
-
-```
-2024-01-15T10:30:00.123Z [message.sent] message.id=msg_abc123 message.body="Hello from Linq!"
-2024-01-15T10:30:01.456Z [message.delivered] message.id=msg_abc123
-2024-01-15T10:30:05.789Z [message.received] message.id=msg_def456 message.body="Hi there!" message.chat_id=chat_xyz
-```
-
-### 6. Clean Up
-
-Press `Ctrl+C` to stop. The CLI automatically cleans up the webhook subscription and ngrok tunnel.
+Press `Ctrl+C` to stop. The CLI automatically cleans up the webhook subscription.
 
 ## Shell Autocomplete
 
@@ -472,7 +396,8 @@ After setup, press `<TAB>` to autocomplete commands, subcommands, and flags.
 - `LINQ_TOKEN`: API token (overrides config file)
 - `LINQ_FROM_PHONE`: Default sender phone number (overrides config file)
 - `LINQ_PROFILE`: Profile to use (overrides config file)
-- `NGROK_AUTHTOKEN`: ngrok auth token for `webhooks listen` command
+- `LINQ_RELAY_URL`: Custom relay HTTP URL for `webhooks listen` webhook targets (default: `https://webhook.linqapp.com`)
+- `LINQ_RELAY_WS_URL`: Custom relay WebSocket URL for `webhooks listen` (default: `wss://relay-ws.linqapp.com`)
 
 ## Contributing
 

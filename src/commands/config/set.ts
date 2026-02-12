@@ -1,7 +1,7 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { saveProfile, getCurrentProfile, type Profile } from '../../lib/config.js';
 
-const VALID_KEYS: (keyof Profile)[] = ['token', 'ngrokAuthtoken', 'fromPhone'];
+const VALID_KEYS: (keyof Profile)[] = ['token', 'fromPhone'];
 
 export default class ConfigSet extends Command {
   static override description = 'Set a configuration value';
@@ -9,13 +9,12 @@ export default class ConfigSet extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %> token YOUR_API_TOKEN',
     '<%= config.bin %> <%= command.id %> fromPhone +12025551234',
-    '<%= config.bin %> <%= command.id %> ngrokAuthtoken YOUR_NGROK_AUTHTOKEN',
     '<%= config.bin %> <%= command.id %> token YOUR_TOKEN --profile work',
   ];
 
   static override args = {
     key: Args.string({
-      description: 'Configuration key to set (token, ngrokAuthtoken, fromPhone)',
+      description: 'Configuration key to set (token, fromPhone)',
       required: true,
     }),
     value: Args.string({

@@ -6,12 +6,10 @@ import * as path from 'node:path';
 
 const mockPassword = vi.fn();
 const mockSelect = vi.fn();
-const mockConfirm = vi.fn();
 
 vi.mock('@inquirer/prompts', () => ({
   password: (...args: unknown[]) => mockPassword(...args),
   select: (...args: unknown[]) => mockSelect(...args),
-  confirm: (...args: unknown[]) => mockConfirm(...args),
 }));
 
 const mockFetch = vi.fn();
@@ -38,7 +36,6 @@ describe('init', () => {
     mockFetch.mockReset();
     mockPassword.mockReset();
     mockSelect.mockReset();
-    mockConfirm.mockReset();
   });
 
   afterEach(async () => {
@@ -46,9 +43,8 @@ describe('init', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  it('completes full setup with single phone number and no ngrok', async () => {
+  it('completes full setup with single phone number', async () => {
     mockPassword.mockResolvedValueOnce('test-token-123');
-    mockConfirm.mockResolvedValueOnce(false);
 
     mockFetch.mockResolvedValueOnce(
       createMockResponse(200, { phone_numbers: [{ phone_number: '+12025551234' }] })
@@ -62,13 +58,11 @@ describe('init', () => {
     const savedConfig = JSON.parse(await fs.readFile(configPath, 'utf-8'));
     expect(savedConfig.profiles.default.token).toBe('test-token-123');
     expect(savedConfig.profiles.default.fromPhone).toBe('+12025551234');
-    expect(savedConfig.profiles.default.ngrokAuthtoken).toBeUndefined();
   });
 
   it('prompts for phone selection with multiple numbers', async () => {
     mockPassword.mockResolvedValueOnce('test-token-123');
     mockSelect.mockResolvedValueOnce('+18005551234');
-    mockConfirm.mockResolvedValueOnce(false);
 
     mockFetch.mockResolvedValueOnce(
       createMockResponse(200, {
@@ -88,25 +82,6 @@ describe('init', () => {
     const configPath = path.join(tempDir, '.linq', 'config.json');
     const savedConfig = JSON.parse(await fs.readFile(configPath, 'utf-8'));
     expect(savedConfig.profiles.default.fromPhone).toBe('+18005551234');
-  });
-
-  it('saves ngrok token when user opts in', async () => {
-    mockPassword
-      .mockResolvedValueOnce('test-token-123')
-      .mockResolvedValueOnce('ngrok-token-abc');
-    mockConfirm.mockResolvedValueOnce(true);
-
-    mockFetch.mockResolvedValueOnce(
-      createMockResponse(200, { phone_numbers: [{ phone_number: '+12025551234' }] })
-    );
-
-    const config = await Config.load({ root: process.cwd() });
-    const cmd = new Init([], config);
-    await cmd.run();
-
-    const configPath = path.join(tempDir, '.linq', 'config.json');
-    const savedConfig = JSON.parse(await fs.readFile(configPath, 'utf-8'));
-    expect(savedConfig.profiles.default.ngrokAuthtoken).toBe('ngrok-token-abc');
   });
 
   it('errors on invalid token', async () => {

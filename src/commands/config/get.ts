@@ -5,7 +5,7 @@ import {
   type Profile,
 } from '../../lib/config.js';
 
-const VALID_KEYS: (keyof Profile)[] = ['token', 'ngrokAuthtoken', 'fromPhone'];
+const VALID_KEYS: (keyof Profile)[] = ['token', 'fromPhone'];
 
 export default class ConfigGet extends Command {
   static override description = 'Get a configuration value';
@@ -19,7 +19,7 @@ export default class ConfigGet extends Command {
 
   static override args = {
     key: Args.string({
-      description: 'Configuration key to get (token, ngrokAuthtoken, fromPhone)',
+      description: 'Configuration key to get (token, fromPhone)',
       required: false,
     }),
   };
@@ -56,7 +56,7 @@ export default class ConfigGet extends Command {
     } else {
       this.log(`Profile: ${profileName}`);
 
-      if (!config.token && !config.ngrokAuthtoken && !config.fromPhone) {
+      if (!config.token && !config.fromPhone) {
         this.log('No configuration set');
         return;
       }
@@ -66,9 +66,6 @@ export default class ConfigGet extends Command {
       }
       if (config.fromPhone) {
         this.log(`fromPhone=${config.fromPhone}`);
-      }
-      if (config.ngrokAuthtoken) {
-        this.log(`ngrokAuthtoken=${this.maskToken(config.ngrokAuthtoken)}`);
       }
     }
   }

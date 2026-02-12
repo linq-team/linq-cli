@@ -64,18 +64,7 @@ export default class Doctor extends Command {
       failed++;
     }
 
-    // Check 4: ngrok auth token
-    if (config.ngrokAuthtoken) {
-      const masked =
-        config.ngrokAuthtoken.slice(0, 4) + '****' + config.ngrokAuthtoken.slice(-4);
-      this.log(`\u2713 ngrok auth token is configured (${masked})`);
-      passed++;
-    } else {
-      this.log('\u2717 ngrok auth token is not configured (optional, needed for `webhooks listen`)');
-      failed++;
-    }
-
-    // Check 5: API connectivity
+    // Check 4: API connectivity
     if (config.token) {
       const client = createApiClient(config.token);
       const start = Date.now();

@@ -50,7 +50,6 @@ describe('doctor', () => {
           default: {
             token: 'test-token-123',
             fromPhone: '+12025551234',
-            ngrokAuthtoken: 'ngrok-token-abc',
           },
         },
       })
@@ -69,9 +68,8 @@ describe('doctor', () => {
     expect(output).toContain('\u2713 Config file exists');
     expect(output).toContain('\u2713 API token is configured');
     expect(output).toContain('\u2713 Default phone number is set');
-    expect(output).toContain('\u2713 ngrok auth token is configured');
     expect(output).toContain('\u2713 API connection successful');
-    expect(output).toContain('5 checks passed, 0 issues found');
+    expect(output).toContain('4 checks passed, 0 issues found');
   });
 
   it('reports missing config when no config file exists', async () => {
@@ -125,7 +123,6 @@ describe('doctor', () => {
         profiles: {
           default: {
             token: 'my-secret-token-value',
-            ngrokAuthtoken: 'ngrok-secret-token',
           },
         },
       })
@@ -142,8 +139,6 @@ describe('doctor', () => {
 
     const output = logs.join('\n');
     expect(output).not.toContain('my-secret-token-value');
-    expect(output).not.toContain('ngrok-secret-token');
     expect(output).toContain('my-s****alue');
-    expect(output).toContain('ngro****oken');
   });
 });

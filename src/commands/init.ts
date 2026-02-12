@@ -1,5 +1,5 @@
 import { Command } from '@oclif/core';
-import { password, select, confirm } from '@inquirer/prompts';
+import { password, select } from '@inquirer/prompts';
 import { saveConfig } from '../lib/config.js';
 import { createApiClient } from '../lib/api-client.js';
 import { LOGO } from '../lib/banner.js';
@@ -67,38 +67,10 @@ export default class Init extends Command {
       this.log('');
     }
 
-    // Optional: ngrok setup
-    let ngrokAuthtoken: string | undefined;
-
-    const setupNgrok = await confirm({
-      message:
-        'Set up ngrok for webhook testing? (optional, can be done later)',
-      default: false,
-    });
-
-    if (setupNgrok) {
-      this.log(
-        '\nGet your ngrok auth token from: https://dashboard.ngrok.com/get-started/your-authtoken\n'
-      );
-
-      ngrokAuthtoken = await password({
-        message: 'Enter your ngrok auth token:',
-        mask: '*',
-        validate: (value) => {
-          if (!value || value.trim() === '') {
-            return 'Token cannot be empty';
-          }
-          return true;
-        },
-      });
-      ngrokAuthtoken = ngrokAuthtoken.trim();
-    }
-
     // Save config
     await saveConfig({
       token: token.trim(),
       ...(fromPhone && { fromPhone }),
-      ...(ngrokAuthtoken && { ngrokAuthtoken }),
     });
 
     this.log('\n\u2713 Configuration saved to ~/.linq/config.json\n');
@@ -107,11 +79,7 @@ export default class Init extends Command {
     this.log(
       '  linq chats create --to +1XXXXXXXXXX -m "Hello!"       Create a chat and send a message'
     );
+    this.log('  linq webhooks listen                                  Listen for webhook events');
     this.log('  linq doctor                                           Check your setup');
-    if (!ngrokAuthtoken) {
-      this.log(
-        '  linq config set ngrokAuthtoken TOKEN   Set up ngrok later'
-      );
-    }
   }
 }
