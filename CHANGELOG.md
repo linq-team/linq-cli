@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/linq-team/linq-cli/compare/v1.6.0...v1.7.0) (2026-02-12)
+
+
+### Features
+
+* replace SSE relay with WebSocket for webhooks listen ([36ea475](https://github.com/linq-team/linq-cli/commit/36ea475bef68daa698c5f02464dfea2fd7c45c3f))
+
 # [1.6.0](https://github.com/linq-team/linq-cli/compare/v1.5.2...v1.6.0) (2026-02-12)
 
 
