@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/linq-team/linq-cli/compare/v1.7.0...v1.7.1) (2026-02-13)
+
+
+### Bug Fixes
+
+* use direct API Gateway URL for WebSocket relay and log unparseable messages ([ac03b55](https://github.com/linq-team/linq-cli/commit/ac03b5556e79ac7b76fcf1ad1d3697d156be9916))
+
 # [1.7.0](https://github.com/linq-team/linq-cli/compare/v1.6.0...v1.7.0) (2026-02-12)
 
 
