@@ -22,6 +22,16 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
+function mockPhoneNumber(phone: string) {
+  return {
+    id: 'pn-1',
+    phone_number: phone,
+    type: 'TWILIO',
+    country_code: 'US',
+    capabilities: { sms: true, mms: true, voice: true },
+  };
+}
+
 // Import after mocks are set up
 const { default: Init } = await import('../../src/commands/init.js');
 
@@ -47,7 +57,9 @@ describe('init', () => {
     mockPassword.mockResolvedValueOnce('test-token-123');
 
     mockFetch.mockResolvedValueOnce(
-      createMockResponse(200, { phone_numbers: [{ phone_number: '+12025551234' }] })
+      createMockResponse(200, {
+        phone_numbers: [mockPhoneNumber('+12025551234')],
+      })
     );
 
     const config = await Config.load({ root: process.cwd() });
@@ -67,8 +79,8 @@ describe('init', () => {
     mockFetch.mockResolvedValueOnce(
       createMockResponse(200, {
         phone_numbers: [
-          { phone_number: '+12025551234' },
-          { phone_number: '+18005551234' },
+          mockPhoneNumber('+12025551234'),
+          { ...mockPhoneNumber('+18005551234'), id: 'pn-2' },
         ],
       })
     );
@@ -88,7 +100,7 @@ describe('init', () => {
     mockPassword.mockResolvedValueOnce('bad-token');
 
     mockFetch.mockResolvedValueOnce(
-      createMockResponse(401, { error: 'Unauthorized' })
+      createMockResponse(401, { error: { message: 'Unauthorized' } })
     );
 
     const config = await Config.load({ root: process.cwd() });

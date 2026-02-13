@@ -1,14 +1,10 @@
-import createClient from 'openapi-fetch';
-import type { paths } from '../gen/api-types.js';
+import { Linq } from '@linqapp/sdk';
 
-const API_BASE_URL =
-  process.env.LINQ_API_URL || 'https://api.linqapp.com/api/partner';
+const API_BASE_URL = process.env.LINQ_API_URL;
 
-export function createApiClient(token: string) {
-  return createClient<paths>({
-    baseUrl: API_BASE_URL,
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+export function createLinqClient(token: string): Linq {
+  return new Linq({
+    bearerAuth: token,
+    ...(API_BASE_URL && { serverURL: API_BASE_URL }),
   });
 }

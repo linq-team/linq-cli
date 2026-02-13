@@ -1,6 +1,6 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
 import { formatWebhookDetail } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
 
@@ -36,31 +36,18 @@ export default class WebhooksGet extends Command {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { data, error } = await client.GET(
-      '/v3/webhook-subscriptions/{subscriptionId}',
-      {
-        params: {
-          path: {
-            subscriptionId: args.subscriptionId,
-          },
-        },
+    try {
+      const data = await client.webhooks.getWebhookSubscription(args.subscriptionId);
+
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatWebhookDetail(data));
       }
-    );
-
-    if (error) {
-      this.error(`Failed to get webhook: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to get webhook: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatWebhookDetail(data));
+    } catch (err) {
+      this.error(`Failed to get webhook: ${parseApiError(err)}`);
     }
   }
 }

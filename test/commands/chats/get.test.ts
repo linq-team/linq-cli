@@ -15,6 +15,14 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
+const mockHandle = (phone: string) => ({
+  id: 'h-1',
+  handle: phone,
+  service: 'iMessage',
+  status: 'active',
+  joined_at: '2024-01-15T00:00:00Z',
+});
+
 describe('chats get', () => {
   let tempDir: string;
   let originalHome: string | undefined;
@@ -43,10 +51,13 @@ describe('chats get', () => {
       createMockResponse(200, {
         id: 'chat-123',
         display_name: 'Test Chat',
-        service: 'iMessage',
+        is_group: false,
+        is_archived: false,
+        created_at: '2024-01-15T00:00:00Z',
+        updated_at: '2024-01-15T00:00:00Z',
         handles: [
-          { handle: '+19876543210', service: 'iMessage' },
-          { handle: '+15555555555', service: 'iMessage' },
+          mockHandle('+19876543210'),
+          mockHandle('+15555555555'),
         ],
       })
     );

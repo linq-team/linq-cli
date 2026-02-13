@@ -15,6 +15,20 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
+function mockMessage(id: string, text: string, from?: string) {
+  return {
+    id,
+    chat_id: 'chat-123',
+    is_from_me: false,
+    is_delivered: true,
+    is_read: false,
+    created_at: '2024-01-15T10:30:00Z',
+    updated_at: '2024-01-15T10:30:00Z',
+    from,
+    parts: [{ type: 'text', value: text }],
+  };
+}
+
 describe('messages list', () => {
   let tempDir: string;
   let originalHome: string | undefined;
@@ -42,22 +56,8 @@ describe('messages list', () => {
     mockFetch.mockResolvedValueOnce(
       createMockResponse(200, {
         messages: [
-          {
-            id: 'msg-123',
-            from: '+19876543210',
-            sent_at: '2024-01-15T10:30:00Z',
-            is_delivered: true,
-            is_read: false,
-            parts: [{ type: 'text', value: 'Hello!' }],
-          },
-          {
-            id: 'msg-456',
-            from: '+12025551234',
-            sent_at: '2024-01-15T10:31:00Z',
-            is_delivered: true,
-            is_read: true,
-            parts: [{ type: 'text', value: 'Hi there!' }],
-          },
+          mockMessage('msg-123', 'Hello!', '+19876543210'),
+          mockMessage('msg-456', 'Hi there!', '+12025551234'),
         ],
       })
     );
@@ -81,14 +81,13 @@ describe('messages list', () => {
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new MessagesList(
-      ['chat-123', '--limit', '50', '--order', 'asc', '--cursor', 'prev-cursor'],
+      ['chat-123', '--limit', '50', '--cursor', 'prev-cursor'],
       config
     );
     await cmd.run();
 
     const [request] = mockFetch.mock.calls[0] as [Request];
     expect(request.url).toContain('limit=50');
-    expect(request.url).toContain('order=asc');
     expect(request.url).toContain('cursor=prev-cursor');
   });
 

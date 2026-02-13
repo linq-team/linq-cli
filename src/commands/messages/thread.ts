@@ -1,8 +1,9 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
 import { formatMessagesList } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
+import type { Order } from '@linqapp/sdk/models/operations';
 
 export default class MessagesThread extends Command {
   static override description = 'Get all messages in a thread';
@@ -49,31 +50,23 @@ export default class MessagesThread extends Command {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { data, error } = await client.GET('/v3/messages/{messageId}/thread', {
-      params: {
-        path: { messageId: args.messageId },
-        query: {
-          limit: flags.limit,
-          cursor: flags.cursor,
-          order: flags.order as 'asc' | 'desc' | undefined,
-        },
-      },
-    });
+    try {
+      const data = await client.messages.getMessageThread(
+        args.messageId,
+        flags.cursor,
+        flags.limit,
+        flags.order as Order | undefined,
+      );
 
-    if (error) {
-      this.error(`Failed to get thread: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to get thread: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatMessagesList(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatMessagesList(data));
+      }
+    } catch (err) {
+      this.error(`Failed to get thread: ${parseApiError(err)}`);
     }
   }
 }

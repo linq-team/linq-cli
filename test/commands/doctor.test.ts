@@ -15,6 +15,20 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
+function phoneNumbersResponse() {
+  return {
+    phone_numbers: [
+      {
+        id: 'pn-1',
+        phone_number: '+12025551234',
+        type: 'TWILIO',
+        country_code: 'US',
+        capabilities: { sms: true, mms: true, voice: true },
+      },
+    ],
+  };
+}
+
 describe('doctor', () => {
   let tempDir: string;
   let originalHome: string | undefined;
@@ -56,7 +70,7 @@ describe('doctor', () => {
     );
 
     mockFetch.mockResolvedValueOnce(
-      createMockResponse(200, [{ phone_number: '+12025551234' }])
+      createMockResponse(200, phoneNumbersResponse())
     );
 
     const config = await Config.load({ root: process.cwd() });
@@ -100,7 +114,7 @@ describe('doctor', () => {
     );
 
     mockFetch.mockResolvedValueOnce(
-      createMockResponse(401, { error: 'Unauthorized' })
+      createMockResponse(401, { error: { message: 'Unauthorized' } })
     );
 
     const config = await Config.load({ root: process.cwd() });
@@ -129,7 +143,7 @@ describe('doctor', () => {
     );
 
     mockFetch.mockResolvedValueOnce(
-      createMockResponse(200, [{ phone_number: '+12025551234' }])
+      createMockResponse(200, phoneNumbersResponse())
     );
 
     const config = await Config.load({ root: process.cwd() });

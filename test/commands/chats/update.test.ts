@@ -15,6 +15,27 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
+const mockHandle = (phone: string) => ({
+  id: 'h-1',
+  handle: phone,
+  service: 'iMessage',
+  status: 'active',
+  joined_at: '2024-01-15T00:00:00Z',
+});
+
+function chatResponse(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'chat-123',
+    display_name: null,
+    is_group: true,
+    is_archived: false,
+    created_at: '2024-01-15T00:00:00Z',
+    updated_at: '2024-01-15T00:00:00Z',
+    handles: [mockHandle('+19876543210')],
+    ...overrides,
+  };
+}
+
 describe('chats update', () => {
   let tempDir: string;
   let originalHome: string | undefined;
@@ -40,10 +61,7 @@ describe('chats update', () => {
 
   it('updates chat display name', async () => {
     mockFetch.mockResolvedValueOnce(
-      createMockResponse(200, {
-        id: 'chat-123',
-        display_name: 'Team Discussion',
-      })
+      createMockResponse(200, chatResponse({ display_name: 'Team Discussion' }))
     );
 
     const config = await Config.load({ root: process.cwd() });
@@ -60,10 +78,7 @@ describe('chats update', () => {
 
   it('updates chat icon', async () => {
     mockFetch.mockResolvedValueOnce(
-      createMockResponse(200, {
-        id: 'chat-123',
-        group_chat_icon: 'https://example.com/icon.png',
-      })
+      createMockResponse(200, chatResponse({ group_chat_icon: 'https://example.com/icon.png' }))
     );
 
     const config = await Config.load({ root: process.cwd() });

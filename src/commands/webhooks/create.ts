@@ -1,11 +1,9 @@
 import { Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
 import { formatWebhookDetail } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
-import type { components } from '../../gen/api-types.js';
-
-type WebhookEventType = components['schemas']['WebhookEventType'];
+import type { WebhookEventType } from '@linqapp/sdk/models/components';
 
 const WEBHOOK_EVENTS: WebhookEventType[] = [
   'message.sent',
@@ -81,27 +79,21 @@ export default class WebhooksCreate extends Command {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { data, error } = await client.POST('/v3/webhook-subscriptions', {
-      body: {
-        target_url: flags.url,
-        subscribed_events: subscribedEvents,
-      },
-    });
+    try {
+      const data = await client.webhooks.createWebhookSubscription({
+        targetUrl: flags.url,
+        subscribedEvents,
+      });
 
-    if (error) {
-      this.error(`Failed to create webhook: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to create webhook: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatWebhookDetail(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatWebhookDetail(data));
+      }
+    } catch (err) {
+      this.error(`Failed to create webhook: ${parseApiError(err)}`);
     }
   }
 }

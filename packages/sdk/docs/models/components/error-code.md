@@ -1,0 +1,108 @@
+# ErrorCode
+
+Linq API error codes for programmatic error handling.
+
+## Error Code Ranges
+
+| Range | Category | Description |
+|-------|----------|-------------|
+| 1xxx | Client Errors | Validation failures, malformed requests |
+| 2xxx | Resource Errors | Not found, permission denied |
+| 3xxx | Infrastructure | Processing failures, retries exhausted |
+| 4xxx | Delivery | Message delivery failures |
+| 5xxx | Attachments | File upload/download failures |
+
+## Complete Error Code Reference
+
+### 1xxx: Client/Request Errors
+
+| Code | Name | Description | HTTP |
+|------|------|-------------|------|
+| 1001 | `missing_required_field` | A required field is missing from the request | 400 |
+| 1002 | `invalid_phone_format` | Phone number must be in E.164 format (e.g., +14155551234) | 400 |
+| 1003 | `invalid_request_body` | Request body is malformed or contains invalid JSON | 400 |
+| 1004 | `invalid_message_content` | Message content or parts are invalid | 400 |
+| 1005 | `invalid_parameter` | A parameter value is invalid | 400 |
+| 1006 | `cannot_update_dm` | Cannot update a direct message chat (only group chats) | 400 |
+| 1007 | `rate_limit_exceeded` | Daily message limit exceeded for this partner | 429 |
+
+### 2xxx: Resource Errors
+
+| Code | Name | Description | HTTP |
+|------|------|-------------|------|
+| 2001 | `chat_not_found` | The requested chat does not exist | 404 |
+| 2002 | `message_not_found` | The requested message does not exist | 404 |
+| 2003 | `attachment_not_found` | The requested attachment does not exist | 404 |
+| 2004 | `unauthorized` | Missing or invalid authentication token | 401 |
+| 2005 | `access_denied` | You don't have permission to access this resource | 403 |
+| 2006 | `phone_permission_denied` | You don't have permission to send from this phone number | 403 |
+| 2007 | `attachment_not_ready` | Attachment is still being processed | 404 |
+| 2008 | `recipient_not_allowed` | Recipient not in allowed list for this account | 403 |
+
+### 3xxx: Infrastructure Errors
+
+| Code | Name | Description | HTTP |
+|------|------|-------------|------|
+| 3001 | `database_connection` | Database connection error (transient) | 500 |
+| 3002 | `database_query` | Database operation failed | 500 |
+| 3003 | `event_stream_connection` | Event stream connection error (transient) | 500 |
+| 3004 | `event_stream_publish` | Failed to publish to event stream | 500 |
+| 3005 | `network_timeout` | Network operation timed out | 504 |
+| 3006 | `internal_error` | Internal server error | 500 |
+| 3007 | `retries_exhausted` | Maximum delivery attempts exceeded | 500 |
+
+### 4xxx: Delivery Errors
+
+| Code | Name | Description | HTTP |
+|------|------|-------------|------|
+| 4001 | `delivery_failed` | Request could not be delivered for processing | 500 |
+| 4002 | `phone_not_available` | Phone number is not available for this operation | 500 |
+| 4003 | `webhook_delivery_failed` | Webhook delivery to your endpoint failed | 500 |
+| 4004 | `service_unavailable` | External service is temporarily unavailable | 503 |
+
+### 5xxx: Attachment/File Errors
+
+| Code | Name | Description | HTTP |
+|------|------|-------------|------|
+| 5001 | `file_upload_failed` | File upload failed | 500 |
+| 5002 | `file_download_failed` | File download failed | 500 |
+| 5003 | `presigned_url_failed` | Failed to generate file access URL | 500 |
+| 5004 | `invalid_file_type` | File type is not supported | 400 |
+| 5005 | `file_too_large` | File exceeds the maximum size limit | 400 |
+| 5006 | `content_type_mismatch` | File content type does not match URL extension | 400 |
+
+## Handling Errors
+
+```json
+{
+  "success": false,
+  "error": {
+    "status": 400,
+    "code": 1002,
+    "message": "Phone number must be in E.164 format"
+  },
+  "trace_id": "abc123"
+}
+```
+
+**Recommended retry strategy for transient errors (3xxx, 4xxx with 5xx HTTP):**
+1. Wait 1-5 seconds, retry
+2. If still failing, wait 30 seconds
+3. After 3 failed attempts, log and alert
+
+
+## Example Usage
+
+```typescript
+import { ErrorCode } from "@linqapp/sdk/models/components";
+
+let value: ErrorCode = 1002;
+```
+
+## Values
+
+This is an open enum. Unrecognized values will be captured as the `Unrecognized<number>` branded type.
+
+```typescript
+1001 | 1002 | 1003 | 1004 | 1005 | 1006 | 1007 | 2001 | 2002 | 2003 | 2004 | 2005 | 2006 | 2007 | 2008 | 3001 | 3002 | 3003 | 3004 | 3005 | 3006 | 3007 | 4001 | 4002 | 4003 | 4004 | 5001 | 5002 | 5003 | 5004 | 5005 | 5006 | Unrecognized<number>
+```

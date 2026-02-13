@@ -1,6 +1,7 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
+import { parseApiError } from '../../lib/errors.js';
 
 export default class ChatsRead extends Command {
   static override description = 'Mark all messages in a chat as read';
@@ -32,16 +33,13 @@ export default class ChatsRead extends Command {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { error } = await client.POST('/v3/chats/{chatId}/read', {
-      params: { path: { chatId: args.chatId } },
-    });
-
-    if (error) {
-      this.error(`Failed to mark chat as read: ${JSON.stringify(error)}`);
+    try {
+      await client.chats.markChatAsRead(args.chatId);
+      this.log(`Chat ${args.chatId} marked as read.`);
+    } catch (err) {
+      this.error(`Failed to mark chat as read: ${parseApiError(err)}`);
     }
-
-    this.log(`Chat ${args.chatId} marked as read.`);
   }
 }

@@ -1,12 +1,9 @@
 import { Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
 import { formatChatCreated } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
-import type { components } from '../../gen/api-types.js';
-
-type MessagePart = components['schemas']['MessagePart'];
-type MessageEffect = components['schemas']['MessageEffect'];
+import type { MessagePart, MessageEffect } from '@linqapp/sdk/models/components';
 
 const SCREEN_EFFECTS = [
   'confetti',
@@ -74,7 +71,7 @@ export default class ChatsCreate extends Command {
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
     const fromPhone = requireFromPhone(flags.from, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
     // Build message parts
     const textPart: MessagePart = {
@@ -94,29 +91,23 @@ export default class ChatsCreate extends Command {
       }
     }
 
-    const { data, error } = await client.POST('/v3/chats', {
-      body: {
+    try {
+      const data = await client.chats.createChat({
         from: fromPhone,
         to: flags.to,
         message: {
           parts: [textPart],
           effect,
         },
-      },
-    });
+      });
 
-    if (error) {
-      this.error(`Failed to create chat: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to create chat: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatChatCreated(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatChatCreated(data));
+      }
+    } catch (err) {
+      this.error(`Failed to create chat: ${parseApiError(err)}`);
     }
   }
 }

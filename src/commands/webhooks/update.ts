@@ -1,11 +1,9 @@
 import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
 import { formatWebhookDetail } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
-import type { components } from '../../gen/api-types.js';
-
-type WebhookEventType = components['schemas']['WebhookEventType'];
+import type { WebhookEventType } from '@linqapp/sdk/models/components';
 
 const WEBHOOK_EVENTS: WebhookEventType[] = [
   'message.sent',
@@ -90,7 +88,7 @@ export default class WebhooksUpdate extends Command {
       subscribedEvents = eventList as WebhookEventType[];
     }
 
-    // Determine is_active value
+    // Determine isActive value
     let isActive: boolean | undefined;
     if (flags.activate) {
       isActive = true;
@@ -100,36 +98,25 @@ export default class WebhooksUpdate extends Command {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { data, error } = await client.PUT(
-      '/v3/webhook-subscriptions/{subscriptionId}',
-      {
-        params: {
-          path: {
-            subscriptionId: args.subscriptionId,
-          },
+    try {
+      const data = await client.webhooks.updateWebhookSubscription(
+        args.subscriptionId,
+        {
+          targetUrl: flags.url,
+          subscribedEvents,
+          isActive,
         },
-        body: {
-          target_url: flags.url,
-          subscribed_events: subscribedEvents,
-          is_active: isActive,
-        },
+      );
+
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatWebhookDetail(data));
       }
-    );
-
-    if (error) {
-      this.error(`Failed to update webhook: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to update webhook: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatWebhookDetail(data));
+    } catch (err) {
+      this.error(`Failed to update webhook: ${parseApiError(err)}`);
     }
   }
 }

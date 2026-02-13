@@ -15,6 +15,19 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
+function sendMessageResponse() {
+  return {
+    chat_id: 'chat-123',
+    message: {
+      id: 'msg-456',
+      parts: [{ type: 'text', value: 'Hello!' }],
+      sent_at: '2024-01-15T00:00:00Z',
+      delivery_status: 'sent',
+      is_read: false,
+    },
+  };
+}
+
 describe('messages send', () => {
   let tempDir: string;
   let originalHome: string | undefined;
@@ -43,15 +56,12 @@ describe('messages send', () => {
   it('sends message to existing chat', async () => {
     mockFetch.mockImplementation(async (request: Request) => {
       lastRequestBody = await request.json();
-      return createMockResponse(201, {
-        chat_id: 'chat-123',
-        message: { id: 'msg-456' },
-      });
+      return createMockResponse(202, sendMessageResponse());
     });
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new MessagesSend(
-      ['chat-123', '--from', '+12025551234', '--message', 'Hello!'],
+      ['chat-123', '--message', 'Hello!'],
       config
     );
     await cmd.run();
@@ -62,25 +72,20 @@ describe('messages send', () => {
     expect(request.method).toBe('POST');
 
     const body = lastRequestBody as {
-      from: string;
       message: { parts: { value: string }[] };
     };
-    expect(body.from).toBe('+12025551234');
     expect(body.message.parts[0].value).toBe('Hello!');
   });
 
   it('includes effect when specified', async () => {
     mockFetch.mockImplementation(async (request: Request) => {
       lastRequestBody = await request.json();
-      return createMockResponse(201, {
-        chat_id: 'chat-123',
-        message: { id: 'msg-456' },
-      });
+      return createMockResponse(202, sendMessageResponse());
     });
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new MessagesSend(
-      ['chat-123', '--from', '+12025551234', '--message', 'Wow!', '--effect', 'fireworks'],
+      ['chat-123', '--message', 'Wow!', '--effect', 'fireworks'],
       config
     );
     await cmd.run();
@@ -94,15 +99,12 @@ describe('messages send', () => {
   it('includes reply-to when specified', async () => {
     mockFetch.mockImplementation(async (request: Request) => {
       lastRequestBody = await request.json();
-      return createMockResponse(201, {
-        chat_id: 'chat-123',
-        message: { id: 'msg-456' },
-      });
+      return createMockResponse(202, sendMessageResponse());
     });
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new MessagesSend(
-      ['chat-123', '--from', '+12025551234', '--message', 'Reply', '--reply-to', 'original-msg-id'],
+      ['chat-123', '--message', 'Reply', '--reply-to', 'original-msg-id'],
       config
     );
     await cmd.run();
@@ -115,7 +117,7 @@ describe('messages send', () => {
 
   it('requires chat ID argument', async () => {
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new MessagesSend(['--from', '+12025551234', '--message', 'Hello!'], config);
+    const cmd = new MessagesSend(['--message', 'Hello!'], config);
 
     await expect(cmd.run()).rejects.toThrow('Missing 1 required arg');
   });

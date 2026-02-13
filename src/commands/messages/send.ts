@@ -1,12 +1,9 @@
 import { Args, Command, Flags } from '@oclif/core';
-import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { loadConfig, requireToken } from '../../lib/config.js';
+import { createLinqClient } from '../../lib/api-client.js';
 import { formatMessageSent } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
-import type { components } from '../../gen/api-types.js';
-
-type MessagePart = components['schemas']['MessagePart'];
-type MessageEffect = components['schemas']['MessageEffect'];
+import type { MessagePart, MessageEffect } from '@linqapp/sdk/models/components';
 
 const SCREEN_EFFECTS = [
   'confetti',
@@ -77,8 +74,7 @@ export default class MessagesSend extends Command {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const fromPhone = requireFromPhone(flags.from, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
     // Build message parts
     const textPart: MessagePart = {
@@ -98,36 +94,24 @@ export default class MessagesSend extends Command {
       }
     }
 
-    const { data, error } = await client.POST('/v3/chats/{chatId}/messages', {
-      params: {
-        path: {
-          chatId: args.chatId,
-        },
-      },
-      body: {
-        from: fromPhone,
+    try {
+      const data = await client.messages.sendMessageToChat(args.chatId, {
         message: {
           parts: [textPart],
           effect,
-          reply_to: flags['reply-to']
-            ? { message_id: flags['reply-to'], part_index: 0 }
+          replyTo: flags['reply-to']
+            ? { messageId: flags['reply-to'], partIndex: 0 }
             : undefined,
         },
-      },
-    });
+      });
 
-    if (error) {
-      this.error(`Failed to send message: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to send message: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatMessageSent(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatMessageSent(data));
+      }
+    } catch (err) {
+      this.error(`Failed to send message: ${parseApiError(err)}`);
     }
   }
 }
