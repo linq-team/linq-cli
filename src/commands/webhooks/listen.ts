@@ -95,14 +95,27 @@ export default class WebhooksListen extends Command {
     const wsUrl = process.env.LINQ_RELAY_WS_URL || DEFAULT_WS_URL;
     const relayUrl = process.env.LINQ_RELAY_URL || DEFAULT_RELAY_URL;
 
-    // Handle graceful shutdown
+    // Handle shutdown on any exit signal
     const shutdown = async () => {
       this.log('\nShutting down...');
       await this.cleanup();
+      process.exit(0);
     };
 
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
+    process.on('SIGHUP', shutdown);
+    process.on('SIGQUIT', shutdown);
+    process.on('uncaughtException', async (error) => {
+      this.logToStderr(`Fatal error: ${error.message}`);
+      await this.cleanup();
+      process.exit(1);
+    });
+    process.on('unhandledRejection', async (reason) => {
+      this.logToStderr(`Unhandled rejection: ${reason}`);
+      await this.cleanup();
+      process.exit(1);
+    });
 
     try {
       this.log('Connecting to relay...');
@@ -285,7 +298,11 @@ export default class WebhooksListen extends Command {
     }
   }
 
+  private cleanupDone = false;
+
   private async cleanup(): Promise<void> {
+    if (this.cleanupDone) return;
+    this.cleanupDone = true;
     this.shuttingDown = true;
 
     // Close WebSocket
