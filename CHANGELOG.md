@@ -1,3 +1,10 @@
+## [1.7.2](https://github.com/linq-team/linq-cli/compare/v1.7.1...v1.7.2) (2026-02-13)
+
+
+### Bug Fixes
+
+* clean up webhook subscription on ungraceful shutdown ([8aad683](https://github.com/linq-team/linq-cli/commit/8aad683b768ddf8b66882df5ada1af9ce60ffe64))
+
 ## [1.7.1](https://github.com/linq-team/linq-cli/compare/v1.7.0...v1.7.1) (2026-02-13)
 
 
