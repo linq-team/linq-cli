@@ -1,10 +1,11 @@
-import { Args, Command, Flags } from '@oclif/core';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createLinqClient } from '../../lib/api-client.js';
 import { formatChatDetail } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
 
-export default class ChatsUpdate extends Command {
+export default class ChatsUpdate extends BaseCommand {
   static override description = 'Update a chat (display name, group icon)';
 
   static override examples = [

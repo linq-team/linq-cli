@@ -1,4 +1,5 @@
-import { Args, Command, Flags } from '@oclif/core';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createLinqClient } from '../../lib/api-client.js';
 import { formatWebhookDetail } from '../../lib/format.js';
@@ -24,7 +25,7 @@ const WEBHOOK_EVENTS: WebhookEventType[] = [
   'chat.typing_indicator.stopped',
 ];
 
-export default class WebhooksUpdate extends Command {
+export default class WebhooksUpdate extends BaseCommand {
   static override description = 'Update a webhook subscription';
 
   static override examples = [

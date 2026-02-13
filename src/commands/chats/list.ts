@@ -1,10 +1,11 @@
-import { Command, Flags } from '@oclif/core';
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createLinqClient } from '../../lib/api-client.js';
 import { formatChatsList } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
 
-export default class ChatsList extends Command {
+export default class ChatsList extends BaseCommand {
   static override description = 'List all chats for a phone number';
 
   static override examples = [

@@ -1,9 +1,10 @@
-import { Args, Command, Flags } from '@oclif/core';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createLinqClient } from '../../lib/api-client.js';
 import { parseApiError } from '../../lib/errors.js';
 
-export default class ChatsVoicememo extends Command {
+export default class ChatsVoicememo extends BaseCommand {
   static override description = 'Send a voice memo to a chat';
 
   static override examples = [

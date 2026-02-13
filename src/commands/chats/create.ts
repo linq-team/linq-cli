@@ -1,4 +1,5 @@
-import { Command, Flags } from '@oclif/core';
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createLinqClient } from '../../lib/api-client.js';
 import { formatChatCreated } from '../../lib/format.js';
@@ -22,7 +23,7 @@ const SCREEN_EFFECTS = [
 const BUBBLE_EFFECTS = ['slam', 'loud', 'gentle', 'invisible'];
 const ALL_EFFECTS = [...SCREEN_EFFECTS, ...BUBBLE_EFFECTS];
 
-export default class ChatsCreate extends Command {
+export default class ChatsCreate extends BaseCommand {
   static override description = 'Create a new chat and send an initial message';
 
   static override examples = [

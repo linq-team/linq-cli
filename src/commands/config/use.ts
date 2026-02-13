@@ -1,7 +1,8 @@
-import { Args, Command } from '@oclif/core';
+import { Args } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { setCurrentProfile, listProfiles } from '../../lib/config.js';
 
-export default class ConfigUse extends Command {
+export default class ConfigUse extends BaseCommand {
   static override description = 'Switch to a different configuration profile';
 
   static override examples = [

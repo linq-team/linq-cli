@@ -1,4 +1,5 @@
-import { Command, Flags } from '@oclif/core';
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createLinqClient } from '../../lib/api-client.js';
 import { formatLogLine } from '../../lib/webhook-format.js';
@@ -34,7 +35,7 @@ const DEFAULT_WS_URL = 'wss://9r8ugjg4s0.execute-api.us-east-1.amazonaws.com/pro
 const DEFAULT_RELAY_URL = 'https://webhook.linqapp.com';
 const MAX_RECONNECT_DELAY = 30_000;
 
-export default class WebhooksListen extends Command {
+export default class WebhooksListen extends BaseCommand {
   static override description =
     'Listen for webhook events';
 

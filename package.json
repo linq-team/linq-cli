@@ -1,6 +1,6 @@
 {
   "name": "@linqapp/cli",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "description": "CLI for Linq messaging API",
   "type": "module",
   "bin": {
@@ -43,6 +43,10 @@
       "target": "./dist/commands"
     },
     "helpClass": "./dist/help.js",
+    "hooks": {
+      "prerun": "./dist/hooks/prerun.js",
+      "postrun": "./dist/hooks/postrun.js"
+    },
     "plugins": [
       "@oclif/plugin-help",
       "@oclif/plugin-autocomplete"
@@ -83,6 +87,7 @@
     "@oclif/core": "^4.8.0",
     "@oclif/plugin-autocomplete": "^3.2.40",
     "@oclif/plugin-help": "^6.2.37",
+    "@sentry/node": "^10.38.0",
     "chalk": "^5.6.2",
     "open": "^11.0.0"
   },

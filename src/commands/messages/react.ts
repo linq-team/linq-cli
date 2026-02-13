@@ -1,4 +1,5 @@
-import { Args, Command, Flags } from '@oclif/core';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createLinqClient } from '../../lib/api-client.js';
 import { formatReaction } from '../../lib/format.js';
@@ -15,7 +16,7 @@ const REACTION_TYPES: ReactionType[] = [
   'custom',
 ];
 
-export default class MessagesReact extends Command {
+export default class MessagesReact extends BaseCommand {
   static override description = 'Add or remove a reaction to a message';
 
   static override examples = [

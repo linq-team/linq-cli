@@ -1,7 +1,6 @@
 {
   "name": "@linqapp/sdk",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.1",
   "author": "Linq",
   "type": "module",
   "main": "./esm/index.js",
@@ -46,9 +45,7 @@
   "sideEffects": false,
   "scripts": {
     "lint": "eslint --cache --max-warnings=0 src",
-    "lint:fix": "eslint --cache --max-warnings=0 --fix src",
     "build": "tsc",
-    "test": "vitest run",
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
@@ -59,8 +56,7 @@
     "eslint": "^9.26.0",
     "globals": "^15.14.0",
     "typescript": "~5.8.3",
-    "typescript-eslint": "^8.26.0",
-    "vitest": "^4.0.18"
+    "typescript-eslint": "^8.26.0"
   },
   "dependencies": {
     "zod": "^3.25.65 || ^4.0.0"

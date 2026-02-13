@@ -1,10 +1,11 @@
-import { Command, Flags } from '@oclif/core';
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createLinqClient } from '../../lib/api-client.js';
 import { formatWebhooksList } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
 
-export default class WebhooksList extends Command {
+export default class WebhooksList extends BaseCommand {
   static override description = 'List all webhook subscriptions';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];

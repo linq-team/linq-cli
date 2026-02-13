@@ -5,12 +5,12 @@ management:
   docVersion: 1.0.0
   speakeasyVersion: 1.715.0
   generationVersion: 2.822.1
-  releaseVersion: 0.1.0
-  configChecksum: cc82bcc34fcc6d42c301d51c30cee826
+  releaseVersion: 0.1.1
+  configChecksum: b0aa40c6804664fc83014af5148e14b1
 persistentEdits:
-  generation_id: 6c89f0db-6e6a-43f9-923c-e10942bfc52d
-  pristine_commit_hash: 509a8fdbf70a60189863f2fe1e8f1cf3541a408c
-  pristine_tree_hash: 1ddc6a92e0da85ef86080644c626705320340b52
+  generation_id: 75f121f1-0892-4379-a789-b835dd639d7f
+  pristine_commit_hash: 5a30747d40ed0b9c11517a823c7f78ae6a96f2cf
+  pristine_tree_hash: 9d276df1b12a62797ab8e532387b99ee3fd6c3a1
 features:
   typescript:
     additionalDependencies: 0.1.0
@@ -742,12 +742,12 @@ trackedFiles:
     pristine_git_object: e2e741f3c8361f7766a40f83625fcdf682613209
   jsr.json:
     id: 7f6ab7767282
-    last_write_checksum: sha1:8f6ecf9b96c5e053c692e35b9334ca8b15fffb51
-    pristine_git_object: 65e294d510b04234845cce6358ea61a164683f98
+    last_write_checksum: sha1:78425ffb883aef5f1c1d06792a578b127015a36a
+    pristine_git_object: f471f69839cb0a938681c77bb23a42ac0c0bbbcb
   package.json:
     id: 7030d0b2f71b
-    last_write_checksum: sha1:0e7127927da40cb00d85677a91f0956e557cfeec
-    pristine_git_object: 58721bb305e8de983ebe6a4a6b524106a2ef1aec
+    last_write_checksum: sha1:8c8f5943519c08ecc4a4d4ad6183716efcf9da37
+    pristine_git_object: cab19096c2ea08b1adc0fe16f285264182d588dd
   src/core.ts:
     id: f431fdbcd144
     last_write_checksum: sha1:9cb184042f88ff7fb38c28ca6f82204a7ed2d662
@@ -882,8 +882,8 @@ trackedFiles:
     pristine_git_object: 44be0eae8246521b230e8e711a88eff738fc015d
   src/lib/config.ts:
     id: 320761608fb3
-    last_write_checksum: sha1:e0fd57fe6deb6d8ac819aa5e4a42d9f065eba2b9
-    pristine_git_object: 3e34cee913c23c5efad736d8817fed2aa33af981
+    last_write_checksum: sha1:86d16df103ccdd901ae06f869664590a5703a396
+    pristine_git_object: 7054921489d24e9f69a5517e1b257d6215c49993
   src/lib/dlv.ts:
     id: b1988214835a
     last_write_checksum: sha1:1dd3e3fbb4550c4bf31f5ef997faff355d6f3250

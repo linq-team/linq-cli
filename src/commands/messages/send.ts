@@ -1,6 +1,7 @@
-import { Args, Command, Flags } from '@oclif/core';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createLinqClient } from '../../lib/api-client.js';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { formatMessageSent } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
 import type { MessagePart, MessageEffect } from '@linqapp/sdk/models/components';
@@ -22,7 +23,7 @@ const SCREEN_EFFECTS = [
 const BUBBLE_EFFECTS = ['slam', 'loud', 'gentle', 'invisible'];
 const ALL_EFFECTS = [...SCREEN_EFFECTS, ...BUBBLE_EFFECTS];
 
-export default class MessagesSend extends Command {
+export default class MessagesSend extends BaseCommand {
   static override description = 'Send a message to an existing chat';
 
   static override examples = [

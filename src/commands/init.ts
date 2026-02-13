@@ -1,12 +1,12 @@
-import { Command } from '@oclif/core';
 import { password, select } from '@inquirer/prompts';
+import { BaseCommand } from '../lib/base-command.js';
 import { saveConfig } from '../lib/config.js';
 import { createLinqClient } from '../lib/api-client.js';
 import { LOGO } from '../lib/banner.js';
 
 const INIT_BANNER = LOGO + '\n  Welcome to Linq CLI Setup\n';
 
-export default class Init extends Command {
+export default class Init extends BaseCommand {
   static override description = 'Interactive setup wizard for Linq CLI';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];

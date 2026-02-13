@@ -19,6 +19,7 @@ export interface Profile {
 export interface ConfigFile {
   profile: string;
   profiles: Record<string, Profile>;
+  telemetry?: boolean;
 }
 
 export type Config = Profile;

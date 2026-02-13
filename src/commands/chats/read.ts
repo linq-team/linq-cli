@@ -1,9 +1,10 @@
-import { Args, Command, Flags } from '@oclif/core';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createLinqClient } from '../../lib/api-client.js';
 import { parseApiError } from '../../lib/errors.js';
 
-export default class ChatsRead extends Command {
+export default class ChatsRead extends BaseCommand {
   static override description = 'Mark all messages in a chat as read';
 
   static override examples = [

@@ -1,7 +1,7 @@
-import { Command } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { listProfiles, getCurrentProfile } from '../../lib/config.js';
 
-export default class ConfigList extends Command {
+export default class ConfigList extends BaseCommand {
   static override description = 'List all configuration profiles';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];

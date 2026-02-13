@@ -1,9 +1,10 @@
-import { Args, Command, Flags } from '@oclif/core';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createLinqClient } from '../../lib/api-client.js';
 import { parseApiError } from '../../lib/errors.js';
 
-export default class ChatsTyping extends Command {
+export default class ChatsTyping extends BaseCommand {
   static override description = 'Start or stop typing indicator in a chat';
 
   static override examples = [

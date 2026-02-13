@@ -1,11 +1,12 @@
-import { Command, Flags } from '@oclif/core';
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createLinqClient } from '../../lib/api-client.js';
 import { formatUploadUrl } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
 import type { SupportedContentType } from '@linqapp/sdk/models/components';
 
-export default class AttachmentsUpload extends Command {
+export default class AttachmentsUpload extends BaseCommand {
   static override description = 'Request a presigned upload URL for a file';
 
   static override examples = [
