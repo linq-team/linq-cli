@@ -1,7 +1,8 @@
-import { Command, Flags } from '@oclif/core';
+import { Flags } from '@oclif/core';
 import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
 import open from 'open';
+import { BaseCommand } from '../lib/base-command.js';
 import { loadConfig, saveConfig } from '../lib/config.js';
 import { createApiClient } from '../lib/api-client.js';
 import { LOGO } from '../lib/banner.js';
@@ -13,7 +14,7 @@ const SANDBOX_API_URL =
 
 const SIGNUP_BANNER = LOGO + '\n  Get a sandbox phone for testing\n';
 
-export default class Signup extends Command {
+export default class Signup extends BaseCommand {
   static override description = 'Get a sandbox phone number for testing';
 
   static override examples = [

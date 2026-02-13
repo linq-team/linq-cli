@@ -1,10 +1,11 @@
-import { Args, Command, Flags } from '@oclif/core';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatDeleted } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
 
-export default class MessagesDelete extends Command {
+export default class MessagesDelete extends BaseCommand {
   static override description = 'Delete a message from API records';
 
   static override examples = [

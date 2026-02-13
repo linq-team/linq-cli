@@ -1,8 +1,9 @@
-import { Args, Command, Flags } from '@oclif/core';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../../lib/config.js';
 import { createApiClient } from '../../../lib/api-client.js';
 
-export default class ParticipantsRemove extends Command {
+export default class ParticipantsRemove extends BaseCommand {
   static override description = 'Remove a participant from a group chat';
 
   static override examples = [

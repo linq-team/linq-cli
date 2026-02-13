@@ -1,10 +1,11 @@
-import { Args, Command, Flags } from '@oclif/core';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatDeleted } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
 
-export default class WebhooksDelete extends Command {
+export default class WebhooksDelete extends BaseCommand {
   static override description = 'Delete a webhook subscription';
 
   static override examples = ['<%= config.bin %> <%= command.id %> SUBSCRIPTION_ID'];

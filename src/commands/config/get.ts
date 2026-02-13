@@ -1,13 +1,16 @@
-import { Args, Command, Flags } from '@oclif/core';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import {
   loadConfig,
+  loadConfigFile,
   getCurrentProfile,
   type Profile,
 } from '../../lib/config.js';
 
 const VALID_KEYS: (keyof Profile)[] = ['token', 'fromPhone'];
+const GLOBAL_KEYS = ['telemetry'] as const;
 
-export default class ConfigGet extends Command {
+export default class ConfigGet extends BaseCommand {
   static override description = 'Get a configuration value';
 
   static override examples = [
@@ -19,7 +22,7 @@ export default class ConfigGet extends Command {
 
   static override args = {
     key: Args.string({
-      description: 'Configuration key to get (token, fromPhone)',
+      description: 'Configuration key to get (token, fromPhone, telemetry)',
       required: false,
     }),
   };
@@ -39,10 +42,23 @@ export default class ConfigGet extends Command {
     const config = await loadConfig(profileName);
 
     if (args.key) {
-      if (!VALID_KEYS.includes(args.key as keyof Profile)) {
+      const allKeys = [...VALID_KEYS, ...GLOBAL_KEYS];
+      if (!allKeys.includes(args.key as (typeof allKeys)[number])) {
         this.error(
-          `Invalid key: ${args.key}. Valid keys: ${VALID_KEYS.join(', ')}`
+          `Invalid key: ${args.key}. Valid keys: ${allKeys.join(', ')}`
         );
+      }
+
+      // Handle global (non-profile) keys
+      if (GLOBAL_KEYS.includes(args.key as (typeof GLOBAL_KEYS)[number])) {
+        const configFile = await loadConfigFile();
+        const value = configFile[args.key as keyof typeof configFile];
+        if (value === undefined) {
+          this.log(`${args.key} is not set`);
+        } else {
+          this.log(`${args.key}=${value}`);
+        }
+        return;
       }
 
       const value = config[args.key as keyof Profile];

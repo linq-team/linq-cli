@@ -1,11 +1,12 @@
-import { Command, Flags } from '@oclif/core';
+import { Flags } from '@oclif/core';
 import { password } from '@inquirer/prompts';
+import { BaseCommand } from '../lib/base-command.js';
 import { loadConfig, saveConfig } from '../lib/config.js';
 import { LOGO } from '../lib/banner.js';
 
 const LOGIN_BANNER = LOGO + '\n  Welcome to Linq CLI\n';
 
-export default class Login extends Command {
+export default class Login extends BaseCommand {
   static override description = 'Authenticate with Linq';
 
   static override examples = [

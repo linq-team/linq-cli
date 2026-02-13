@@ -1,11 +1,12 @@
-import { Command, Flags } from '@oclif/core';
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatUploadUrl } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
 import type { components } from '../../gen/api-types.js';
 
-export default class AttachmentsUpload extends Command {
+export default class AttachmentsUpload extends BaseCommand {
   static override description = 'Request a presigned upload URL for a file';
 
   static override examples = [

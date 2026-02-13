@@ -1,10 +1,11 @@
-import { Command, Flags } from '@oclif/core';
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../lib/base-command.js';
 import { loadConfig, requireToken } from '../lib/config.js';
 import { createApiClient } from '../lib/api-client.js';
 import { formatPhoneNumbers } from '../lib/format.js';
 import { parseApiError } from '../lib/errors.js';
 
-export default class PhoneNumbers extends Command {
+export default class PhoneNumbers extends BaseCommand {
   static override description = 'List your available phone numbers';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];

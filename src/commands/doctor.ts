@@ -1,8 +1,9 @@
-import { Command, Flags } from '@oclif/core';
+import { Flags } from '@oclif/core';
+import { BaseCommand } from '../lib/base-command.js';
 import { loadConfig, loadConfigFile } from '../lib/config.js';
 import { createApiClient } from '../lib/api-client.js';
 
-export default class Doctor extends Command {
+export default class Doctor extends BaseCommand {
   static override description = 'Check your Linq CLI configuration and connectivity';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];

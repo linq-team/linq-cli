@@ -534,6 +534,26 @@ linq autocomplete
 
 After setup, press `<TAB>` to autocomplete commands, subcommands, and flags.
 
+## Telemetry
+
+Linq CLI collects anonymous usage data to help improve the tool. This includes:
+
+- **Command name** (e.g., `chats create`)
+- **CLI version**, OS, Node version, architecture
+- **Error stack traces** for crashes
+
+**Never collected**: tokens, phone numbers, message content, flag values, or any PII.
+
+### Opt out
+
+```bash
+# Via config
+linq config set telemetry false
+
+# Or via environment variable
+export LINQ_TELEMETRY=0
+```
+
 ## Environment Variables
 
 - `LINQ_TOKEN`: API token (overrides config file)
@@ -541,6 +561,7 @@ After setup, press `<TAB>` to autocomplete commands, subcommands, and flags.
 - `LINQ_PROFILE`: Profile to use (overrides config file)
 - `LINQ_RELAY_URL`: Custom relay URL for `webhooks listen`
 - `LINQ_RELAY_WS_URL`: Custom WebSocket relay URL for `webhooks listen`
+- `LINQ_TELEMETRY`: Set to `0` to disable telemetry
 
 ## Contributing
 

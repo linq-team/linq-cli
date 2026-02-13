@@ -1,8 +1,9 @@
-import { Args, Command, Flags } from '@oclif/core';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 
-export default class ChatsShareContact extends Command {
+export default class ChatsShareContact extends BaseCommand {
   static override description = 'Share your contact card with a chat';
 
   static override examples = [

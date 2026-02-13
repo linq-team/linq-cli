@@ -1,8 +1,9 @@
-import { Args, Command, Flags } from '@oclif/core';
+import { Args, Flags } from '@oclif/core';
+import { BaseCommand } from '../../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../../lib/config.js';
 import { createApiClient } from '../../../lib/api-client.js';
 
-export default class ParticipantsAdd extends Command {
+export default class ParticipantsAdd extends BaseCommand {
   static override description = 'Add a participant to a group chat';
 
   static override examples = [
