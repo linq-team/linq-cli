@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/linq-team/linq-cli/compare/v1.7.2...v1.8.0) (2026-02-13)
+
+
+### Features
+
+* add Sentry telemetry with error capture and usage tracking ([064005f](https://github.com/linq-team/linq-cli/commit/064005f45d5e981ccb41e9a5f83f428c93c4eea2))
+
 ## [1.7.2](https://github.com/linq-team/linq-cli/compare/v1.7.1...v1.7.2) (2026-02-13)
 
 
