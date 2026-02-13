@@ -30,7 +30,7 @@ const WEBHOOK_EVENTS: WebhookEventType[] = [
   'chat.typing_indicator.stopped',
 ];
 
-const DEFAULT_WS_URL = 'wss://relay-ws.linqapp.com';
+const DEFAULT_WS_URL = 'wss://9r8ugjg4s0.execute-api.us-east-1.amazonaws.com/prod';
 const DEFAULT_RELAY_URL = 'https://webhook.linqapp.com';
 const MAX_RECONNECT_DELAY = 30_000;
 
@@ -219,7 +219,8 @@ export default class WebhooksListen extends Command {
 
     this.ws.addEventListener('message', (event) => {
       try {
-        const data = JSON.parse(typeof event.data === 'string' ? event.data : '') as WebhookEvent;
+        const raw = typeof event.data === 'string' ? event.data : '';
+        const data = JSON.parse(raw) as WebhookEvent;
 
         // Skip init response
         if ('connectionId' in data) return;
@@ -235,7 +236,7 @@ export default class WebhooksListen extends Command {
           this.log(formatLogLine(data));
         }
       } catch {
-        // Skip malformed messages
+        this.logToStderr(`Warning: received unparseable message: ${String(event.data).slice(0, 200)}`);
       }
     });
   }
