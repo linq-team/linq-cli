@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/linq-team/linq-cli/compare/v1.8.0...v1.8.1) (2026-02-13)
+
+
+### Bug Fixes
+
+* add loading spinner during sandbox phone setup ([769c645](https://github.com/linq-team/linq-cli/commit/769c6457101f9272e60aed5234b087076b72ce51))
+
 # [1.8.0](https://github.com/linq-team/linq-cli/compare/v1.7.2...v1.8.0) (2026-02-13)
 
 
