@@ -63,6 +63,14 @@ Interactive setup wizard. Validates your API token and selects a default phone n
 linq init
 ```
 
+#### `linq signup`
+
+Get a sandbox phone number for testing. Authenticates via GitHub and provisions a temporary sandbox number (valid for 3 hours).
+
+```bash
+linq signup
+```
+
 #### `linq doctor`
 
 Check your CLI configuration and API connectivity. Runs diagnostic checks and reports any issues.
@@ -213,6 +221,85 @@ Get details of a specific chat.
 linq chats get CHAT_ID
 ```
 
+#### `linq chats update`
+
+Update a chat's display name or group icon.
+
+```bash
+# Rename a chat
+linq chats update CHAT_ID --name "Team Discussion"
+
+# Set group icon
+linq chats update CHAT_ID --icon https://example.com/icon.png
+```
+
+**Flags:**
+- `--name`: New display name for the chat
+- `--icon`: URL for group chat icon
+- At least one of `--name` or `--icon` must be specified
+
+#### `linq chats read`
+
+Mark all messages in a chat as read.
+
+```bash
+linq chats read CHAT_ID
+```
+
+#### `linq chats typing`
+
+Start or stop a typing indicator in a chat.
+
+```bash
+# Start typing indicator
+linq chats typing CHAT_ID
+
+# Stop typing indicator
+linq chats typing CHAT_ID --stop
+```
+
+#### `linq chats voicememo`
+
+Send a voice memo to a chat.
+
+```bash
+linq chats voicememo CHAT_ID --url https://example.com/memo.m4a
+```
+
+**Flags:**
+- `--url` (required): URL of the voice memo audio file
+- `--from`: Sender phone number. Uses config `fromPhone` if not specified.
+
+#### `linq chats share-contact`
+
+Share your contact card with a chat.
+
+```bash
+linq chats share-contact CHAT_ID
+```
+
+#### `linq chats participants add`
+
+Add a participant to a group chat.
+
+```bash
+linq chats participants add CHAT_ID --handle +19876543210
+```
+
+**Flags:**
+- `--handle` (required): Phone number or email of participant to add
+
+#### `linq chats participants remove`
+
+Remove a participant from a group chat.
+
+```bash
+linq chats participants remove CHAT_ID --handle +19876543210
+```
+
+**Flags:**
+- `--handle` (required): Phone number or email of participant to remove
+
 ### Messages
 
 #### `linq messages send`
@@ -228,12 +315,16 @@ linq messages send CHAT_ID --from +12025551234 --message "Hello!"
 
 # With iMessage effect
 linq messages send CHAT_ID --message "Surprise!" --effect fireworks
+
+# Reply to a message (creates a thread)
+linq messages send CHAT_ID --message "Reply" --reply-to MSG_ID
 ```
 
 **Flags:**
 - `--from`: Your sender phone number (must be one from `linq phonenumbers`). Uses config `fromPhone` if not specified.
 - `--message`, `-m` (required): Message text
 - `--effect`: iMessage effect
+- `--reply-to`: Message ID to reply to (creates a thread)
 - `--profile`, `-p`: Config profile to use
 - `--token`, `-t`: Override stored API token
 
@@ -297,6 +388,43 @@ linq messages react MESSAGE_ID --type laugh --part-index 1
 - `--emoji`: Custom emoji (required when type is `custom`)
 - `--part-index`: Index of the message part to react to (default: 0)
 
+#### `linq messages thread`
+
+Get all messages in a thread.
+
+```bash
+linq messages thread MESSAGE_ID
+linq messages thread MESSAGE_ID --limit 10 --order desc
+```
+
+**Flags:**
+- `--limit`: Maximum number of messages to return
+- `--cursor`: Pagination cursor
+- `--order`: Sort order (asc or desc)
+
+### Attachments
+
+#### `linq attachments upload`
+
+Request a presigned upload URL for a file.
+
+```bash
+linq attachments upload --filename photo.jpg --content-type image/jpeg --size 1024000
+```
+
+**Flags:**
+- `--filename` (required): Filename (e.g. photo.jpg)
+- `--content-type` (required): MIME type (e.g. image/jpeg)
+- `--size` (required): File size in bytes
+
+#### `linq attachments get`
+
+Get attachment metadata.
+
+```bash
+linq attachments get ATTACHMENT_ID
+```
+
 ### Webhooks
 
 #### `linq webhooks create`
@@ -304,14 +432,21 @@ linq messages react MESSAGE_ID --type laugh --part-index 1
 Create a new webhook subscription.
 
 ```bash
+# Subscribe to specific events
 linq webhooks create --url https://example.com/webhook --events message.received,message.sent
+
+# Subscribe to all events
+linq webhooks create --url https://example.com/webhook --all-events
 ```
 
 **Flags:**
 - `--url` (required): Target URL for webhook events
-- `--events` (required): Comma-separated list of events to subscribe to
+- `--events`: Comma-separated list of events to subscribe to
+- `--all-events`: Subscribe to all event types
 
-Available events: message.sent, message.received, message.read, message.delivered, message.failed, reaction.added, reaction.removed, participant.added, participant.removed, chat.created, chat.group_name_updated, chat.group_icon_updated, chat.typing_indicator.started, chat.typing_indicator.stopped
+Either `--events` or `--all-events` is required.
+
+Available events: message.sent, message.received, message.read, message.delivered, message.failed, reaction.added, reaction.removed, participant.added, participant.removed, chat.created, chat.group_name_updated, chat.group_icon_updated, chat.group_name_update_failed, chat.group_icon_update_failed, chat.typing_indicator.started, chat.typing_indicator.stopped
 
 #### `linq webhooks list`
 
@@ -351,6 +486,14 @@ Delete a webhook subscription.
 
 ```bash
 linq webhooks delete SUBSCRIPTION_ID
+```
+
+#### `linq webhooks events`
+
+List available webhook event types.
+
+```bash
+linq webhooks events
 ```
 
 #### `linq webhooks listen`
@@ -396,8 +539,8 @@ After setup, press `<TAB>` to autocomplete commands, subcommands, and flags.
 - `LINQ_TOKEN`: API token (overrides config file)
 - `LINQ_FROM_PHONE`: Default sender phone number (overrides config file)
 - `LINQ_PROFILE`: Profile to use (overrides config file)
-- `LINQ_RELAY_URL`: Custom relay HTTP URL for `webhooks listen` webhook targets (default: `https://webhook.linqapp.com`)
-- `LINQ_RELAY_WS_URL`: Custom relay WebSocket URL for `webhooks listen` (default: `wss://relay-ws.linqapp.com`)
+- `LINQ_RELAY_URL`: Custom relay URL for `webhooks listen`
+- `LINQ_RELAY_WS_URL`: Custom WebSocket relay URL for `webhooks listen`
 
 ## Contributing
 
