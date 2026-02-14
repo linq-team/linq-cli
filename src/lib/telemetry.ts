@@ -1,13 +1,15 @@
-import * as Sentry from '@sentry/node';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 
+type SentryModule = typeof import('@sentry/node');
+
 const SENTRY_DSN =
   'https://2693fb36d15f1a707be672d1b51b819c@o1196146.ingest.us.sentry.io/4510880227000320';
 
 let telemetryEnabled = false;
+let sentry: SentryModule | undefined;
 
 function getConfigPath(): string {
   const home = process.env.HOME || homedir();
@@ -54,7 +56,7 @@ export interface TelemetryOptions {
   environment?: string;
 }
 
-export function initTelemetry(options?: TelemetryOptions): void {
+export async function initTelemetry(options?: TelemetryOptions): Promise<void> {
   if (isOptedOut()) {
     telemetryEnabled = false;
     return;
@@ -62,7 +64,9 @@ export function initTelemetry(options?: TelemetryOptions): void {
 
   telemetryEnabled = true;
 
-  Sentry.init({
+  sentry = await import('@sentry/node');
+
+  sentry.init({
     dsn: SENTRY_DSN,
     sendDefaultPii: false,
     release: `linq-cli@${getCliVersion()}`,
@@ -83,16 +87,16 @@ export function initTelemetry(options?: TelemetryOptions): void {
     },
   });
 
-  Sentry.setTag('os', process.platform);
-  Sentry.setTag('arch', process.arch);
-  Sentry.setTag('node', process.version);
+  sentry.setTag('os', process.platform);
+  sentry.setTag('arch', process.arch);
+  sentry.setTag('node', process.version);
 }
 
-let activeSpan: Sentry.Span | undefined;
+let activeSpan: { setStatus(status: { code: number }): void; end(): void } | undefined;
 
 export function startCommandSpan(commandId: string): void {
-  if (!telemetryEnabled) return;
-  activeSpan = Sentry.startInactiveSpan({
+  if (!telemetryEnabled || !sentry) return;
+  activeSpan = sentry.startInactiveSpan({
     name: commandId,
     op: 'command.run',
     forceTransaction: true,
@@ -109,13 +113,23 @@ export function finishCommandSpan(status?: 'ok' | 'error'): void {
 }
 
 export function captureError(error: unknown): void {
-  if (!telemetryEnabled) return;
-  Sentry.captureException(error);
+  if (!telemetryEnabled || !sentry) return;
+  sentry.captureException(error);
 }
 
-export async function shutdown(): Promise<void> {
-  if (!telemetryEnabled) return;
-  await Sentry.flush(2000);
+export async function shutdown(timeout = 200): Promise<void> {
+  if (!telemetryEnabled || !sentry) return;
+  await sentry.close(timeout);
+}
+
+export function setTag(key: string, value: string): void {
+  if (!telemetryEnabled || !sentry) return;
+  sentry.setTag(key, value);
+}
+
+export function setContext(name: string, context: Record<string, unknown>): void {
+  if (!telemetryEnabled || !sentry) return;
+  sentry.setContext(name, context);
 }
 
 /**
