@@ -1,3 +1,15 @@
+## [1.8.3](https://github.com/linq-team/linq-cli/compare/v1.8.2...v1.8.3) (2026-02-14)
+
+
+### Bug Fixes
+
+* allow full chat id in list command ([97df3e1](https://github.com/linq-team/linq-cli/commit/97df3e14f2041d38a743810df60d579d8b866521))
+
+
+### Performance Improvements
+
+* lazy-load Sentry and use close() for faster shutdown ([8f9928f](https://github.com/linq-team/linq-cli/commit/8f9928f08b4db30d33c68681a50e05d5dcbb9951))
+
 ## [1.8.2](https://github.com/linq-team/linq-cli/compare/v1.8.1...v1.8.2) (2026-02-14)
 
 
