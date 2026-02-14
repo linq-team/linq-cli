@@ -1,3 +1,10 @@
+## [1.8.2](https://github.com/linq-team/linq-cli/compare/v1.8.1...v1.8.2) (2026-02-14)
+
+
+### Bug Fixes
+
+* allow more time for phone prep ([d214630](https://github.com/linq-team/linq-cli/commit/d21463075aee0c1b220c66656b506ead46d21c4f))
+
 ## [1.8.1](https://github.com/linq-team/linq-cli/compare/v1.8.0...v1.8.1) (2026-02-13)
 
 
