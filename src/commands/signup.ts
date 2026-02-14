@@ -127,8 +127,8 @@ export default class Signup extends BaseCommand {
     await saveConfig(config);
 
     // Wait for mac-agent to reconcile
-    ux.action.start('Preparing your sandbox phone...');
-    await this.sleep(5000);
+    ux.action.start('Preparing your sandbox phone');
+    await this.sleep(10000);
     ux.action.stop('ready!');
 
     this.log(`\n  Your sandbox number: ${chalk.bold(data.sandboxPhone)}\n`);
