@@ -7,20 +7,6 @@ A command-line interface for the [Linq](https://linqapp.com) messaging API. Send
 
 ## Installation
 
-### npm (all platforms)
-
-```bash
-npm install -g @linqapp/cli
-```
-
-Or use directly with npx:
-
-```bash
-npx @linqapp/cli login
-```
-
-### Native Installers
-
 Download the latest installer for your platform from the [Releases](https://github.com/linq-team/linq-cli/releases) page:
 
 | Platform | File | Install Command |

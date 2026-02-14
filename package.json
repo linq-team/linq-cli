@@ -118,7 +118,7 @@
     "sms"
   ],
   "license": "Apache-2.0",
-  "author": "Josh Flayhart",
+  "author": "Josh Flayhart <npm@linqapp.com>",
   "homepage": "https://github.com/linq-team/linq-cli#readme",
   "repository": {
     "type": "git",
