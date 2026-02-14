@@ -67,13 +67,13 @@ export function formatChatsList(data: { chats: Chat[]; next_cursor?: string | nu
   const chats = data.chats;
   if (chats.length === 0) return 'No chats found.';
 
-  const header = `${pad('ID', 10)} ${pad('PARTICIPANTS', 36)} ${pad('SERVICE', 12)} UPDATED`;
+  const header = `${pad('ID', 38)} ${pad('PARTICIPANTS', 36)} ${pad('SERVICE', 12)} UPDATED`;
   const rows = chats.map((c) => {
     const participants = (c.handles || [])
       .filter((h) => !h.is_me)
       .map((h) => h.handle)
       .join(', ');
-    return `${pad(shortId(c.id), 10)} ${pad(truncate(c.display_name || participants, 34), 36)} ${pad(c.service || '–', 12)} ${fmtDate(c.updated_at ?? null)}`;
+    return `${pad(c.id, 38)} ${pad(truncate(c.display_name || participants, 34), 36)} ${pad(c.service || '–', 12)} ${fmtDate(c.updated_at ?? null)}`;
   });
   const lines = [chalk.dim(header), ...rows];
   if (data.next_cursor) {
