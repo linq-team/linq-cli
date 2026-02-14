@@ -1,5 +1,8 @@
 # Linq CLI
 
+[![License](https://img.shields.io/github/license/linq-team/linq-cli.svg)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/linq-team/linq-cli/ci.yml?branch=main)](https://github.com/linq-team/linq-cli/actions/workflows/ci.yml)
+
 A command-line interface for the [Linq](https://linqapp.com) messaging API. Send and receive iMessages programmatically.
 
 ## Installation
@@ -565,8 +568,8 @@ export LINQ_TELEMETRY=0
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and contribution guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines. Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before participating.
 
 ## License
 
-Apache-2.0
+Apache-2.0 — see [LICENSE](LICENSE) for details.

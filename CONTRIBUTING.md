@@ -4,7 +4,7 @@ Thank you for your interest in contributing to the Linq CLI! This document provi
 
 ## Code of Conduct
 
-Please be respectful and constructive in all interactions. We're building something together.
+This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). Please be respectful and constructive in all interactions.
 
 ## Getting Started
 
