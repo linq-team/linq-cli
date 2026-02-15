@@ -6,7 +6,7 @@ import {
   setTag,
   setContext,
 } from '../lib/telemetry.js';
-import { loadConfigFile, saveConfigFile } from '../lib/config.js';
+import { loadConfig, loadConfigFile, saveConfigFile } from '../lib/config.js';
 
 const hook: Hook<'prerun'> = async function (opts) {
   const commandId = opts.Command.id;
@@ -29,6 +29,16 @@ const hook: Hook<'prerun'> = async function (opts) {
 
   // Set Sentry context for this command
   setTag('command', commandId);
+
+  // Tag partner ID if available in config
+  try {
+    const config = await loadConfig();
+    if (config.partnerId) {
+      setTag('partner_id', config.partnerId);
+    }
+  } catch {
+    // Non-fatal
+  }
 
   // Record flag names only (no values) for debugging context
   const flagNames = Object.keys(opts.argv ?? {});
