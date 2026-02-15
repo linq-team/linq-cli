@@ -29,8 +29,12 @@ jobs:
           cd dist/deb
           for file in *.deb; do
             [ -f "$file" ] || continue
-            arch=$(echo "$file" | grep -oE '(amd64|arm64|armel)')
-            mv "$file" "linq_${VERSION}_linux-${arch}.deb"
+            raw_arch=$(echo "$file" | grep -oE '(amd64|arm64|armel)')
+            case "$raw_arch" in
+              amd64) arch="x64" ;;
+              *) arch="$raw_arch" ;;
+            esac
+            mv "$file" "linq-${VERSION}-linux-${arch}.deb"
           done
           ls -la
           for file in *.deb; do
@@ -64,7 +68,7 @@ jobs:
           for file in *.exe; do
             [ -f "$file" ] || continue
             arch=$(echo "$file" | grep -oE '(x64|x86|arm64)')
-            mv "$file" "linq-${VERSION}-win-${arch}.exe"
+            mv "$file" "linq-${VERSION}-windows-${arch}.exe"
           done
           ls -la
           for file in *.exe; do
@@ -210,7 +214,12 @@ jobs:
           cd dist/macos
           for file in *.pkg; do
             [ -f "$file" ] || continue
-            arch=$(echo "$file" | grep -oE '(x64|arm64)')
+            raw_arch=$(echo "$file" | grep -oE '(x64|arm64)')
+            case "$raw_arch" in
+              arm64) arch="apple-silicon" ;;
+              x64) arch="intel" ;;
+              *) arch="$raw_arch" ;;
+            esac
             mv "$file" "linq-${VERSION}-mac-${arch}.pkg"
           done
           ls -la
