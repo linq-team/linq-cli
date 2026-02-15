@@ -1,6 +1,7 @@
 import { Flags } from '@oclif/core';
 import { password } from '@inquirer/prompts';
 import { BaseCommand } from '../lib/base-command.js';
+import { fetchPartnerId } from '../lib/partner.js';
 import { loadConfig, saveConfig } from '../lib/config.js';
 import { LOGO } from '../lib/banner.js';
 
@@ -53,6 +54,12 @@ export default class Login extends BaseCommand {
 
     const config = await loadConfig();
     config.token = token;
+
+    const partnerId = await fetchPartnerId(token);
+    if (partnerId) {
+      config.partnerId = partnerId;
+    }
+
     await saveConfig(config);
 
     this.log('Token saved to ~/.linq/config.json');

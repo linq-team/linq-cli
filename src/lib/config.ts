@@ -7,6 +7,7 @@ const CONFIG_FILE = 'config.json';
 
 export interface Profile {
   token?: string;
+  partnerId?: string;
   sandbox?: {
     phone: string;
     userPhone: string;

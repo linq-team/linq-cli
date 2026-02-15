@@ -4,13 +4,16 @@ import chalk from 'chalk';
 import open from 'open';
 import { BaseCommand } from '../lib/base-command.js';
 import { loadConfig, saveConfig } from '../lib/config.js';
+import { fetchPartnerId } from '../lib/partner.js';
 import { createApiClient } from '../lib/api-client.js';
 import { LOGO } from '../lib/banner.js';
 
 // TODO: Create GitHub OAuth App and update this
 const GITHUB_CLIENT_ID = 'Ov23liGRjTnm4bJgatLx';
+const WEBHOOK_BASE_URL =
+  process.env.WEBHOOK_BASE_URL || 'https://webhook.linqapp.com';
 const SANDBOX_API_URL =
-  process.env.SANDBOX_API_URL || 'https://webhook.linqapp.com/sandbox';
+  process.env.SANDBOX_API_URL || `${WEBHOOK_BASE_URL}/sandbox`;
 
 const SIGNUP_BANNER = LOGO + '\n  Get a sandbox phone for testing\n';
 
@@ -109,6 +112,7 @@ export default class Signup extends BaseCommand {
 
     const data = (await res.json()) as {
       token: string;
+      partnerId?: string;
       sandboxPhone: string;
       userPhone: string;
       expiresAt: string;
@@ -118,6 +122,7 @@ export default class Signup extends BaseCommand {
     // Save to config
     config.token = data.token;
     config.fromPhone = data.sandboxPhone;
+    config.partnerId = data.partnerId ?? await fetchPartnerId(data.token) ?? undefined;
     config.sandbox = {
       phone: data.sandboxPhone,
       userPhone: data.userPhone,
