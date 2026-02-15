@@ -324,13 +324,11 @@ List messages in a chat.
 ```bash
 linq messages list CHAT_ID
 linq messages list CHAT_ID --limit 50
-linq messages list CHAT_ID --order asc
 ```
 
 **Flags:**
 - `--limit`: Maximum number of messages to return (default: 20, max: 100)
 - `--cursor`: Pagination cursor from previous response
-- `--order`: Sort order (asc or desc, default: desc)
 - `--profile`, `-p`: Config profile to use
 - `--token`, `-t`: Override stored API token
 
@@ -551,6 +549,26 @@ export LINQ_TELEMETRY=0
 - `LINQ_RELAY_URL`: Custom relay URL for `webhooks listen`
 - `LINQ_RELAY_WS_URL`: Custom WebSocket relay URL for `webhooks listen`
 - `LINQ_TELEMETRY`: Set to `0` to disable telemetry
+
+## Development
+
+This is a monorepo using npm workspaces:
+
+- **`@linqapp/cli`** (root) — the CLI itself
+- **`@linqapp/sdk`** (`packages/sdk/`) — TypeScript SDK auto-generated from `openapi.yaml` via [Speakeasy](https://speakeasy.com)
+
+The CLI dogfoods the SDK for all API calls.
+
+```bash
+# Regenerate the SDK after openapi.yaml changes
+npm run generate:sdk
+
+# Build the CLI
+npm run build
+
+# Run tests
+npm test
+```
 
 ## Contributing
 

@@ -15,6 +15,23 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
+const mockHandle = {
+  id: 'h-1',
+  handle: '+12025551234',
+  service: 'iMessage',
+  status: 'active',
+  joined_at: '2024-01-15T00:00:00Z',
+};
+
+function reactionResponse(type: string, customEmoji?: string) {
+  return {
+    is_me: true,
+    handle: mockHandle,
+    type,
+    ...(customEmoji && { custom_emoji: customEmoji }),
+  };
+}
+
 describe('messages react', () => {
   let tempDir: string;
   let originalHome: string | undefined;
@@ -43,7 +60,7 @@ describe('messages react', () => {
   it('adds reaction to message', async () => {
     mockFetch.mockImplementation(async (request: Request) => {
       lastRequestBody = await request.json();
-      return createMockResponse(200, { success: true });
+      return createMockResponse(200, reactionResponse('love'));
     });
 
     const config = await Config.load({ root: process.cwd() });
@@ -63,7 +80,7 @@ describe('messages react', () => {
   it('removes reaction from message', async () => {
     mockFetch.mockImplementation(async (request: Request) => {
       lastRequestBody = await request.json();
-      return createMockResponse(200, { success: true });
+      return createMockResponse(200, reactionResponse('like'));
     });
 
     const config = await Config.load({ root: process.cwd() });
@@ -78,7 +95,7 @@ describe('messages react', () => {
   it('supports custom emoji', async () => {
     mockFetch.mockImplementation(async (request: Request) => {
       lastRequestBody = await request.json();
-      return createMockResponse(200, { success: true });
+      return createMockResponse(200, reactionResponse('custom', '🎉'));
     });
 
     const config = await Config.load({ root: process.cwd() });

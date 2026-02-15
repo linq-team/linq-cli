@@ -15,6 +15,41 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
+const mockHandle = {
+  id: 'h-1',
+  handle: '+12025551234',
+  service: 'iMessage',
+  status: 'active',
+  joined_at: '2024-01-15T00:00:00Z',
+};
+
+function voiceMemoResponse() {
+  return {
+    voice_memo: {
+      id: 'vm-123',
+      from: '+12025551234',
+      to: ['+19876543210'],
+      status: 'sent',
+      service: 'iMessage',
+      voice_memo: {
+        id: 'att-123',
+        url: 'https://example.com/memo.m4a',
+        filename: 'memo.m4a',
+        mime_type: 'audio/m4a',
+        size_bytes: 1024,
+      },
+      created_at: '2024-01-15T00:00:00Z',
+      chat: {
+        id: 'chat-123',
+        handles: [mockHandle],
+        is_group: false,
+        service: 'iMessage',
+        is_active: true,
+      },
+    },
+  };
+}
+
 describe('chats voicememo', () => {
   let tempDir: string;
   let originalHome: string | undefined;
@@ -43,10 +78,7 @@ describe('chats voicememo', () => {
 
   it('sends voice memo to chat', async () => {
     mockFetch.mockResolvedValueOnce(
-      createMockResponse(202, {
-        chat_id: 'chat-123',
-        message: { id: 'msg-456' },
-      })
+      createMockResponse(202, voiceMemoResponse())
     );
 
     const config = await Config.load({ root: process.cwd() });

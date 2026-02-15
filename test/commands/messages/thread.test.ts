@@ -15,6 +15,19 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
+function mockMessage(id: string, text: string) {
+  return {
+    id,
+    chat_id: 'chat-1',
+    is_from_me: false,
+    is_delivered: true,
+    is_read: false,
+    created_at: '2024-01-15T00:00:00Z',
+    updated_at: '2024-01-15T00:00:00Z',
+    parts: [{ type: 'text', value: text }],
+  };
+}
+
 describe('messages thread', () => {
   let tempDir: string;
   let originalHome: string | undefined;
@@ -42,8 +55,8 @@ describe('messages thread', () => {
     mockFetch.mockResolvedValueOnce(
       createMockResponse(200, {
         messages: [
-          { id: 'msg-1', parts: [{ type: 'text', value: 'Original' }] },
-          { id: 'msg-2', parts: [{ type: 'text', value: 'Reply' }] },
+          mockMessage('msg-1', 'Original'),
+          mockMessage('msg-2', 'Reply'),
         ],
       })
     );
@@ -54,9 +67,7 @@ describe('messages thread', () => {
 
     expect(mockFetch).toHaveBeenCalledOnce();
     const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe(
-      'https://api.linqapp.com/api/partner/v3/messages/msg-1/thread'
-    );
+    expect(request.url).toContain('/v3/messages/msg-1/thread');
     expect(request.method).toBe('GET');
   });
 

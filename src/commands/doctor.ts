@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../lib/base-command.js';
 import { loadConfig, loadConfigFile } from '../lib/config.js';
-import { createApiClient } from '../lib/api-client.js';
+import { createLinqClient } from '../lib/api-client.js';
 
 export default class Doctor extends BaseCommand {
   static override description = 'Check your Linq CLI configuration and connectivity';
@@ -67,21 +67,16 @@ export default class Doctor extends BaseCommand {
 
     // Check 4: API connectivity
     if (config.token) {
-      const client = createApiClient(config.token);
+      const client = createLinqClient(config.token);
       const start = Date.now();
       try {
-        const { error } = await client.GET('/v3/phonenumbers');
+        await client.phoneNumbers.listPhoneNumbers();
         const latency = Date.now() - start;
-        if (error) {
-          this.log(`\u2717 API request failed (${latency}ms) — check your token`);
-          failed++;
-        } else {
-          this.log(`\u2713 API connection successful (${latency}ms)`);
-          passed++;
-        }
+        this.log(`\u2713 API connection successful (${latency}ms)`);
+        passed++;
       } catch {
         const latency = Date.now() - start;
-        this.log(`\u2717 API connection failed (${latency}ms) — check your network`);
+        this.log(`\u2717 API request failed (${latency}ms) — check your token or network`);
         failed++;
       }
     } else {

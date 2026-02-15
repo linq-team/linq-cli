@@ -17,5 +17,8 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Test SDK
+        run: npm test --workspace=packages/sdk
+
   build-installers:
     uses: ./.github/workflows/build-installers.yml

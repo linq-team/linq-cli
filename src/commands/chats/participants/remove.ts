@@ -1,7 +1,8 @@
 import { Args, Flags } from '@oclif/core';
 import { BaseCommand } from '../../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../../lib/config.js';
-import { createApiClient } from '../../../lib/api-client.js';
+import { createLinqClient } from '../../../lib/api-client.js';
+import { parseApiError } from '../../../lib/errors.js';
 
 export default class ParticipantsRemove extends BaseCommand {
   static override description = 'Remove a participant from a group chat';
@@ -37,21 +38,13 @@ export default class ParticipantsRemove extends BaseCommand {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { data, error } = await client.DELETE('/v3/chats/{chatId}/participants', {
-      params: { path: { chatId: args.chatId } },
-      body: { handle: flags.handle },
-    });
-
-    if (error) {
-      this.error(`Failed to remove participant: ${JSON.stringify(error)}`);
+    try {
+      const data = await client.chats.removeParticipant(args.chatId, { handle: flags.handle });
+      this.log(JSON.stringify(data, null, 2));
+    } catch (err) {
+      this.error(`Failed to remove participant: ${parseApiError(err)}`);
     }
-
-    if (!data) {
-      this.error('Failed to remove participant: no response data');
-    }
-
-    this.log(JSON.stringify(data, null, 2));
   }
 }

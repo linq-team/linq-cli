@@ -1,7 +1,8 @@
 import { Args, Flags } from '@oclif/core';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
+import { parseApiError } from '../../lib/errors.js';
 
 export default class ChatsTyping extends BaseCommand {
   static override description = 'Start or stop typing indicator in a chat';
@@ -38,28 +39,19 @@ export default class ChatsTyping extends BaseCommand {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    if (flags.stop) {
-      const { error } = await client.DELETE('/v3/chats/{chatId}/typing', {
-        params: { path: { chatId: args.chatId } },
-      });
-
-      if (error) {
-        this.error(`Failed to stop typing: ${JSON.stringify(error)}`);
+    try {
+      if (flags.stop) {
+        await client.chats.stopTyping(args.chatId);
+        this.log('Typing indicator stopped.');
+      } else {
+        await client.chats.startTyping(args.chatId);
+        this.log('Typing indicator started.');
       }
-
-      this.log('Typing indicator stopped.');
-    } else {
-      const { error } = await client.POST('/v3/chats/{chatId}/typing', {
-        params: { path: { chatId: args.chatId } },
-      });
-
-      if (error) {
-        this.error(`Failed to start typing: ${JSON.stringify(error)}`);
-      }
-
-      this.log('Typing indicator started.');
+    } catch (err) {
+      const action = flags.stop ? 'stop' : 'start';
+      this.error(`Failed to ${action} typing: ${parseApiError(err)}`);
     }
   }
 }

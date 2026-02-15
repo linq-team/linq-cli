@@ -1,7 +1,7 @@
 import { password, select } from '@inquirer/prompts';
 import { BaseCommand } from '../lib/base-command.js';
 import { saveConfig } from '../lib/config.js';
-import { createApiClient } from '../lib/api-client.js';
+import { createLinqClient } from '../lib/api-client.js';
 import { LOGO } from '../lib/banner.js';
 
 const INIT_BANNER = LOGO + '\n  Welcome to Linq CLI Setup\n';
@@ -33,35 +33,32 @@ export default class Init extends BaseCommand {
 
     // Validate token by calling the API
     this.log('\nValidating token...');
-    const client = createApiClient(token.trim());
+    const client = createLinqClient(token.trim());
 
-    const { data, error } = await client.GET('/v3/phonenumbers');
-
-    if (error) {
+    let data;
+    try {
+      data = await client.phoneNumbers.listPhoneNumbers();
+    } catch {
       this.error(
         'Invalid token or API error. Please check your token and try again.'
       );
-    }
-
-    if (!data) {
-      this.error('Failed to validate token: no response data');
     }
 
     this.log('\u2713 Token is valid!\n');
 
     // Select default phone number
     let fromPhone: string | undefined;
-    const phones = data.phone_numbers;
+    const phones = data.phoneNumbers;
 
     if (phones.length === 1) {
-      fromPhone = phones[0].phone_number;
+      fromPhone = phones[0].phoneNumber;
       this.log(`Default phone number set to ${fromPhone} (only number on account)\n`);
     } else if (phones.length > 1) {
       fromPhone = await select({
         message: 'Select a default phone number:',
         choices: phones.map((p) => ({
-          name: p.phone_number,
-          value: p.phone_number,
+          name: p.phoneNumber,
+          value: p.phoneNumber,
         })),
       });
       this.log('');

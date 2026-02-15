@@ -1,10 +1,10 @@
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
 import { formatUploadUrl } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
-import type { components } from '../../gen/api-types.js';
+import type { SupportedContentType } from '@linqapp/sdk/models/components';
 
 export default class AttachmentsUpload extends BaseCommand {
   static override description = 'Request a presigned upload URL for a file';
@@ -45,28 +45,22 @@ export default class AttachmentsUpload extends BaseCommand {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { data, error } = await client.POST('/v3/attachments', {
-      body: {
+    try {
+      const data = await client.attachments.requestUpload({
         filename: flags.filename,
-        content_type: flags['content-type'] as components['schemas']['SupportedContentType'],
-        size_bytes: flags.size,
-      },
-    });
+        contentType: flags['content-type'] as SupportedContentType,
+        sizeBytes: flags.size,
+      });
 
-    if (error) {
-      this.error(`Failed to request upload: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to request upload: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatUploadUrl(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatUploadUrl(data));
+      }
+    } catch (err) {
+      this.error(`Failed to request upload: ${parseApiError(err)}`);
     }
   }
 }

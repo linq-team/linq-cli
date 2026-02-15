@@ -1,7 +1,7 @@
 import { Args, Flags } from '@oclif/core';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
 import { formatAttachmentMeta } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
 
@@ -39,24 +39,18 @@ export default class AttachmentsGet extends BaseCommand {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { data, error } = await client.GET('/v3/attachments/{attachmentId}', {
-      params: { path: { attachmentId: args.attachmentId } },
-    });
+    try {
+      const data = await client.attachments.getAttachment(args.attachmentId);
 
-    if (error) {
-      this.error(`Failed to get attachment: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to get attachment: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatAttachmentMeta(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatAttachmentMeta(data));
+      }
+    } catch (err) {
+      this.error(`Failed to get attachment: ${parseApiError(err)}`);
     }
   }
 }

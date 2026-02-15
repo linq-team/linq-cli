@@ -1,0 +1,2087 @@
+lockVersion: 2.0.0
+id: 3008c7ff-058b-43bd-98e9-5333018a76f4
+management:
+  docChecksum: f7a335358038caaa5aeb95e5cba65bd8
+  docVersion: 1.0.0
+  speakeasyVersion: 1.715.0
+  generationVersion: 2.822.1
+  releaseVersion: 0.1.0
+  configChecksum: cc82bcc34fcc6d42c301d51c30cee826
+persistentEdits:
+  generation_id: 6c89f0db-6e6a-43f9-923c-e10942bfc52d
+  pristine_commit_hash: 509a8fdbf70a60189863f2fe1e8f1cf3541a408c
+  pristine_tree_hash: 1ddc6a92e0da85ef86080644c626705320340b52
+features:
+  typescript:
+    additionalDependencies: 0.1.0
+    constsAndDefaults: 0.1.13
+    core: 3.26.27
+    defaultEnabledRetries: 0.1.0
+    deprecations: 2.81.1
+    enumUnions: 0.1.0
+    envVarSecurityUsage: 0.1.2
+    flattening: 2.82.1
+    globalSecurity: 2.82.15
+    globalSecurityCallbacks: 0.1.0
+    globalSecurityFlattening: 0.1.0
+    globalServerURLs: 2.83.0
+    nullables: 0.1.1
+    responseFormat: 0.3.0
+    retries: 2.83.0
+    sdkHooks: 0.4.0
+    unions: 2.86.4
+    webhooks: 1.5.1
+trackedFiles:
+  .gitattributes:
+    id: 24139dae6567
+    last_write_checksum: sha1:26d16d8297b104945139da8c25bd38feeaad3e25
+    pristine_git_object: 113eead5093c17d43a46159132885318f281a68a
+  .npmignore:
+    id: aa70c1f807c3
+    last_write_checksum: sha1:3d5eb92f81539175db1ff0280e0aefbdd701f200
+    pristine_git_object: cf98a6bf092538eb10ff0edc915102682ce9a6e6
+  FUNCTIONS.md:
+    id: 21b9df02aaeb
+    last_write_checksum: sha1:2145b291d71170f9c9d64e4aaed7f8d70efe2a66
+    pristine_git_object: ab102b958f10104f0e0010c545bfb859c2bd1974
+  RUNTIMES.md:
+    id: 620c490847b6
+    last_write_checksum: sha1:e45b854f02c357cbcfdb8c3663000e8339e16505
+    pristine_git_object: 27731c3b5ace66bedc454ed5acbe15075aacd3dc
+  USAGE.md:
+    id: 3aed33ce6e6f
+    last_write_checksum: sha1:23f010dc1793a93bf0ff638247bf95530b7cf515
+    pristine_git_object: c39004ef841a891e75f5d2acd7d6142bf1c2a943
+  docs/lib/utils/retryconfig.md:
+    id: 0ce9707cb848
+    last_write_checksum: sha1:bc4454e196fcd219f5a78da690375a884f5ed07b
+    pristine_git_object: 08f95f4552349360b2c0b01802aa71ec3a55d2c2
+  docs/models/components/add-participant-request.md:
+    id: 6e3b84c5111a
+    last_write_checksum: sha1:a4945f2a19a6b9e6e32fb454a9938d1ae4f6927b
+    pristine_git_object: 558e5de59a4a7ee7158e3670ef132b75f249354b
+  docs/models/components/attachment-status.md:
+    id: bc9f0f39dbdb
+    last_write_checksum: sha1:40230e30b7cac9a2c5ae9243e58817a17201c361
+    pristine_git_object: f4729278d331499b77757a937f950125ad4f94be
+  docs/models/components/attachment.md:
+    id: a18c3e6704a6
+    last_write_checksum: sha1:262256fb5332994234e5c66f2d8d696deea050b6
+    pristine_git_object: 60de6c1088af5ee6c878f371bae477193756a9b0
+  docs/models/components/chat-created-event-service.md:
+    id: 7485a965fb60
+    last_write_checksum: sha1:7a3436fbb15839d094288a100a149b35a676d633
+    pristine_git_object: d28dac2f33772ce9c1ab33573e9608db59b92162
+  docs/models/components/chat-created-event.md:
+    id: 8191538bd11b
+    last_write_checksum: sha1:5b322d581a94248650b7bbe94d6cf482c9bf05b5
+    pristine_git_object: ed949c700822f9c8af9ac4774a204c031c4526a1
+  docs/models/components/chat-created-webhook.md:
+    id: d482cadc39af
+    last_write_checksum: sha1:49a9f0017db90dac04c8e423f2fde0bd154fd448
+    pristine_git_object: 3ed04ba3d434830d9fec617ce50e491b414720d7
+  docs/models/components/chat-group-icon-update-failed-event.md:
+    id: 4f1512e5b471
+    last_write_checksum: sha1:df1db3332337a5e2313635d28c1d48552283c011
+    pristine_git_object: 191e35331a25c7329f6d3c5601168c4b77d54648
+  docs/models/components/chat-group-icon-update-failed-webhook.md:
+    id: e75922e4362b
+    last_write_checksum: sha1:12bb65dee8c7f28c6b9189b4a2592dcff87a1b9a
+    pristine_git_object: 450c959ba4fdf6e9a9275b3563c46f8f94239551
+  docs/models/components/chat-group-icon-updated-event-changed-by-handle.md:
+    id: 167da1d023e8
+    last_write_checksum: sha1:cb2a00092fd52887786b3a99731f656e65c67166
+    pristine_git_object: 3b58e71ded548a8c188569720f68676a6bff934c
+  docs/models/components/chat-group-icon-updated-event-service.md:
+    id: e8a90eb3182d
+    last_write_checksum: sha1:b8caa5de8c4d208bea063ffa50522055a169cb2e
+    pristine_git_object: 454a7780a193cf3179a26ed47a9bb8409a40922c
+  docs/models/components/chat-group-icon-updated-event-status.md:
+    id: 8993c47f2afc
+    last_write_checksum: sha1:ab5e7d3e6b9592023d8871e15851ba9fbd92b88a
+    pristine_git_object: ae8cb6ebc8e5ee55b32cdada89f0cac3beeefd4f
+  docs/models/components/chat-group-icon-updated-event.md:
+    id: cfda662539eb
+    last_write_checksum: sha1:1a852491fb1eb8009814680f9bf6c83343368ca0
+    pristine_git_object: fb721bd47b7dbddecc45f046f0a87a98715e5f46
+  docs/models/components/chat-group-icon-updated-webhook.md:
+    id: 0a137372ca8f
+    last_write_checksum: sha1:bb05e00ab7e422f0b511766909f731bb22115c14
+    pristine_git_object: 8f505214cb875b831b01e074b5ff62470cacc44b
+  docs/models/components/chat-group-name-update-failed-event.md:
+    id: 6e6a884f959a
+    last_write_checksum: sha1:19d425180c700b5a937d4dac9e0fac7e32984e58
+    pristine_git_object: 43a741082b2da7fc03bdb7617f669117daeaa1fa
+  docs/models/components/chat-group-name-update-failed-webhook.md:
+    id: 3f212b501f9c
+    last_write_checksum: sha1:79c8633851e0cd48a503ef3ba98d5294a28cae1f
+    pristine_git_object: ec83e071c73ed25d3966abda31f1d53391cf48ad
+  docs/models/components/chat-group-name-updated-event-changed-by-handle.md:
+    id: 9bac3aced80a
+    last_write_checksum: sha1:36314e649852f941d37a0241dc0d778cbab53fe0
+    pristine_git_object: 80af18ed4a2684e1608255543ad644bc18e34993
+  docs/models/components/chat-group-name-updated-event-service.md:
+    id: 2251f0e5497f
+    last_write_checksum: sha1:257435afb90d110baf0c722378f6092ac224082f
+    pristine_git_object: de4715bcd230174df12b8bc44cde13caba36a1ff
+  docs/models/components/chat-group-name-updated-event-status.md:
+    id: 9ecf616d54f5
+    last_write_checksum: sha1:8f421a80c709453c531cb33dfa80f125b7ce4c23
+    pristine_git_object: 14fff99e55953b0085c8b110aa5799014706956e
+  docs/models/components/chat-group-name-updated-event.md:
+    id: 5726114e0cfa
+    last_write_checksum: sha1:ad884be13d177ceb05539c5e8e0303aa51536e0d
+    pristine_git_object: 29d7a08997d91f62a3080a3ebd37b9e9a2f21a0f
+  docs/models/components/chat-group-name-updated-webhook.md:
+    id: 421008b2e345
+    last_write_checksum: sha1:8839983f5c66cda58e8af1d213f8b740a1443639
+    pristine_git_object: 2f294ba2841bbfb273f7d2e2d361dc87ef9b5a00
+  docs/models/components/chat-handle-service.md:
+    id: 7878b210db69
+    last_write_checksum: sha1:71e90db5d92ac3eeebfcacb90799e51a5cfc3bd0
+    pristine_git_object: cbb8d69bd34c179e0d5e221b21ccae0b15bd1f99
+  docs/models/components/chat-handle-status.md:
+    id: 48cd11237761
+    last_write_checksum: sha1:e5483205e02075d2d04c4efe050c4a3b2312fc1c
+    pristine_git_object: cecd42b2c9e88780ade5f972a0ec4999c8a5e2c2
+  docs/models/components/chat-handle.md:
+    id: 9cc4b7502f7f
+    last_write_checksum: sha1:4a6ed9f726fcaa6d62275889d893dccde56bd394
+    pristine_git_object: d714dd7e62816e30b1abe3360435292d4a4b56b1
+  docs/models/components/chat-info.md:
+    id: 3d325694575b
+    last_write_checksum: sha1:239646c9ad132a13372caf3c175ee4a9f9c47bae
+    pristine_git_object: 9ffcd83c3f87303d4f523383d7b98bac6f43ea71
+  docs/models/components/chat-service.md:
+    id: 369e926c727e
+    last_write_checksum: sha1:5e8ad4905ed5a91ce061f344eea616b3db8a906a
+    pristine_git_object: 0cece3e2a93b55239a891b2005bfec25c0dee06c
+  docs/models/components/chat-typing-indicator-started-event.md:
+    id: c1fc95e948d1
+    last_write_checksum: sha1:0da0b3f69e08c7811db48f69625888905b717be5
+    pristine_git_object: 9fa6cc7b7ce8f8444cd8080511f0815f394f9b93
+  docs/models/components/chat-typing-indicator-started-webhook.md:
+    id: 130b6611104f
+    last_write_checksum: sha1:f721de4930fc35c857b6de4d9cc381e3a39afb00
+    pristine_git_object: a0c7e5544bd512f2c8b7f2bd13abee0c10174d4c
+  docs/models/components/chat-typing-indicator-stopped-event.md:
+    id: 607cb9a4b3bc
+    last_write_checksum: sha1:10fd6a18c930365cfd4d862ad2371ed9648212d6
+    pristine_git_object: 9d96064132fa926ebeb9e2a2d7261707d5accb7d
+  docs/models/components/chat-typing-indicator-stopped-webhook.md:
+    id: cbf43df8119a
+    last_write_checksum: sha1:86c55744d54f2cd7bd048b990e6d8c6113bb1c1f
+    pristine_git_object: 869575b85e2437379f5f71dba36ea3d57e6e4337
+  docs/models/components/chat.md:
+    id: bef2369a49b6
+    last_write_checksum: sha1:988af2e3363c03bf0699a4211f30c34e2c1b1749
+    pristine_git_object: caa577993a8b19f0b99da5a63b027ab9c79d3157
+  docs/models/components/create-chat-request.md:
+    id: ded2798356aa
+    last_write_checksum: sha1:f46527b396bb136e3f9421f838e210cfb7eb3519
+    pristine_git_object: 0e0e819e8a7ccc2a5311d87a25abf452624fd066
+  docs/models/components/create-chat-result-chat.md:
+    id: a01419e1f36b
+    last_write_checksum: sha1:703b81b482f9ae5508cec24a74bcb08e78d0de89
+    pristine_git_object: fbc80f60cc3926137a73a5efaa72b21bc53f735c
+  docs/models/components/create-chat-result.md:
+    id: af9ffe326d07
+    last_write_checksum: sha1:a377dfeea0e6526cc344ff933f73b43048d8b5cd
+    pristine_git_object: 5a91d60058e8dd49731f95616591f90470c05b49
+  docs/models/components/create-webhook-subscription-request.md:
+    id: 68ee9786f298
+    last_write_checksum: sha1:361cc1dcfb966915eb1927ca0e021be9fef5d5c5
+    pristine_git_object: c5670580b68443c1e91dd02f96149c12bd32bb83
+  docs/models/components/delete-message-request.md:
+    id: dc978542edff
+    last_write_checksum: sha1:c60fa642ec21080fecc261f5deb3109b70dacf5e
+    pristine_git_object: 8a0fb43efb2d6fb5041b31fa9d6f26733a86798d
+  docs/models/components/delivery-status.md:
+    id: f3af21aaedf7
+    last_write_checksum: sha1:9b3e43140b3c7eb9157afef1056648d073822b27
+    pristine_git_object: 1243bbbfe934af339d25699c8f53ec317f14cee6
+  docs/models/components/direction.md:
+    id: 184efcdcbc2f
+    last_write_checksum: sha1:74cde2babe9d7db943df725b475449b5ded84b7a
+    pristine_git_object: 1c98989e932f718030929f5bc6a8b594e8a37144
+  docs/models/components/error-code.md:
+    id: f63b6ac1642b
+    last_write_checksum: sha1:1f80bf6d46c50a27ee62ccc333742da0b0d18974
+    pristine_git_object: 89aa129addae01595062f6e6f91ef230c8a3bec2
+  docs/models/components/error-detail.md:
+    id: cdabb7c135e2
+    last_write_checksum: sha1:e6069df3eb2215d9d2c078a4b9c7381ad32bed78
+    pristine_git_object: c969ff5aa2a6fe62d4951917c9b667104be00396
+  docs/models/components/get-messages-result.md:
+    id: c2922901cd8d
+    last_write_checksum: sha1:dfe126543b119dba00f45e643b63e98a9ba69e79
+    pristine_git_object: 236d96a5644eaf9348096245d7c3275167a207fb
+  docs/models/components/get-thread-response.md:
+    id: 0b24e0f8cb94
+    last_write_checksum: sha1:335066290e96c65879c09731410d96ef41e57171
+    pristine_git_object: ef0960ace29a810fde3dbfa311db34f087642145
+  docs/models/components/http-method.md:
+    id: 99c8bb7a22bb
+    last_write_checksum: sha1:0e0622490f52a988ddb5b56b38e5157ca7e71147
+    pristine_git_object: c2685d25d61ed09acdf1795d2c47f69f404ab11c
+  docs/models/components/list-chats-result.md:
+    id: f5bcb544cfad
+    last_write_checksum: sha1:c47d8b0d12e027a55ea81b92bd9bd72eae4b7394
+    pristine_git_object: 7122f48d75ecd7d57cf0f14262bda95da211aa98
+  docs/models/components/list-phone-numbers-result.md:
+    id: c1bc62856cb5
+    last_write_checksum: sha1:7e792b1d853324da77486339c3578609678ceaa6
+    pristine_git_object: 12d4ee0322496578338e0f536d621bf4b56e6808
+  docs/models/components/list-webhook-subscriptions-result.md:
+    id: f31c59695cd8
+    last_write_checksum: sha1:87b582aa6f74b20140aa9135e82effa10d4aad34
+    pristine_git_object: 64b705c6a960ebe7bfa405831cee72471f09a79d
+  docs/models/components/media-part-response.md:
+    id: f99e4370d689
+    last_write_checksum: sha1:63100719dcebb6232e9e2fea5dd998caf7733977
+    pristine_git_object: b9e6199da68b3395985ba99265e3822e1a32569f
+  docs/models/components/media-part.md:
+    id: 6831bc5f79f2
+    last_write_checksum: sha1:4ddfc541fcac29f7c7ad9afc936d5eac777b001a
+    pristine_git_object: 93e08df82ba4c736255d11b912393e42e5ba3ccc
+  docs/models/components/message-content-preferred-service.md:
+    id: cc67bb708d5e
+    last_write_checksum: sha1:203cf648a0a6bf90f1d69849ab20ae9ee2484cee
+    pristine_git_object: 88afdb51e610ccb1c4f918bf3f2304587215053f
+  docs/models/components/message-content.md:
+    id: 7adf1207af3a
+    last_write_checksum: sha1:e061d87da59f1be43a0bf885bf12cdb77e17f3b4
+    pristine_git_object: 632152fb357aeb9724d3a2ee7eb4994ef1a2a9b5
+  docs/models/components/message-delivered-webhook-v2.md:
+    id: a9baef287624
+    last_write_checksum: sha1:ba30c35d9300e05c9807bee4b1ed8263148ff02e
+    pristine_git_object: feaeec5a24601f618a5ef7140d957b2a6a035603
+  docs/models/components/message-effect-type.md:
+    id: 2c04e61eaa19
+    last_write_checksum: sha1:2186e9a4f16833bd4d5e31469b81342a119517fe
+    pristine_git_object: 70bd92eec780013fdd8e31857dcddae7fa8cc827
+  docs/models/components/message-effect.md:
+    id: 22510e744e5f
+    last_write_checksum: sha1:5ae52939e45f075ae4b7a56f6e6d7d0221abc1f2
+    pristine_git_object: 8d03f35059f6dfc022f5afc95e2b6b911af27677
+  docs/models/components/message-effect1.md:
+    id: 78a15a5c268d
+    last_write_checksum: sha1:08ad665fa698e1b8fd5b47a18f50e5535ae200f3
+    pristine_git_object: f285e42062c5e59b2653a997346808503df9d75c
+  docs/models/components/message-event-v2-chat.md:
+    id: c3f1aa6a2e25
+    last_write_checksum: sha1:8524e0961af5bd7f75f633d94973e206bbc53660
+    pristine_git_object: 7a6c1881872031a9238cd2e361255342df5589bf
+  docs/models/components/message-event-v2-effect.md:
+    id: 862d11dd60ad
+    last_write_checksum: sha1:e284d5d88bab3ddd559124c1bc880bc151be28dc
+    pristine_git_object: 3fd1ac13ce6a978a4f5188590bc9a4571fa1bb3f
+  docs/models/components/message-event-v2-part.md:
+    id: 2f59adf9e0f9
+    last_write_checksum: sha1:9cd887684d796e57faec3f56ab242f6861014d3f
+    pristine_git_object: f48a1d916701a439205cacbf7eca89a0516f1724
+  docs/models/components/message-event-v2-preferred-service.md:
+    id: b115ab9c355f
+    last_write_checksum: sha1:da52ca22d0a586e05a6e4b9f6a3b19faef4b1dd5
+    pristine_git_object: 7e42ccc5b27ba273025b5d8fa4688679281d90d3
+  docs/models/components/message-event-v2-reply-to.md:
+    id: 92af6c22b71f
+    last_write_checksum: sha1:1b7563156e4cd134a92002f79babde98df13c1db
+    pristine_git_object: 18d0ef489278203a710c60f2bbebab24259adc15
+  docs/models/components/message-event-v2-service.md:
+    id: 423ed3198da9
+    last_write_checksum: sha1:6c90e0f5ec790f07364145ce4401d920a378e7b4
+    pristine_git_object: e2bb7cc879af5771a7ba1850831d02a4c8cef25c
+  docs/models/components/message-event-v2-status.md:
+    id: b708436228a7
+    last_write_checksum: sha1:2f88cd5ca015d1bd535ced53e821a599fca05e00
+    pristine_git_object: e38f0ca6fd198682c97406b301dbac2897be872f
+  docs/models/components/message-event-v2-type.md:
+    id: 11a8914f708e
+    last_write_checksum: sha1:b32253eaef2898fe5d51bbb4bd60e00aad496512
+    pristine_git_object: f95adc6b770684ac822fd515535f119a4f6d435b
+  docs/models/components/message-event-v2.md:
+    id: 542ef6aea7c1
+    last_write_checksum: sha1:45f0d771ed52c0d9a5bb339a99cd3a539e85a680
+    pristine_git_object: e5a485fea349b3a21a5fcfc7e187ce85f7dc6403
+  docs/models/components/message-failed-event.md:
+    id: 574dd8b1e900
+    last_write_checksum: sha1:5fe1b3740385cde7bdaa96c3142821d53d7ed1d2
+    pristine_git_object: b6244bd9f20520c3cc5155e6922dd3a53bf3dbbe
+  docs/models/components/message-failed-webhook.md:
+    id: 078ffda6c3b6
+    last_write_checksum: sha1:0b9502c5bc767881abe75726ff5910935338f4e7
+    pristine_git_object: 7d3f710b8b58fced06798159179d3ab8b14b3ea2
+  docs/models/components/message-from-handle-service.md:
+    id: 0be734cd6681
+    last_write_checksum: sha1:1de6e8963d9cd1de29fc7b5e34d7198657dc5f0c
+    pristine_git_object: 00f9602c67cc9f1b2506bd1fb2638f5fea849cd9
+  docs/models/components/message-from-handle.md:
+    id: 1427d2800f90
+    last_write_checksum: sha1:46a71fd925929d1b1ccc94e103e201e71738baf6
+    pristine_git_object: 5e034953e7b1816e2413db9c4fab3563ec18b4a5
+  docs/models/components/message-part.md:
+    id: "743291446267"
+    last_write_checksum: sha1:75efc8e3c3f9533b711bb726ed7870ac3b929592
+    pristine_git_object: aef6b6a27a3987bbcab1a61e8479f6b844c882d4
+  docs/models/components/message-part1.md:
+    id: 2debed80e8b0
+    last_write_checksum: sha1:a632a2985f3f9c09d6add4fe7556a901bfb52530
+    pristine_git_object: e996f11e650f6e71fe6e210aebe2f70202d4eca8
+  docs/models/components/message-preferred-service.md:
+    id: 32d046d2af73
+    last_write_checksum: sha1:e5edd709738ac5294101cf45a05c8d97fe02a768
+    pristine_git_object: ada46b94cb619ff87f332450777af6820f81c869
+  docs/models/components/message-read-webhook-v2.md:
+    id: ae1f127850c9
+    last_write_checksum: sha1:3daaa2992e593c25bd3fde8802bc0a8b8b6cc6b7
+    pristine_git_object: e930c5b191d6cbe2c7f2c10b0f0954f28d1ed3cb
+  docs/models/components/message-received-webhook-v2.md:
+    id: 52798afb5bb3
+    last_write_checksum: sha1:62f72a7d5ef80f5c5c5d1b5e2161afe669530cee
+    pristine_git_object: 69c79bd75f2950c0d663320dbac3cd6377c48a12
+  docs/models/components/message-reply-to.md:
+    id: a3f6a37bfacb
+    last_write_checksum: sha1:5420b0cd0d8797b01ba40d5933a56850e7055196
+    pristine_git_object: 0c6a6921a2be11b4b73e7124fbeb10a12711802c
+  docs/models/components/message-sent-webhook-v2.md:
+    id: 76f4d91cdc57
+    last_write_checksum: sha1:264c91255960399d93ee68a9203114098de87eec
+    pristine_git_object: a3f6e6802a2e2f2c5257796812648cffaee6efce
+  docs/models/components/message-service.md:
+    id: bccd8a4f62ce
+    last_write_checksum: sha1:0aba15a584e37fd8d8f12105f090b85465ebf567
+    pristine_git_object: 2f7bdfca096aed89e64418622591070a30262343
+  docs/models/components/message-status.md:
+    id: 55e8a33b4c6b
+    last_write_checksum: sha1:3de408d27e5f4b9fa29a99dd88e7d6a107de42d7
+    pristine_git_object: 3c4ab0ac4b0d8bfedec57514227946dd1d6dbb6e
+  docs/models/components/message-type.md:
+    id: 027fd92d4160
+    last_write_checksum: sha1:57b662498849d3744ddb70d3c8bfea26cd5face1
+    pristine_git_object: 38c84433ef625df251dd4f167d767fb8e107b5b9
+  docs/models/components/message.md:
+    id: 6b6207b6871b
+    last_write_checksum: sha1:3268c75d7a5cbc729b52c55d4db99613ee69f192
+    pristine_git_object: 89beb252b072423e63356db6cf37076de3f91dc2
+  docs/models/components/operation.md:
+    id: cf56bc24045c
+    last_write_checksum: sha1:5b7ff2ff1d9c2cae235c8531cb3bad52f1843723
+    pristine_git_object: 79c012d2f57db4a02e1275e045db40c884551ec8
+  docs/models/components/owner-handle-service.md:
+    id: 33118881d04c
+    last_write_checksum: sha1:05d65a3f341959401e1bc3b1610bba3ff86864e4
+    pristine_git_object: 177d72d46a2d6cb54ea7261bf15c2c4ec54b2bc4
+  docs/models/components/owner-handle.md:
+    id: 0cdfe4edb24f
+    last_write_checksum: sha1:577544450e3d166ee5d58e9cee3e08f9de33013c
+    pristine_git_object: f89ff4a05f3f878c218ac3cc0a4572469902508f
+  docs/models/components/participant-added-event-participant.md:
+    id: 36ce72680546
+    last_write_checksum: sha1:b7257d1e745bf8783b93a8031516741d483465fe
+    pristine_git_object: dd729dc65213e4f3b01232ff28c54fe38a9c60ef
+  docs/models/components/participant-added-event-service.md:
+    id: d4e060f3a77a
+    last_write_checksum: sha1:6b7cc3b88311fe873e5b5b2ce2a8c48841024a87
+    pristine_git_object: 83ee096fcac1bdc00a701fd7c643615b2cf63071
+  docs/models/components/participant-added-event-status.md:
+    id: 237e07bb1cbd
+    last_write_checksum: sha1:d3dfeaed76382ec51100dc3c7d9d8f590f044eb4
+    pristine_git_object: 08d144074152987158791f84104dd6425e9606cd
+  docs/models/components/participant-added-event.md:
+    id: 8bff9e27f843
+    last_write_checksum: sha1:9379b2ce73502d72e1403a99c449faafbad0e68f
+    pristine_git_object: 7615d6be8d645889ba08a3ecae635836925834b2
+  docs/models/components/participant-added-webhook.md:
+    id: 894f245df142
+    last_write_checksum: sha1:b2fa22cdd99e13b802ca24605dd63add071e0f24
+    pristine_git_object: 82c70d9aea1c47904b11f47501698146d08f92e8
+  docs/models/components/participant-removed-event-participant.md:
+    id: f0a7a3a66b6f
+    last_write_checksum: sha1:9aa7b81a4878389d570b4dca3cbbf7dc7686da0c
+    pristine_git_object: 43b4add599626a55d1dda18c35b5ae11a9692e71
+  docs/models/components/participant-removed-event-service.md:
+    id: 8a934c4f41f0
+    last_write_checksum: sha1:7bed4640618ac1f9b3017731a8f11d97ee544ecf
+    pristine_git_object: 0dba3b6429feb681218bb7310e40270320cea629
+  docs/models/components/participant-removed-event-status.md:
+    id: 1ebb500f5ac6
+    last_write_checksum: sha1:d221713a49f7638a9446dae6f1ca5e41f73bdc0f
+    pristine_git_object: 3334e4a423e07a11c68e87d30c298806381eb90f
+  docs/models/components/participant-removed-event.md:
+    id: 41f3e37be383
+    last_write_checksum: sha1:fee4cadc7cb73360ce303f47e704d4e88ad552e7
+    pristine_git_object: 27bad77cdfd21c065462c7a1c885833dc551d888
+  docs/models/components/participant-removed-webhook.md:
+    id: fec015519e03
+    last_write_checksum: sha1:985206539ed126e1c12a5d8a95d3b42d8e58f5fa
+    pristine_git_object: a1c70d2bc3c8c98f375422904e9ae9b40c14c868
+  docs/models/components/phone-capabilities.md:
+    id: 2f32b9978f5b
+    last_write_checksum: sha1:fd7a3fe6315d8e3603f40f3e51e7f4d707a067fd
+    pristine_git_object: de84d9b6e6a5ade08df7d245dc88dfdce4d9bd77
+  docs/models/components/phone-number-info-type.md:
+    id: 73fd7e09dfad
+    last_write_checksum: sha1:4832f98cabc951fe925f2ad45a5a6a436a9e48e0
+    pristine_git_object: 9c6034aa57eac308e60da81644f05ed669c07538
+  docs/models/components/phone-number-info.md:
+    id: 0d53a9db2979
+    last_write_checksum: sha1:19b47daf7b0e51c712399586c86855ca45815223
+    pristine_git_object: e599d95412e5e995fcc9be58b25384664d9e120a
+  docs/models/components/reaction-added-webhook.md:
+    id: 2730d154d0c6
+    last_write_checksum: sha1:840016a9e4b98f5812408ef58b639ea62c1d2a25
+    pristine_git_object: 3c7c045ecc33415a0a7920932a8354dadff42ac8
+  docs/models/components/reaction-event-base-from-handle-service.md:
+    id: 0434cdeb3d49
+    last_write_checksum: sha1:edaae92c630cd88fc2ad77233cc666d9140bb29d
+    pristine_git_object: 5f9c9d4bc9c4782989aa164d81f3e3f227706113
+  docs/models/components/reaction-event-base-from-handle.md:
+    id: dbfcc4edfa01
+    last_write_checksum: sha1:d2fc61e1e79c0b898e9373098220cad61282dbb7
+    pristine_git_object: d9bca0f00daa388ca5021fc51ccf946568407d13
+  docs/models/components/reaction-event-base-service.md:
+    id: ff299c177969
+    last_write_checksum: sha1:97050d595c8e48262b7c2933e26a693afa3cfdd8
+    pristine_git_object: 31f26828932e1bf4524c81f389e2c56b5b062e0b
+  docs/models/components/reaction-event-base-status.md:
+    id: 76e12f16bc0d
+    last_write_checksum: sha1:bacaa351e4eaf86a54e04eb4abfad25e35ddf775
+    pristine_git_object: 2581c558937d377ac7973cfe043188d6c526ef31
+  docs/models/components/reaction-event-base.md:
+    id: 442ef13491d3
+    last_write_checksum: sha1:ce188950c9de3974088800f5fd206aeb0a314cdb
+    pristine_git_object: f7eafec5f502679fa179f79f49cd32dcc13c6b97
+  docs/models/components/reaction-removed-webhook.md:
+    id: e2bcfa642808
+    last_write_checksum: sha1:d1029e095768baba72d7d61558f99b78c046f86f
+    pristine_git_object: 124e5708eeba46bb08c2fb751042722bcf3b7454
+  docs/models/components/reaction-type.md:
+    id: 75b89ea4e12b
+    last_write_checksum: sha1:9e793872d092deb3cb688618e699740935b69b4a
+    pristine_git_object: 835c5fbd20087e3e17b8c4a05fe80efe2851da30
+  docs/models/components/reaction.md:
+    id: c59f29128f46
+    last_write_checksum: sha1:bfef4be3e71ab3fb65dfb1b890aa0243f9906d69
+    pristine_git_object: 380e14a5f658403e3303896124456bbc6740959b
+  docs/models/components/remove-participant-request.md:
+    id: 37890a85eb49
+    last_write_checksum: sha1:186521faa83c31045ec1c58462d7fa358d17734a
+    pristine_git_object: 241cd38d8daa52b037ff19aaa2a5617d711371d3
+  docs/models/components/reply-to.md:
+    id: 34b5b7c777a8
+    last_write_checksum: sha1:99396edcfe583ea0314f761c01f5d5d0a504e76e
+    pristine_git_object: 00cfdeb8c8046bffdf97906c73ae64d44ca90397
+  docs/models/components/request-upload-request.md:
+    id: 0f1a548f8c51
+    last_write_checksum: sha1:26ca3ffff549e1cf2d0890a0aeb4841f9482939e
+    pristine_git_object: fa820d7b843ab32366b5b90a664fa29df0b9d65e
+  docs/models/components/request-upload-result.md:
+    id: e18f70dbb6df
+    last_write_checksum: sha1:e26f3f9889601b25237f62c629a04933de981b5c
+    pristine_git_object: 39f74d0c79400a2f9a969cea7abdbb75b521a053
+  docs/models/components/schemas-media-part-response.md:
+    id: f56dabec354c
+    last_write_checksum: sha1:32ea0b98003c253f2777f12b24d37b7216066edd
+    pristine_git_object: 67bbba25637346ac70fda64bdc97685cf0990dec
+  docs/models/components/schemas-text-part-response.md:
+    id: c3955c1c8ded
+    last_write_checksum: sha1:50abe5c12c255e7b350de8bcee2de8d93662fc58
+    pristine_git_object: f4a72ca3c5618779c7044ac89f74a97ee1942b2f
+  docs/models/components/security.md:
+    id: 54906b49ea28
+    last_write_checksum: sha1:c480fcb2476e193089ba43f1a35ec0ab7f21a6ab
+    pristine_git_object: c394ce70e82b8e7a341af0620229bde513844f79
+  docs/models/components/send-message-response.md:
+    id: 98d9d9add734
+    last_write_checksum: sha1:ca5eebab5ed823566a7f07a8167af28119fe3cce
+    pristine_git_object: 7596fdd31513b5c0a79e6eafb15bd5941174c41d
+  docs/models/components/send-message-to-chat-request.md:
+    id: 28320fca286c
+    last_write_checksum: sha1:e9963019a2b901c2e8fb570e7cbb05d632b55369
+    pristine_git_object: 34a7dc06ac6280e1108e10f6299b1e766dc9706b
+  docs/models/components/send-reaction-request.md:
+    id: e00b2930d043
+    last_write_checksum: sha1:7f955129420fdc6c6141e47aa4d7693873789f22
+    pristine_git_object: 827849efb6b1f5871327d86fbf403eca14d6e9b3
+  docs/models/components/send-voice-memo-to-chat-request.md:
+    id: 60122011f576
+    last_write_checksum: sha1:b7f7c552c06a319f1c74a3f473d1f2bdad70849e
+    pristine_git_object: ff95dfae40b0c19075d01f9100d6833eadb45def
+  docs/models/components/send-voice-memo-to-chat-result-service.md:
+    id: a184086feeed
+    last_write_checksum: sha1:6f501a03026a94ea52cfbf9c6ff943f7f8965a94
+    pristine_git_object: 4ecb844c68ca259e291fdabc2e1b845947b72442
+  docs/models/components/send-voice-memo-to-chat-result.md:
+    id: ee1506c02f7b
+    last_write_checksum: sha1:21e2aca2cb296800130e80507706ce14b885f48c
+    pristine_git_object: a3f1f9193272f7186efa2339ee60e73727f64bfd
+  docs/models/components/sent-message-effect.md:
+    id: 022041584c11
+    last_write_checksum: sha1:2376e3c07de8f3ae2abb6a649fa5d65fbcdfd0f4
+    pristine_git_object: 36b64fce50887802526adeb501b3999e161b25da
+  docs/models/components/sent-message-from-handle-service.md:
+    id: b8076b2025ce
+    last_write_checksum: sha1:9b18fedaa63fe9afec33449573a7d18296880498
+    pristine_git_object: f425f38160adc988f67eceb8435dcb72c706f26b
+  docs/models/components/sent-message-from-handle.md:
+    id: 255406bbf1a8
+    last_write_checksum: sha1:d219a932d18d68c0463bfe0fd4e37f099c52ca23
+    pristine_git_object: fd9164947e34eaffd5bed5bbffa86652e6d0f709
+  docs/models/components/sent-message-part.md:
+    id: 57556f4c46c7
+    last_write_checksum: sha1:01136d01604bf70007776974802c424e1c1e1174
+    pristine_git_object: 817e3b9ec25161d5d921b75eca282a265c2851ec
+  docs/models/components/sent-message-preferred-service.md:
+    id: e7994ede73e8
+    last_write_checksum: sha1:982abf7f6f7020a15dccfd6927b055b1c109dc92
+    pristine_git_object: d654775b497c29a26a410d52086e2b78e6d58151
+  docs/models/components/sent-message-reply-to.md:
+    id: 494ae5def216
+    last_write_checksum: sha1:47984719064e333ad799974b2b3e04ed535b3ad3
+    pristine_git_object: 764e095c554d162f3aab8021bb69e1d1a8c1e78e
+  docs/models/components/sent-message-service.md:
+    id: 91cb28948cc5
+    last_write_checksum: sha1:28587062b80eb346ef7164b674bc35a6d5e01a40
+    pristine_git_object: 3255f7220b496cf834612c1bba1c2157226b9e86
+  docs/models/components/sent-message-status.md:
+    id: 411cf18ef21b
+    last_write_checksum: sha1:831efa0169f9e05b0ae4a3805e0a6e9ee5fe7aa7
+    pristine_git_object: f3d34ce40edca1bc0b7aa0060718e83da4ad160d
+  docs/models/components/sent-message-type.md:
+    id: 2bba99207ab3
+    last_write_checksum: sha1:cd31a10b52341428b0ece0040942a532ece71dd2
+    pristine_git_object: e67ef2d1134acb855343d0898145cb81ba3021f2
+  docs/models/components/sent-message.md:
+    id: 6e028a8711b9
+    last_write_checksum: sha1:2c0bcf07bc69155bf5b37d3200182bfdf979071b
+    pristine_git_object: 94b704dab6e622d55d0169c9ece2f60d8944a253
+  docs/models/components/supported-content-type.md:
+    id: ec7938c34e9f
+    last_write_checksum: sha1:111adc775df0bbd60ca86a5af6380b7a6d7c15fb
+    pristine_git_object: 79c58224ab6bcee903ee68345cdc54ae7e662c87
+  docs/models/components/text-part-response.md:
+    id: b8666f018502
+    last_write_checksum: sha1:9bd4dafd9e0dae526a2999c40839c57778dd4f4c
+    pristine_git_object: f073948d8458f9ca114ef21febf9cefcee2d3bd6
+  docs/models/components/text-part.md:
+    id: 16c5b90e895a
+    last_write_checksum: sha1:19e72e5e1b7e88d145a2943f1f7f4bf90a0b8f06
+    pristine_git_object: 7dc5521ba61d086ef04b0a5109f0cda3547f9082
+  docs/models/components/update-chat-request.md:
+    id: 35e17639a2ce
+    last_write_checksum: sha1:7c67f9caae4c8a1e2cad0cdb12d91a4d8b896621
+    pristine_git_object: 1b4d6037cfbc12e8c7d996aa0c9c5f5454e711c2
+  docs/models/components/update-webhook-subscription-request.md:
+    id: 13a1899d23af
+    last_write_checksum: sha1:b2267141d6229ccbc2616a88c0ec914717fdd6f1
+    pristine_git_object: 263ad9047a4d9587bff4cf7921a35b7aca0a7717
+  docs/models/components/voice-memo-attachment.md:
+    id: d4b949aa1122
+    last_write_checksum: sha1:ea235c77b5a168a1ae62ec26bbaef9175b274cad
+    pristine_git_object: f747f682b82f9ed1220942b143a4ca9ec2e4417b
+  docs/models/components/voice-memo.md:
+    id: 3d392397a382
+    last_write_checksum: sha1:ba6aab81dc1b7f9938543c32a9cf8f503ac9f7eb
+    pristine_git_object: 8c3752614bee876399ca931c92a635fb816b2491
+  docs/models/components/webhook-error-code.md:
+    id: 3575eeca79a9
+    last_write_checksum: sha1:95ace350d588945c6bca0612c6a222d996ca14b4
+    pristine_git_object: 3605e118514b3e554287f7d266f5917e92ea4681
+  docs/models/components/webhook-event-type.md:
+    id: 15605110e46b
+    last_write_checksum: sha1:d402bfe5b3484eb69723484feb4a126e9b728d49
+    pristine_git_object: 278961ebc075fe612cab89333371c137168c3f4c
+  docs/models/components/webhook-events-result.md:
+    id: 3708966dfb08
+    last_write_checksum: sha1:1dc690b475ba17d263a5236d1326648416d6a275
+    pristine_git_object: 6bf06d477750adc79d0840b12b4241af0d34b64d
+  docs/models/components/webhook-subscription-created-response.md:
+    id: c27caa65e32d
+    last_write_checksum: sha1:6b8c024eb2b59f137a5cab92a4bfa77b04077714
+    pristine_git_object: 583488ec09238b227fcd943f1aecefd37d8b87e8
+  docs/models/components/webhook-subscription-response.md:
+    id: 1fe0cac45cac
+    last_write_checksum: sha1:54eaf561ae3287748fb4beb26189ef8d75cab57c
+    pristine_git_object: 958f8a772f7847ba467859538807b4703b578a1d
+  docs/models/errors/error-response.md:
+    id: 42d2f6b1c814
+    last_write_checksum: sha1:98a7695d673ec6b0ef4286d5d67d08df88c44e8a
+    pristine_git_object: a49d1fe3298dba910086c8e3189f6cf222cea916
+  docs/models/operations/add-participant-request.md:
+    id: 0bd0e91b20c6
+    last_write_checksum: sha1:d98e41ccffb2469c2452556342a106bf2c5a0031
+    pristine_git_object: aa1169fe59b19c7080765df65514bc9088d522df
+  docs/models/operations/add-participant-response.md:
+    id: 3be6ca51cc1a
+    last_write_checksum: sha1:4f4c5de539de1762f13718b67d005e3100322711
+    pristine_git_object: c3ca79aa73d2aa596d7b7349d893983425a7b411
+  docs/models/operations/delete-message-request.md:
+    id: 9df7110eace2
+    last_write_checksum: sha1:83e0935fc6b3204c0c9a7e2362a9788fd12023b0
+    pristine_git_object: b593259715075acf35d1f92b8bd0fa6f624c43d5
+  docs/models/operations/delete-webhook-subscription-request.md:
+    id: cbc115396618
+    last_write_checksum: sha1:b37fb573f56c285f487d2cfe224415f2400b9fb4
+    pristine_git_object: ca8d445c7866716d1e2ab5a4c704fd30527ef693
+  docs/models/operations/get-attachment-request.md:
+    id: 6b289091db80
+    last_write_checksum: sha1:beee46b83b25ff53e5a338d79ebf2877114823fc
+    pristine_git_object: e5412d02dd63b9264d5e2bfa531b9e23819ba662
+  docs/models/operations/get-chat-request.md:
+    id: 8641237f10b2
+    last_write_checksum: sha1:a20f063786777cb57ed8ecaf0793a2d1d8355808
+    pristine_git_object: 9221d0548fbe1fefdabbe5122c1c11a0ec31d359
+  docs/models/operations/get-message-request.md:
+    id: 2ba54322e356
+    last_write_checksum: sha1:37e0af3d160baca303148dda09b83fcc64eb7195
+    pristine_git_object: 35e71176e82d4e6e831bd01c0a70531031ddfcc7
+  docs/models/operations/get-message-thread-request.md:
+    id: 5f1ef60090c3
+    last_write_checksum: sha1:74a90a816243a1c2b93605bf8865aa171fa132b3
+    pristine_git_object: 30daec50941503734a53bd1ba2a60f8a0f0d391f
+  docs/models/operations/get-messages-request.md:
+    id: c7dc26d4771e
+    last_write_checksum: sha1:c318a7d553d275c434f9fd466fe0faa2c0445614
+    pristine_git_object: 2e8a3b0b21f19f4c38ec4bb6e9f7beaf636ea2a9
+  docs/models/operations/get-webhook-subscription-request.md:
+    id: bb86569b553e
+    last_write_checksum: sha1:d84aad4eb5e52b245159076a4e895dc95cd2525e
+    pristine_git_object: 2efc8ab9e9854373141938471bdb5fadc6fde0f3
+  docs/models/operations/list-chats-request.md:
+    id: d54904a4218b
+    last_write_checksum: sha1:c35de7290825367a318bb15fef8cc5e5440f52c0
+    pristine_git_object: 019d6d3383b7b82b1c16294d5ce4109b6056e13a
+  docs/models/operations/mark-chat-as-read-request.md:
+    id: 4334cc1bd396
+    last_write_checksum: sha1:525f3bc63b33f5e9689cdc5ebd64d1074ce300da
+    pristine_git_object: a1a286431570af36908236605e388b1601767be1
+  docs/models/operations/order.md:
+    id: 97e3e83e5b11
+    last_write_checksum: sha1:476cf14bbe5de65adf7319964017d62b7dc84b56
+    pristine_git_object: 30e97adf9c0dc6d4b3ba6d06535f8849cde2c474
+  docs/models/operations/remove-participant-request.md:
+    id: 24cf8b56a39b
+    last_write_checksum: sha1:e18a3c90812d786a08722e22b828c7cc0d61d42b
+    pristine_git_object: 6b30783a287c0072b9367e515abba90e7b260c1d
+  docs/models/operations/remove-participant-response.md:
+    id: cddd9c2ddd41
+    last_write_checksum: sha1:39b2bdbd23a968b2e7d7298fdbcb5ae711d688c6
+    pristine_git_object: e388a901cdca336e1cd800abaa475985d3c34792
+  docs/models/operations/send-message-to-chat-request.md:
+    id: 195198fdaf37
+    last_write_checksum: sha1:a012e2a2548787c3d1f864298fe0d9bb21ccfa94
+    pristine_git_object: 8637644d5b7b25977c10b1018cbe47c29325e723
+  docs/models/operations/send-reaction-request.md:
+    id: 940d3d312d1d
+    last_write_checksum: sha1:899d41300d32048e1567b6bca4f68711ca781129
+    pristine_git_object: de97e64b1d6e5fa00c8635280a98743fa5da3843
+  docs/models/operations/send-voice-memo-to-chat-request.md:
+    id: a14dc9bd9932
+    last_write_checksum: sha1:e6324c26ce1c65e2adbfd3e18311a76b6ca9dceb
+    pristine_git_object: 0a053771a18c4eae2d61e40b4216c4861aa20969
+  docs/models/operations/share-contact-with-chat-request.md:
+    id: a1538bfdecef
+    last_write_checksum: sha1:259794b448573b4ae136af24fde25e66060f4e2c
+    pristine_git_object: 5ec4e60b9cb0fd4e5b5f97c4e3d6fe3de437c231
+  docs/models/operations/start-typing-request.md:
+    id: 127379e3300f
+    last_write_checksum: sha1:e6a1ea82818e1862a8b0685a962f84881405d67a
+    pristine_git_object: ee7fbd73a115e9e7fc0cf60d2e8596c1a0995109
+  docs/models/operations/stop-typing-request.md:
+    id: a9010b698354
+    last_write_checksum: sha1:5d3fb70e52b58c73b4c41f29cd741b9f3d1a6014
+    pristine_git_object: 7e3e33490dc28aa7c8a71d4f98b2a5115f671c34
+  docs/models/operations/update-chat-request.md:
+    id: d80cb6b9448f
+    last_write_checksum: sha1:b8683dfdeffc2c9cbcdcefb68ae5bd676fe81215
+    pristine_git_object: a9691d4399c38657f95bc6f56103cd5897e3f274
+  docs/models/operations/update-webhook-subscription-request.md:
+    id: 0069b1043ff0
+    last_write_checksum: sha1:6cddd9468638d6333ec84e16d8259a88093836e9
+    pristine_git_object: 64b8bc56b2422af74965871a8120a807bfd9c28d
+  docs/sdks/attachments/README.md:
+    id: b60e6ecf628b
+    last_write_checksum: sha1:1550969773297ba2ae8954f315c9d7b9894d3b7e
+    pristine_git_object: 60d885d1e93ef47bd39cd93a1717368774b6b012
+  docs/sdks/chats/README.md:
+    id: ea139ac0a476
+    last_write_checksum: sha1:59eab3ba1f6ee1ab0e2e830f5809acd9b28a82c2
+    pristine_git_object: e4f5bc9ac0f8ae8f2e6ec0ecf3c7f01f8a7047a2
+  docs/sdks/messages/README.md:
+    id: 3f1f6d38fc33
+    last_write_checksum: sha1:8b300208161482e75494937cc9350561763f2b3c
+    pristine_git_object: 92705ce2de1fc04638187919143312976a738812
+  docs/sdks/phonenumbers/README.md:
+    id: bfed92f30c8c
+    last_write_checksum: sha1:e2ee4471e7ceded14f12e92d7b21a1ac1f38101a
+    pristine_git_object: 1cc02333f431079dfee14b4e9f1018e2bb8db760
+  docs/sdks/webhooks/README.md:
+    id: e21b32d786a4
+    last_write_checksum: sha1:2650b3c022ff33dd0360d427dbdd9533acc33de3
+    pristine_git_object: f633f73973022cafa75da269f682bdf735688cdb
+  eslint.config.mjs:
+    id: 461c8d07f6da
+    last_write_checksum: sha1:9398f326377fe47f67af2df6eb6370750c0790b4
+    pristine_git_object: 67bccfec985be20a00970d90155752832dd47135
+  examples/.env.template:
+    id: 52cbe5afed92
+    last_write_checksum: sha1:e398d5300ed2f25d7198e44bfc99c65a4763b5a2
+    pristine_git_object: 6f1eb9dd2e6b9e05252d7a44bdfee21905a61ad6
+  examples/README.md:
+    id: 9d0f69d6e677
+    last_write_checksum: sha1:a8c01e5fe511037b6eab22306887607ba1565c8a
+    pristine_git_object: 16a83bf4e4de38ff0a8162101399feb0c2985cc0
+  examples/chatsCreateChat.example.ts:
+    id: 9c3bcf19a270
+    last_write_checksum: sha1:05f8c6b8317c6aaa263d5206f516cbec81b518f2
+    pristine_git_object: 9bedce0f7b5d62dbf39375d2b4a5457029a536f0
+  examples/package.json:
+    id: c1d7b0ec8e7e
+    last_write_checksum: sha1:89a367958b468ac79c073f85a87caf4403aefd33
+    pristine_git_object: e2e741f3c8361f7766a40f83625fcdf682613209
+  jsr.json:
+    id: 7f6ab7767282
+    last_write_checksum: sha1:8f6ecf9b96c5e053c692e35b9334ca8b15fffb51
+    pristine_git_object: 65e294d510b04234845cce6358ea61a164683f98
+  package.json:
+    id: 7030d0b2f71b
+    last_write_checksum: sha1:0e7127927da40cb00d85677a91f0956e557cfeec
+    pristine_git_object: 58721bb305e8de983ebe6a4a6b524106a2ef1aec
+  src/core.ts:
+    id: f431fdbcd144
+    last_write_checksum: sha1:9cb184042f88ff7fb38c28ca6f82204a7ed2d662
+    pristine_git_object: 5fc81112cc07b3858b972766ee8a4303c911b81b
+  src/funcs/attachments-get-attachment.ts:
+    id: 318bbb16e2ec
+    last_write_checksum: sha1:72353ed3c7ff4afef631954c38993bd0db0e50ea
+    pristine_git_object: c2868fabca253a90c60ff3a62a86fd593fdcc260
+  src/funcs/attachments-request-upload.ts:
+    id: 87a68e450c63
+    last_write_checksum: sha1:e44cd14a9b46b4de0ff00eca4882ea030b0ea3eb
+    pristine_git_object: 79c178fe29f47ceab3eb715bd87afaf800cdb572
+  src/funcs/chats-add-participant.ts:
+    id: 41885f5c1d67
+    last_write_checksum: sha1:fb1f75ba8a718552f439e0a9c58629aacb498ee0
+    pristine_git_object: 7da5722ac8a1d40dbd207c6ca4d40eddc872ee07
+  src/funcs/chats-create-chat.ts:
+    id: 841591b8c059
+    last_write_checksum: sha1:cfd4c787f07c0768275c478697a60ddf545930a7
+    pristine_git_object: 1d71b439f7dbd1e5d54d04a0f65fb2bfded9864b
+  src/funcs/chats-get-chat.ts:
+    id: c09193fae7f2
+    last_write_checksum: sha1:2962424cb90c90b72258a80c5e028ad967b83b40
+    pristine_git_object: d02fa3ca065c659205a687600b3dd0e51dec5d50
+  src/funcs/chats-list-chats.ts:
+    id: 6071d31deec2
+    last_write_checksum: sha1:1dd73cd2bf74d0ecb4d3509a3fc412ab6097081f
+    pristine_git_object: d42db3698b5f4616b951dd2284a9e5d5aefce37e
+  src/funcs/chats-mark-chat-as-read.ts:
+    id: cf022a26854e
+    last_write_checksum: sha1:c089acb31cbe5bb2e8b8ed9e6614ba3fab1f3279
+    pristine_git_object: 369baa7bb90c41c8e6e18467ee05c07f7905d160
+  src/funcs/chats-remove-participant.ts:
+    id: b895f0ad0ccd
+    last_write_checksum: sha1:eb79087abebdf8c7046c0f70c140a0b77cf39da1
+    pristine_git_object: f8a3759097eab86e5ab3a91a531bce0944b239d1
+  src/funcs/chats-share-contact-with-chat.ts:
+    id: d57469238396
+    last_write_checksum: sha1:6fa1e8b120392c16939e5a4dad613a1b70599cc6
+    pristine_git_object: 45840f7d651c983fae6702f9b9a3d206c94c7f07
+  src/funcs/chats-start-typing.ts:
+    id: 438f6fff9686
+    last_write_checksum: sha1:e723d7a12fd7f34a53219819779b0ea9b1300c33
+    pristine_git_object: 104b0a0fe3d728a6f8d9a0bcd3c1ab9536910f02
+  src/funcs/chats-stop-typing.ts:
+    id: d180968f5c44
+    last_write_checksum: sha1:c0c1aaa948d0f636970ecd230b83cb3427040212
+    pristine_git_object: 24947ff8dc038ea2ad515b77a7f7ae2185879152
+  src/funcs/chats-update-chat.ts:
+    id: dbb312c69839
+    last_write_checksum: sha1:aa64b9963ba01e029aad059f814eebb8c2dfb384
+    pristine_git_object: 2fe4bc42d393d580bb93f359588ff150381148ee
+  src/funcs/messages-delete-message.ts:
+    id: b59c8d998454
+    last_write_checksum: sha1:50e90912e44c0bed67d0caf19cd8d1793c378048
+    pristine_git_object: b98d709f8f3bc17cabb9118dc68d689f424379bd
+  src/funcs/messages-get-message-thread.ts:
+    id: 07b0292f4ce3
+    last_write_checksum: sha1:0a7cbc9861f046356dfcbef7e03d84a5a1f8e6b0
+    pristine_git_object: 571cdd4a68f2ea0a761c7f6207873eb15e32dfc8
+  src/funcs/messages-get-message.ts:
+    id: 1da165b92014
+    last_write_checksum: sha1:9691b881890e66d710bb1a1c7dd6e2f9cb193b54
+    pristine_git_object: 568d867e9726684134ed03709a4e50a3d41c12d4
+  src/funcs/messages-get-messages.ts:
+    id: afafd9c1baf0
+    last_write_checksum: sha1:4a61926378cd50979538b2c4679db7fedf107988
+    pristine_git_object: cc8ec18a2e03deed616816f32e37bb2c8e182ab4
+  src/funcs/messages-send-message-to-chat.ts:
+    id: b3dd43300fcd
+    last_write_checksum: sha1:2233de7e04d5f7b6b1ac7b1171b619a487797e8e
+    pristine_git_object: 451ca124f8330944fe15e4f70798253841bb9ebe
+  src/funcs/messages-send-reaction.ts:
+    id: 4889efbbc12d
+    last_write_checksum: sha1:b89d07d000c833a862bc862153545dba41c68a47
+    pristine_git_object: dc8933f1e9b8ffe287ffa8d1956d5bb7ef6d3a81
+  src/funcs/messages-send-voice-memo-to-chat.ts:
+    id: 12a32ba087cd
+    last_write_checksum: sha1:c70c134273a8bcb735c469179cc7673136949c9f
+    pristine_git_object: fd174cf1968185eeab8a3a2a9b0479d5418853b3
+  src/funcs/phone-numbers-list-phone-numbers.ts:
+    id: 92926424ce85
+    last_write_checksum: sha1:0f6c33c4d3e04a480817ad0d4c27286a67b3a9c2
+    pristine_git_object: d7c9bc35715a6eeb640f639cd491e470df149fad
+  src/funcs/validate-webhook.ts:
+    id: 9a89fedffcd8
+    last_write_checksum: sha1:f3b58745997f261b4f9e7fcec99d70410f437f2b
+    pristine_git_object: 316139e77b014ad1af3b3cfbb5f3335b59e74a94
+  src/funcs/webhooks-create-webhook-subscription.ts:
+    id: f96a6dbc7e4f
+    last_write_checksum: sha1:daa21c73363405c274c5c886220d6b65122dc52c
+    pristine_git_object: 12d06c8e081cc6432564ed6b939c22e9292aff22
+  src/funcs/webhooks-delete-webhook-subscription.ts:
+    id: 6dda8205c961
+    last_write_checksum: sha1:000b42af3c508ef24ff4e908b4fd1730b1274af9
+    pristine_git_object: 3d33f9676faecf82c2145dd29d335afa31c13b3c
+  src/funcs/webhooks-get-webhook-subscription.ts:
+    id: 7cdfc3a775fe
+    last_write_checksum: sha1:bd2224d510e08b881f2fedecbd5f8abfe21ae24f
+    pristine_git_object: f1f91596e5a2000cf4fb665c7e9226c93771fbda
+  src/funcs/webhooks-list-webhook-events.ts:
+    id: 64c37d5b0802
+    last_write_checksum: sha1:a1d74743fba03da68ca585b3f0517693da88c052
+    pristine_git_object: 22eaa041095f18dc4279d470de9cde0c5892fd64
+  src/funcs/webhooks-list-webhook-subscriptions.ts:
+    id: 5585f24897e9
+    last_write_checksum: sha1:8253c278867f40da5d0e8528c5ab4437006e630a
+    pristine_git_object: 9e344704017ed75d8a612af7f397c7e98c04509b
+  src/funcs/webhooks-update-webhook-subscription.ts:
+    id: cd92fa81f2d6
+    last_write_checksum: sha1:7bfbac6713edfe0dd0354f496c3e7ee90d2a2c60
+    pristine_git_object: 0e9b191b692ac27f4dea0bfab8660d1d7d7d047e
+  src/hooks/hooks.ts:
+    id: a2463fc6f69b
+    last_write_checksum: sha1:7dd975bbcc46a32dd394f86a4652b74ecc70d874
+    pristine_git_object: 7ed9e0445ac189e0f90687c6ef602212702bde90
+  src/hooks/index.ts:
+    id: 5f2dab62b520
+    last_write_checksum: sha1:1a11c073a6cd792932218e1d4ed36b8567bad8ef
+    pristine_git_object: f60ec7acd76141a71d78008c5a362eb0236d8335
+  src/hooks/types.ts:
+    id: 2a02d86ec24f
+    last_write_checksum: sha1:795234ea169bcf6f92d61022795b107a3375b3d2
+    pristine_git_object: 8ecd1e869a8294c19cc14a414c9776b7d1aecb3d
+  src/index.ts:
+    id: c5fb850250c7
+    last_write_checksum: sha1:35c9cde3ae14b18b3f893a1afe8b6c44f8760f24
+    pristine_git_object: dbcba164a0082e3bb8c43cf21fa7f8ffb9d35dfc
+  src/lib/base64.ts:
+    id: "598522066688"
+    last_write_checksum: sha1:8c94164f2f78e6041c853186fa01f659591f5913
+    pristine_git_object: 44be0eae8246521b230e8e711a88eff738fc015d
+  src/lib/config.ts:
+    id: 320761608fb3
+    last_write_checksum: sha1:e0fd57fe6deb6d8ac819aa5e4a42d9f065eba2b9
+    pristine_git_object: 3e34cee913c23c5efad736d8817fed2aa33af981
+  src/lib/dlv.ts:
+    id: b1988214835a
+    last_write_checksum: sha1:1dd3e3fbb4550c4bf31f5ef997faff355d6f3250
+    pristine_git_object: e81091f5e536f82739f71379b1fddc2d147c49e2
+  src/lib/encodings.ts:
+    id: 3bd8ead98afd
+    last_write_checksum: sha1:7b206b995d985c9c1c89856a23346cf87c22d374
+    pristine_git_object: 25d1d8032a69f56da1ac1df00a48ecf73457a1ef
+  src/lib/files.ts:
+    id: e5efa54fcb95
+    last_write_checksum: sha1:d0f325f445b8d22e7d73baf052c585ec2dd24841
+    pristine_git_object: 0344cd046d033f9e8a55de02f7935c5cec5dc30b
+  src/lib/http.ts:
+    id: 63a80782d37e
+    last_write_checksum: sha1:797cbf16d3c7c4d62d3ba0eedb08617524938457
+    pristine_git_object: 13cf1fd7894a89f727b8d2db2ad24313a94f68c7
+  src/lib/is-plain-object.ts:
+    id: b9862591096a
+    last_write_checksum: sha1:df687f25a9590b6fd95d39df41a652ae3fd4e517
+    pristine_git_object: 61070d3d7c7e5e95b1ed7e7ea21869eb0767db77
+  src/lib/logger.ts:
+    id: 7ee7741a02bf
+    last_write_checksum: sha1:0ec9d3a2a34c362746b767e4f9a746c055d57a7b
+    pristine_git_object: d181f2937d4128afbe9b0327e0f81d1fa9c877b7
+  src/lib/matchers.ts:
+    id: d54b2253b719
+    last_write_checksum: sha1:4d892014a7d0ebc2d775c4d6900afb2b9f04ab81
+    pristine_git_object: 7166bb2c8c013e60b61bd3cf51fe6f5b80b9c798
+  src/lib/primitives.ts:
+    id: 74859f750b28
+    last_write_checksum: sha1:987869fc54790b9c22e9182099103d6aa7c67016
+    pristine_git_object: d21f1dc49affa4e6d324bdd60811b470fdfa7eb6
+  src/lib/retries.ts:
+    id: b24a69d15639
+    last_write_checksum: sha1:f3da74dffcbe2756c69393f8600205aa1dc06e68
+    pristine_git_object: e3ce9aba72150fc3c18f3105d39b21aba809377b
+  src/lib/schemas.ts:
+    id: deb4b531fae1
+    last_write_checksum: sha1:b4b5fd22340ebd5b2914ee7b177c797b28fba7ef
+    pristine_git_object: cf280491bf54dbd4d78e5c071c3b85cf5ca9e35e
+  src/lib/sdks.ts:
+    id: 8a6d91f1218d
+    last_write_checksum: sha1:71fd958d019dbfc5aaa9880aa82e39702f95c444
+    pristine_git_object: 13781e8f9aa24e3dc3abd1309feb2f495a563c7b
+  src/lib/security.ts:
+    id: 0502afa7922e
+    last_write_checksum: sha1:87c88bf99ec753cba40df1512aac2717f1161a27
+    pristine_git_object: 28e25dca9ae61471b84bb27f220dff4eb08ec718
+  src/lib/url.ts:
+    id: b0057e24ed76
+    last_write_checksum: sha1:d124050c7e755c0cce233b9e029afb584ff65201
+    pristine_git_object: f3a8de6c021de59c991707946cd294596cae954d
+  src/models/components/add-participant-request.ts:
+    id: dcd3f944cacd
+    last_write_checksum: sha1:5f4ab77051cf1717516bdabccc4986bc88bc3ce6
+    pristine_git_object: 55e0ab7aaa2df19548e0305ae3466662571c7045
+  src/models/components/attachment.ts:
+    id: b5ec50ebc31d
+    last_write_checksum: sha1:e31a5c2a01bb3702b6ef10dc4940fc3073cb65d6
+    pristine_git_object: 239e19ab19ae55327bc4eb770ef524254b354355
+  src/models/components/chat-created-event.ts:
+    id: de547d8c7183
+    last_write_checksum: sha1:c91af90755d96282b0e7cbb4d391dbf689224083
+    pristine_git_object: 461bd26d7b1448d6e2630fb2c642a8d3894a8f65
+  src/models/components/chat-created-webhook.ts:
+    id: 5563383673f5
+    last_write_checksum: sha1:703dcdacbe33525173913e0122dbf796f79dfe5d
+    pristine_git_object: fd91ce757c0a616a120e4e8d26765cf71fab2d95
+  src/models/components/chat-group-icon-update-failed-event.ts:
+    id: caff31eaca7e
+    last_write_checksum: sha1:bc2d5730110a88c8c86264ac9b872b62c1083fa2
+    pristine_git_object: 89cc871cfc9eb2dcf7d7f4bbae535ac699b7f9ce
+  src/models/components/chat-group-icon-update-failed-webhook.ts:
+    id: b031411cbec3
+    last_write_checksum: sha1:e6a02f2da09a5f2e0d7d439a8872ff7f5a20a609
+    pristine_git_object: a2f3e8cdb77f7a5c0147c88390b9538ff1875a49
+  src/models/components/chat-group-icon-updated-event.ts:
+    id: 868de2194438
+    last_write_checksum: sha1:15ad28131169b03daa0aacf130fdb8fe5091e483
+    pristine_git_object: 847d179016e161e949ddc2eb98a4cbeb6952721b
+  src/models/components/chat-group-icon-updated-webhook.ts:
+    id: aebde8574ba4
+    last_write_checksum: sha1:55c7fb212f00e68378e841edfc613b40a81be15c
+    pristine_git_object: ef5b33200040bd34ebb21f0ec3a286d8aac1a37c
+  src/models/components/chat-group-name-update-failed-event.ts:
+    id: 60dadcdd1c2e
+    last_write_checksum: sha1:62ec3563b934213a866f3e930b097434173a08e9
+    pristine_git_object: 1b09b766304a1e75b5ee0a285f66bc08c894ef3b
+  src/models/components/chat-group-name-update-failed-webhook.ts:
+    id: a3913965a6e9
+    last_write_checksum: sha1:a670976ac8af8f5de639f725425f95ad5d321f25
+    pristine_git_object: cbbd457e27cae1e7c996ee1be70a60db9bc12a06
+  src/models/components/chat-group-name-updated-event.ts:
+    id: a0e31d2c474b
+    last_write_checksum: sha1:597bd3b9112d1352eddc6d41e7d5552c73aa8604
+    pristine_git_object: 593cf46ed916b4ed61a6f70498f88715312ea1ef
+  src/models/components/chat-group-name-updated-webhook.ts:
+    id: 16be0d3a2c6d
+    last_write_checksum: sha1:6aa8df5e8069193930ff794b4b7924a186b5c5f5
+    pristine_git_object: 264bf2389c789c30ab75e900c0f37880b114ca12
+  src/models/components/chat-handle.ts:
+    id: "628884270827"
+    last_write_checksum: sha1:eef8fcfd66953cc9fedf2b1981422572394c13c2
+    pristine_git_object: f91f5da9d3e1cb82823acc99b285debe23899e5e
+  src/models/components/chat-info.ts:
+    id: f2192058aa6c
+    last_write_checksum: sha1:bf0ab2b3a61fe37f90fc1412b20b4be79b5cf737
+    pristine_git_object: 8b4975e667e24d5539f3eb04de2b539ac92c42fc
+  src/models/components/chat-typing-indicator-started-event.ts:
+    id: "683475382163"
+    last_write_checksum: sha1:2d3fbcec600a84a6d687daaab8b8a781830acba4
+    pristine_git_object: cfec68ce5e98c17dc2532ee57fe7b69d9c924f02
+  src/models/components/chat-typing-indicator-started-webhook.ts:
+    id: 7d38f6eb3ac7
+    last_write_checksum: sha1:01748a66e2c6bd2586cc4081617caa0d8e99c2f8
+    pristine_git_object: ee5969c29dd69cff239341929219eb691fadb738
+  src/models/components/chat-typing-indicator-stopped-event.ts:
+    id: e1717fe6b59f
+    last_write_checksum: sha1:58f90155a5f9f8963340b1fc2bbb2cff2c27a566
+    pristine_git_object: 487b6fc29850be19609cfad1f70a918a9a0c893d
+  src/models/components/chat-typing-indicator-stopped-webhook.ts:
+    id: e06232d21add
+    last_write_checksum: sha1:d3786a2a7aa1812b13298189873f1c0c29f9f917
+    pristine_git_object: 7a9784df764260866362794f53c9022af2fa3344
+  src/models/components/chat.ts:
+    id: 9ced5127d17b
+    last_write_checksum: sha1:114bb1aafc8ae79ddc9c5d499f8e9f86e5598c2f
+    pristine_git_object: 3e55cb5569a4ec1d2712e7686aa1c9aeec620401
+  src/models/components/create-chat-request.ts:
+    id: 3849bbabcb92
+    last_write_checksum: sha1:7f22540c05327256d779da7d440fd5b842be54d6
+    pristine_git_object: 27a911a2089899a0acf35cd6c732fb531ff4c059
+  src/models/components/create-chat-result.ts:
+    id: a96302919586
+    last_write_checksum: sha1:2678e99ad1d32d808f317a7a3b7e0a3ece5174f4
+    pristine_git_object: f4c9b294124e1e17df6ea5a6cf488ceb549ccc94
+  src/models/components/create-webhook-subscription-request.ts:
+    id: 2533c25c777a
+    last_write_checksum: sha1:766904a4572f462e2ab80faaf801303d33396cd0
+    pristine_git_object: 8c7e7e4b1e421398c59a1127f16a1405f085c9a7
+  src/models/components/delete-message-request.ts:
+    id: 798ee46e49eb
+    last_write_checksum: sha1:028675a6640db4e6451938050ce6fadefb80f11d
+    pristine_git_object: 5b908b399383bcb43519bcea4a0941dc9487e1ca
+  src/models/components/delivery-status.ts:
+    id: f35346cd6bde
+    last_write_checksum: sha1:788ea14b741ad1a2aadf7cf8f64bc82ff75630b8
+    pristine_git_object: 846bc8c946dfea8d5a054415261337c1a06f6f01
+  src/models/components/error-code.ts:
+    id: 48b01a94f17f
+    last_write_checksum: sha1:97177168946b92dfbbfefe9ed99918522a966ed9
+    pristine_git_object: 88f251aa27c6180730f59f5eee0a79a0e8f77e31
+  src/models/components/error-detail.ts:
+    id: 473299cd535c
+    last_write_checksum: sha1:8ad75166efaad3f7348ee9cccbf7d5dedca85ddf
+    pristine_git_object: 75ee7167fac94baa107467bfd05e96bc9318a06e
+  src/models/components/get-messages-result.ts:
+    id: 26c1d3fa1550
+    last_write_checksum: sha1:4d416c1250fb93a6ffc2c8bd27de60f60c2853bf
+    pristine_git_object: 2b7a9ea027504ac7735a0b3ad1176356c40b080a
+  src/models/components/get-thread-response.ts:
+    id: e4124e42b033
+    last_write_checksum: sha1:359a773d006fa29ae3db1536f980b958f8f1b1b1
+    pristine_git_object: 15cadf2a20fba07c6eed241c2b200198b1848296
+  src/models/components/index.ts:
+    id: 0aa842dce54d
+    last_write_checksum: sha1:94225deecf3a8b3f078f12e55e2d8f31aafc6b89
+    pristine_git_object: a6a8024b22b11942c253f5119ee72c34c4f86c2e
+  src/models/components/list-chats-result.ts:
+    id: 9b143e8c23fc
+    last_write_checksum: sha1:0f13f3c793ac76a90245d1faf33d3f929c4a415f
+    pristine_git_object: faf8fbd293a64ea29d145f9c2eb0e25ab5ade806
+  src/models/components/list-phone-numbers-result.ts:
+    id: e7fa952f990a
+    last_write_checksum: sha1:5d8e473852ff0b13ad50cce13d8e0b06456217ea
+    pristine_git_object: f360218b5a85fcc70b6ca044a8808a3bbc7592a1
+  src/models/components/list-webhook-subscriptions-result.ts:
+    id: cac8ab3cc04d
+    last_write_checksum: sha1:71c38b81c36f59491e3169eb791f42d5d5299af8
+    pristine_git_object: 76adfbbcb13eb33c1bb898f70aa08bf19b976a91
+  src/models/components/media-part-response.ts:
+    id: 184296c851d0
+    last_write_checksum: sha1:d3382f63d70cea4753b7055b8221f975309d1f49
+    pristine_git_object: fe3fed3577eb30df556f5cd5f44a04d567969699
+  src/models/components/media-part.ts:
+    id: 76e9191e55b0
+    last_write_checksum: sha1:62f56065edc9a71210de1d7ddbc324c0c696131a
+    pristine_git_object: 5248b71877896bcc65096b81960e6c6eac8bc35e
+  src/models/components/message-content.ts:
+    id: abf41b4cae47
+    last_write_checksum: sha1:62c4971019f400a5e7464df5712bca3f4507cb66
+    pristine_git_object: 710c4e987a8caeb6019a04316631c6ed69d63370
+  src/models/components/message-delivered-webhook-v2.ts:
+    id: 71d0c95c1deb
+    last_write_checksum: sha1:252ea00269951381f519102770cd8ab9ce8c43fe
+    pristine_git_object: 7eef971d1f7d86056a7512d105ff1311d54c82b5
+  src/models/components/message-effect.ts:
+    id: 9de87e342e3e
+    last_write_checksum: sha1:45dffb1fa8b583dd25764d3606929b3589bdbe14
+    pristine_git_object: 243c13a661ddea98ede96187d606469c270abd10
+  src/models/components/message-event-v2.ts:
+    id: 30a33ca6012f
+    last_write_checksum: sha1:d8a77900bb8ad28e2a5baa789a8170210c0de401
+    pristine_git_object: 085ddcdacaf9a632dfaf64764d4de45d7a7ea373
+  src/models/components/message-failed-event.ts:
+    id: 8915bd76a28e
+    last_write_checksum: sha1:9b0013f0c42dbd6be5643d876ebca49c15565365
+    pristine_git_object: 61e661b0fb02fe16fba2097438b96dc3b0d1e5c5
+  src/models/components/message-failed-webhook.ts:
+    id: 5518d517b1a7
+    last_write_checksum: sha1:c0d2a7386515703fecea36d3e3abd917f263031f
+    pristine_git_object: 14b381bade492a484d774e65ef904fa214281eec
+  src/models/components/message-part.ts:
+    id: 4b24c56944cf
+    last_write_checksum: sha1:1c4613ae6385e879cc2011d0aa39fae3e4e411fb
+    pristine_git_object: 20a657ab2657e77546c0103b6f0feac306b42c9d
+  src/models/components/message-read-webhook-v2.ts:
+    id: 050cc9c10c1b
+    last_write_checksum: sha1:aeb4c305194dde5f987eeeb7f75474960bf51371
+    pristine_git_object: ae243b5ad1774735781fbc1710cb5780d89eb593
+  src/models/components/message-received-webhook-v2.ts:
+    id: b2959062fe47
+    last_write_checksum: sha1:1a2185ceb16d9e830c009795f029e63eaedd3adb
+    pristine_git_object: 92c3144386fcbb2b4c617f36b9430f5ccee9a8a9
+  src/models/components/message-sent-webhook-v2.ts:
+    id: 99f53a75c69e
+    last_write_checksum: sha1:f9750d277ae92ae81fcbce6a21d26d79d3d29783
+    pristine_git_object: bfdc4b0882b946a171b94acb945306c7d50eebee
+  src/models/components/message.ts:
+    id: c1f7bf936709
+    last_write_checksum: sha1:f2593f0ee73e335d67581455f9b6115e313bedf3
+    pristine_git_object: 0bd4c5757b3ba162789087fe3567b50caaf7033e
+  src/models/components/participant-added-event.ts:
+    id: 41c51a41c573
+    last_write_checksum: sha1:68f00c61210c41a54f86283358d7295b4440613b
+    pristine_git_object: ed51eaf1e51eb758deaf3549b8623db67f3b393b
+  src/models/components/participant-added-webhook.ts:
+    id: 84001702b600
+    last_write_checksum: sha1:75e6846d4b0dfd1020d9d35c43f826825056d7d0
+    pristine_git_object: 758d0416279aae19324d263da7b3a492fa242143
+  src/models/components/participant-removed-event.ts:
+    id: 6ed0a16c2f56
+    last_write_checksum: sha1:50763bd4648cdddf9039335bc6bbbab0d43dd51d
+    pristine_git_object: 37cb8eec63115ab3a4b6e1ddd7de73f6a563b55f
+  src/models/components/participant-removed-webhook.ts:
+    id: d1ab52ae584d
+    last_write_checksum: sha1:4285b86fd8581f070b898a781aa523ee70c37117
+    pristine_git_object: beaf40c1744cce35a2264afd6795f4246780a9a5
+  src/models/components/phone-capabilities.ts:
+    id: cf1351d482da
+    last_write_checksum: sha1:81b4c90047f75b1d238dea40cf30467c9d7a1074
+    pristine_git_object: 256fa9cbcec9aaf6fe348bf96072295f337cb8d8
+  src/models/components/phone-number-info.ts:
+    id: c8f427eda924
+    last_write_checksum: sha1:242123087fecf820b7bcca28dbc7c1da301d0778
+    pristine_git_object: 7470364d21cf3d97184e0f7bebe730d790e4afae
+  src/models/components/reaction-added-webhook.ts:
+    id: fe7327ae2d66
+    last_write_checksum: sha1:d0b1ce714a5e0d5570add80776ec62a8c1177115
+    pristine_git_object: 67b5d4e7cba5eb915d5c91ff8704e8b763b33ed8
+  src/models/components/reaction-event-base.ts:
+    id: 73561cdba33c
+    last_write_checksum: sha1:355c376b8e4ae2eab89efefe8308648eccffe368
+    pristine_git_object: 997f94740bec7f93305ec5bf720e11d9e69841dc
+  src/models/components/reaction-removed-webhook.ts:
+    id: eb7fdd67446b
+    last_write_checksum: sha1:0786440c20b905b953bea45df2a17f70fa9400ac
+    pristine_git_object: b884629a22155d4256ca52601d42632248f76163
+  src/models/components/reaction-type.ts:
+    id: 0ee7cccef1f3
+    last_write_checksum: sha1:eccd8151b8030eb8301a5c9b69720c5e487fd5f2
+    pristine_git_object: e9079c89e49466f96d9054a3ac8239497e5097d2
+  src/models/components/reaction.ts:
+    id: ee7517d8d8bf
+    last_write_checksum: sha1:795246a7c3a3993a9ea9becd9846a74a5cbbd334
+    pristine_git_object: 02621384b3abe00a8d289be518dacf5206c7b0a9
+  src/models/components/remove-participant-request.ts:
+    id: 3b832de9379e
+    last_write_checksum: sha1:b74a4134e4420a1d62db56bb960a6059d496eaf3
+    pristine_git_object: 7417d94f85c1a1de8cb2dda328a9372773b1ef29
+  src/models/components/reply-to.ts:
+    id: 1e0e4bf58c08
+    last_write_checksum: sha1:47c74f1bfa62e6cac5ea9ab40696497889a79ed4
+    pristine_git_object: 8e58b2c9270e6b4898b559c94eeac3ab16bae956
+  src/models/components/request-upload-request.ts:
+    id: 78a1e2d13aa7
+    last_write_checksum: sha1:9c9b6d89af3465a7813f33a5893216f3009de135
+    pristine_git_object: c52d10ff5b0305ef0e9ffe915787239ec0aa2d92
+  src/models/components/request-upload-result.ts:
+    id: 3c4e82c4fe5c
+    last_write_checksum: sha1:6fc8771a47a28e905eb8ebf17898ffce0780f7b7
+    pristine_git_object: 3acd1257ac6853dbee107269519cdb08a797ecac
+  src/models/components/schemas-media-part-response.ts:
+    id: edbf4e107a1d
+    last_write_checksum: sha1:9b4eca697c82206da52c2c1f6a3a860dce801e04
+    pristine_git_object: a698435bcbc044cd205bd71b68ebc7d4969379ed
+  src/models/components/schemas-text-part-response.ts:
+    id: e2ec61e141c3
+    last_write_checksum: sha1:383d06a811f784adb0b9a8eb1f951d4fd9daf0da
+    pristine_git_object: 7cd0354aa66840ecfc3c16229637cdd62ad8b8bc
+  src/models/components/security.ts:
+    id: 472dde81bb1c
+    last_write_checksum: sha1:24f7a6f8f40c6bd60d80f8f94e3deef96df34474
+    pristine_git_object: b1cb64f975e89015acccc01aac100d3dc46759b2
+  src/models/components/send-message-response.ts:
+    id: 15c93ce9c524
+    last_write_checksum: sha1:272147224e0796cc91ce09b4f142b6560e73d5c4
+    pristine_git_object: 3d71add09530a6da8f16816574746b67be5cfff8
+  src/models/components/send-message-to-chat-request.ts:
+    id: 7a807550815c
+    last_write_checksum: sha1:534b9bc94be9494706a74b65c053958665aa0fe3
+    pristine_git_object: 32648126bb2d85b9fc0dd41b4032168fd8bb950a
+  src/models/components/send-reaction-request.ts:
+    id: f9a38fd99f1c
+    last_write_checksum: sha1:b514084a80bb42a2ee99c152c28a2205ae4a21a1
+    pristine_git_object: 48debe470e5393bb6ab36c12f46d629d1cf6ebc1
+  src/models/components/send-voice-memo-to-chat-request.ts:
+    id: c38265f65916
+    last_write_checksum: sha1:057f8f29363ec565e031cdb00dca73c95551486a
+    pristine_git_object: 91cd3db478946a7cebb24a6ec998fbed55b68185
+  src/models/components/send-voice-memo-to-chat-result.ts:
+    id: cec6fcf2666f
+    last_write_checksum: sha1:3e2653ff1bb746c9a4fe5cd6bf73b869d0ba465e
+    pristine_git_object: a422671f99f95a15bdfbe74d6d6bedf85c208256
+  src/models/components/sent-message.ts:
+    id: 4a287b575287
+    last_write_checksum: sha1:e96f1adcf16b06ce3cd65d14e9509ea08237ab4e
+    pristine_git_object: fa5a44bfa4c76a3f02d368393eedc1150c7dc7cd
+  src/models/components/supported-content-type.ts:
+    id: bc165c8571b0
+    last_write_checksum: sha1:29f0f47c93dcee27bb705fd9ea17921455cd7066
+    pristine_git_object: 2a57d74c3b8ffced36193d06df648a0822198470
+  src/models/components/text-part-response.ts:
+    id: ea24dcce00f9
+    last_write_checksum: sha1:312793ff340fccc246e162bf60f71d718495f386
+    pristine_git_object: 266163943a159e468bbfe7b3570a97dc28dd0837
+  src/models/components/text-part.ts:
+    id: 26f730d4a6f3
+    last_write_checksum: sha1:ec46fa4b9ffc9d582b267a2db82ec9d8bb7718dc
+    pristine_git_object: 3087398c9fd9f9132efc8bbb60862186de1c13d3
+  src/models/components/update-chat-request.ts:
+    id: ca9732682dd3
+    last_write_checksum: sha1:d641e7809a7002c858e161cfbf6c165fb19d6951
+    pristine_git_object: 7f87b380bf03895d5a51764a5519b390ce700efa
+  src/models/components/update-webhook-subscription-request.ts:
+    id: cd22b67f4f3a
+    last_write_checksum: sha1:4bac3b0cb9b25a3c2453604a09029ec6cf1d338e
+    pristine_git_object: 838175e7f35f37a9f5c67d47705f4f1813399acc
+  src/models/components/voice-memo-attachment.ts:
+    id: d5f27672569f
+    last_write_checksum: sha1:f9f95de94bb4f47ff741d4fa082fee24064bdbf9
+    pristine_git_object: 176245831f015952e466d65d1279dc3d302a66b9
+  src/models/components/webhook-error-code.ts:
+    id: 28568ddf8663
+    last_write_checksum: sha1:613b9c679545ba2bf2f2cea7583bcbeecfe84605
+    pristine_git_object: d57ec9a3eeff246da3921407340165d28cb4b35b
+  src/models/components/webhook-event-type.ts:
+    id: a1bb1419a0b8
+    last_write_checksum: sha1:0e217d9330bee062cb3122ea1ac28017e3e46757
+    pristine_git_object: 64d612ba14d611990e511ccf87f1f218ccd3a1c5
+  src/models/components/webhook-events-result.ts:
+    id: 96c2f2d867a2
+    last_write_checksum: sha1:87befc642f9d6f1bd98d6e64c7af093388578bda
+    pristine_git_object: 8cc3b3e30b966005c4ccbe956b19127acc845800
+  src/models/components/webhook-subscription-created-response.ts:
+    id: 428c8526d2d7
+    last_write_checksum: sha1:e81cb3b80f113e4dd6ccb58157bd2ebbe80db6c8
+    pristine_git_object: 04043002d1a1e2b938b7e141bf6b9f52f1dd9a9b
+  src/models/components/webhook-subscription-response.ts:
+    id: 60b9be076c11
+    last_write_checksum: sha1:66de17cddbe66f1259cc339caa993dd8c8f99639
+    pristine_git_object: e19b84e4021a0b83be13c6cadb9aff92a2e6b9c3
+  src/models/errors/error-response.ts:
+    id: 6459edd35024
+    last_write_checksum: sha1:e5426c544fd01286c79d6c4f49ffaccf28cb575c
+    pristine_git_object: c1224a8aca80e53fe8a5b12b0b56c642f7b183aa
+  src/models/errors/http-client-errors.ts:
+    id: 08390231aab8
+    last_write_checksum: sha1:994ced121c54fecd0af038ccfb7855fbfd3868ec
+    pristine_git_object: b34f612124c797c2a1106b9735708f679a90b74f
+  src/models/errors/index.ts:
+    id: c4e22507cb83
+    last_write_checksum: sha1:22a409230c364d95c08baedd2944577a2069caf9
+    pristine_git_object: 19ae1e5c0a7fdac5bcaa82fbe1efce213d487232
+  src/models/errors/linq-default-error.ts:
+    id: d879b4538704
+    last_write_checksum: sha1:c02996778c6d7bfb3e527ee5d77e4852708b4fb8
+    pristine_git_object: 8078c8462969cfc899697b445e90bccd33c0ed32
+  src/models/errors/linq-error.ts:
+    id: 9e1fdc4b7b54
+    last_write_checksum: sha1:55b267e2eddddfd32309a3bc082f1a5a8b682fd4
+    pristine_git_object: a62ec3bcdf72a57b3d5619b6ad98506993b70c8b
+  src/models/errors/response-validation-error.ts:
+    id: a6ce701a9571
+    last_write_checksum: sha1:0a894d1a35dc2faade5ba3981a9b92f2f68093cb
+    pristine_git_object: 5d6682be3d8c2043274fee783b047013ef1051a3
+  src/models/errors/sdk-validation-error.ts:
+    id: 9b17e7ef247f
+    last_write_checksum: sha1:92771987c251f02fd86cfd824a3be709cd3c2837
+    pristine_git_object: db00022e05d55600252f401eb0e6ab46278e0b07
+  src/models/operations/add-participant.ts:
+    id: 215ad7789269
+    last_write_checksum: sha1:ada8395a60609187fd8c19057e65a7983946e485
+    pristine_git_object: c28acd0379c8c692cda59575b08140d3bc6580d3
+  src/models/operations/delete-message.ts:
+    id: 538ee216a983
+    last_write_checksum: sha1:a0152f947dc18f89e529d2be3177f310f0e4e60f
+    pristine_git_object: 5573e4c7738186e9a643fbf5429f28144fa34067
+  src/models/operations/delete-webhook-subscription.ts:
+    id: d4cd222c5e84
+    last_write_checksum: sha1:0a6ffc4c2231f17a6d69b78b100e0447eabc88cb
+    pristine_git_object: 1b4456cab02ce83b0e9dda99567340ac71d64f62
+  src/models/operations/get-attachment.ts:
+    id: 89d2fa83c7d0
+    last_write_checksum: sha1:3f6e9c19bd215f1cf9213679403c12555bf9e444
+    pristine_git_object: 68b7f6ec002f8f1d8fbe0993b1fedca3be7005b3
+  src/models/operations/get-chat.ts:
+    id: fb4aba98ca5b
+    last_write_checksum: sha1:d4db1ed7a36a1d707188c2de11bb9aca91c5f2fc
+    pristine_git_object: ea697f45aa5b6bd1254cb5bc07ddb572879fec0f
+  src/models/operations/get-message-thread.ts:
+    id: 0aac29033b10
+    last_write_checksum: sha1:707a362713b686729ae741600b781877e293287e
+    pristine_git_object: 13a9b3c4acd83c49b6de27d79c10e7c78c0aa274
+  src/models/operations/get-message.ts:
+    id: d162cdc2008e
+    last_write_checksum: sha1:a833ffc4272773f5f2da1bfc6cf331926196af2c
+    pristine_git_object: 3ab33d3c46ff3aef622049a1822db12925d394a3
+  src/models/operations/get-messages.ts:
+    id: 8d93e3df7df7
+    last_write_checksum: sha1:93a3e4ad588b7c756ac7ced07ea0baaf88603cc4
+    pristine_git_object: 62b9de3d8649d779a6c48ef97f8da920edb6e8e6
+  src/models/operations/get-webhook-subscription.ts:
+    id: 78d525871e65
+    last_write_checksum: sha1:3c689aa1a4dc4a7366a8c080f2320ec0b1b76fdc
+    pristine_git_object: 5e2393a0a9ab3e6dd4925f5d67d4a9c8ef837a73
+  src/models/operations/index.ts:
+    id: 0d9ffaf774d2
+    last_write_checksum: sha1:9061ecf0095e051c981f818e02d26b1ab3ab88bd
+    pristine_git_object: 20d28ea1d6f11752af637ad4f3bbbb6bf0021767
+  src/models/operations/list-chats.ts:
+    id: 4de0cfb9248b
+    last_write_checksum: sha1:2d3a4dd5ba3dd354f405076513d64cebe5d14f45
+    pristine_git_object: d592aa38315b82c61f2a9e9f2dfc26db66efae4e
+  src/models/operations/mark-chat-as-read.ts:
+    id: f84ab863f322
+    last_write_checksum: sha1:c2c42e4c92b74ba30e5a509ab54db919461d3f1a
+    pristine_git_object: c7fd9088d2467acc4a36eec04abaf3753f4ec220
+  src/models/operations/remove-participant.ts:
+    id: 8fd2ac7a0a88
+    last_write_checksum: sha1:0033c39420d39a766fc8b2d47f1ba630a03cefc1
+    pristine_git_object: 4bbedf808dd29318545cbb780f3f80e2147b43da
+  src/models/operations/send-message-to-chat.ts:
+    id: 577385934fe4
+    last_write_checksum: sha1:46272935f5f85676f34d90d792dff5b9e780aa4f
+    pristine_git_object: da075b0635d82a9886e52e7763ab5ae5511dcb45
+  src/models/operations/send-reaction.ts:
+    id: adcdffbbbb1a
+    last_write_checksum: sha1:bbfc90f01c025713a47d55e6e13270c833b1ba93
+    pristine_git_object: d2d25fe1e8891397208732bc2cfef0ef15984918
+  src/models/operations/send-voice-memo-to-chat.ts:
+    id: 0b7356d04f54
+    last_write_checksum: sha1:a3d86e4a51b6ec12fe6691b00b58131269bcd0e8
+    pristine_git_object: 0da6438efb8a60ce75501d8d9de0cee8be435eaf
+  src/models/operations/share-contact-with-chat.ts:
+    id: 14e3d0112031
+    last_write_checksum: sha1:a7462dc7864b67c3feb5a98dd78fa14e8559b1c5
+    pristine_git_object: 51e1b69a27bdca9de7a7cc17b8654a3d0826bd3c
+  src/models/operations/start-typing.ts:
+    id: 1c4967cb8e66
+    last_write_checksum: sha1:f7e516e1aa678fe642be5482815de0057e44aa4c
+    pristine_git_object: c72878bb8e7815d12ba52c85a7a1d92db33c662a
+  src/models/operations/stop-typing.ts:
+    id: d59dfdce5fd8
+    last_write_checksum: sha1:9c4909176e7cb0356324485cac2101d78166e9ed
+    pristine_git_object: 4b1f4e21e7347cb0b0376a3001713c000ccedd4f
+  src/models/operations/update-chat.ts:
+    id: 751e1a745bf1
+    last_write_checksum: sha1:ae0c715b4e04b90485dd715e4db32679af775b89
+    pristine_git_object: e70c162e237ac0b713f71441b6dc0f2237a9049a
+  src/models/operations/update-webhook-subscription.ts:
+    id: 31725a50e972
+    last_write_checksum: sha1:0a88aa73c3176d93ab21e7593d4977f1a1fd0871
+    pristine_git_object: 77ae0663b42ccbe505062603ddb1d0e827f75509
+  src/sdk/attachments.ts:
+    id: 01c3953a7152
+    last_write_checksum: sha1:0a6bdbe7b3c9b72412d1d7ace05796395e19cf56
+    pristine_git_object: 457a9a87f804e2cd7c099e7f57726dc21399a4a4
+  src/sdk/chats.ts:
+    id: 910eab44b075
+    last_write_checksum: sha1:ec48a2ad34bb55139c12ac41075ec21e85ff8e4e
+    pristine_git_object: 44469b167d294688f74975f91db3cd0f24580585
+  src/sdk/index.ts:
+    id: a857902a703f
+    last_write_checksum: sha1:ed6d64f2a6135349aa8498b8d8cff9ba85c7fb8f
+    pristine_git_object: ecac2264817bb369ff2dbf0f0e9029807e67ff77
+  src/sdk/messages.ts:
+    id: 89df5fa2bb12
+    last_write_checksum: sha1:bdc32bd7f35a448c2403403e962d3a6991571cb0
+    pristine_git_object: 3a324e22d4f8f784f9a7a7e531f6b3f2715babe0
+  src/sdk/phone-numbers.ts:
+    id: 2680c62f31c9
+    last_write_checksum: sha1:54520a093d7cc7a670103f3d250efcde0cf11506
+    pristine_git_object: 5c2d9bd556cddac0fad5a841cf2e14ca03e5971b
+  src/sdk/sdk.ts:
+    id: 784571af2f69
+    last_write_checksum: sha1:1c3a275b6b71a6f21eeb3b5f87ef7d6f2280624f
+    pristine_git_object: 412191cc015dba9268675e97b118c7b1e4f6989e
+  src/sdk/webhooks.ts:
+    id: e879e17d0532
+    last_write_checksum: sha1:0a9c277f2ffd3ffd3352dc907f7a2f1c33bf0511
+    pristine_git_object: 18edf06514f1eca2518e53ab20f7f2b0bcb9367e
+  src/types/async.ts:
+    id: fac8da972f86
+    last_write_checksum: sha1:3ff07b3feaf390ec1aeb18ff938e139c6c4a9585
+    pristine_git_object: 689dba5de50e8769e5f3bb913e3f42a146d15bc1
+  src/types/blobs.ts:
+    id: f8ab9b326c86
+    last_write_checksum: sha1:fd681458b532138913c372b05b3e16407abaa7a1
+    pristine_git_object: 3deb988d444f7d202eda723492d7c1d76c5c208d
+  src/types/const-date-time.ts:
+    id: b3487d7170f2
+    last_write_checksum: sha1:ce05316b31b373401875d5e962d63d2422e09cf2
+    pristine_git_object: 586ee46aa2273cdf680bb542b4ef5dd953a48a08
+  src/types/default-to-zero-value.ts:
+    id: 6e0f763ae8c8
+    last_write_checksum: sha1:2820c0bc8e71d475e79cc6b6947ca18d93f6310c
+    pristine_git_object: c4cad53db08687649a55c711c4f4b3a29f7b7d24
+  src/types/discriminated-union.ts:
+    id: ac1bf11344f7
+    last_write_checksum: sha1:06d1dfd89ad24e907e2ba49ea8d73ce48f3d486f
+    pristine_git_object: f41a6ac1571aee5c69b524359c7f5f786820aaee
+  src/types/enums.ts:
+    id: 4d03ddfe5100
+    last_write_checksum: sha1:d7d0ffad0c128a11c5feb1f0ae8f3b507ee03c14
+    pristine_git_object: a523bdde4b5b8144cf26414e32fc2319f2c466fa
+  src/types/fp.ts:
+    id: ae9f0fb8aab6
+    last_write_checksum: sha1:d24994d58f37a1ca106847fcc6d2e976c6f1c093
+    pristine_git_object: ccbe51eac69dfb0da5131f14fd753c4b47c1d527
+  src/types/index.ts:
+    id: cd7a0a5ed005
+    last_write_checksum: sha1:1edc82f4090412cef79d915cea68ebeca54e1a27
+    pristine_git_object: bd1c19274d48b801df27454c52f4131b354664e9
+  src/types/operations.ts:
+    id: 314da01dca47
+    last_write_checksum: sha1:c49e724cfb1259296381cb57bc0fcdd2eae45865
+    pristine_git_object: beb81e10f0b9eee2ed398a853fe6f737b743f818
+  src/types/primitives.ts:
+    id: 0cd7f4ac625d
+    last_write_checksum: sha1:7bdf6c790bdbcb8e369088557c42878f5270a701
+    pristine_git_object: 6180991492b8b6afccb3bb808010d4a15823168f
+  src/types/rfcdate.ts:
+    id: 9eb64906dcd6
+    last_write_checksum: sha1:8e5f382e02fe21c2f2e24deb1b7bbf8cddd3dd16
+    pristine_git_object: c79b3f53a3dd922aa2ace5a4191c8652cf9a8e89
+  src/types/smart-union.ts:
+    id: 2e3af2ad4ea7
+    last_write_checksum: sha1:22fe9063528cadf94640a776df4cf762e2b681e0
+    pristine_git_object: 4809527f774cde50ea4153a9a56c1c0929906d0f
+  src/types/streams.ts:
+    id: f99be9c4bf14
+    last_write_checksum: sha1:cc9ced2dd34a76c3a1bd7784ccda1cc3b37ab9a9
+    pristine_git_object: a0163e7a99cea88f21d0ad4ce3af1c720180ee20
+  src/types/unrecognized.ts:
+    id: 476605c40716
+    last_write_checksum: sha1:d33ac686528492f4cdc0dbf81ed343b4afe020fe
+    pristine_git_object: b7a2a13f3dff50663429df24ae2f55b647ff1084
+  src/types/webhooks.ts:
+    id: 2f5c16db294b
+    last_write_checksum: sha1:dbce0cb417bcdcfcae0827fa045ee93ccab1c2c8
+    pristine_git_object: 9510d20c09d8dd689f6e37254030de22e997f3cc
+  tsconfig.json:
+    id: 61ebb9fd6e8c
+    last_write_checksum: sha1:2e344714e2df3cf6ecf3f8c8df0dd773fccdc1e4
+    pristine_git_object: feac755105182e970c7a41d712f0de91768a1a08
+examples:
+  createChat:
+    chatWithTextMessage:
+      requestBody:
+        application/json: {"from": "+12052535597", "to": ["+12052532136"], "message": {"parts": [{"type": "text", "value": "Hello! How can I help you today?"}]}}
+      responses:
+        "201":
+          application/json: {"chat": {"id": "94c6bf33-31d9-40e3-a0e9-f94250ecedb9", "display_name": "+14155551234, +14155559876", "service": "iMessage", "is_group": false, "handles": [{"id": "550e8400-e29b-41d4-a716-446655440010", "handle": "+14155551234", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": true}, {"id": "550e8400-e29b-41d4-a716-446655440011", "handle": "+14155559876", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": false}], "message": {"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "service": "iMessage", "preferred_service": "iMessage", "parts": [{"type": "text", "value": "Hello!", "reactions": null}], "sent_at": "2025-10-23T13:07:55.019-05:00", "delivered_at": null, "delivery_status": "pending", "is_read": false, "effect": {"type": "screen", "name": "confetti"}, "from_handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "reply_to": null}}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    chatWithMediaUrl:
+      requestBody:
+        application/json: {"from": "+12052535597", "to": ["+12052532136"], "message": {"parts": [{"type": "text", "value": "Check out this image!"}, {"type": "media", "url": "https://images.dog.ceo/breeds/terrier-cairn/n02096177_13328.jpg"}]}}
+      responses:
+        "201":
+          application/json: {"chat": {"id": "94c6bf33-31d9-40e3-a0e9-f94250ecedb9", "display_name": "+14155551234, +14155559876", "service": "iMessage", "is_group": false, "handles": [{"id": "550e8400-e29b-41d4-a716-446655440010", "handle": "+14155551234", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": true}, {"id": "550e8400-e29b-41d4-a716-446655440011", "handle": "+14155559876", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": false}], "message": {"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "service": "iMessage", "preferred_service": "iMessage", "parts": [{"type": "text", "value": "Hello!", "reactions": null}], "sent_at": "2025-10-23T13:07:55.019-05:00", "delivered_at": null, "delivery_status": "pending", "is_read": false, "effect": {"type": "screen", "name": "confetti"}, "from_handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "reply_to": null}}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    chatWithPreuploadedMedia:
+      requestBody:
+        application/json: {"from": "+12052535597", "to": ["+12052532136"], "message": {"parts": [{"type": "media", "attachment_id": "550e8400-e29b-41d4-a716-446655440000"}]}}
+      responses:
+        "201":
+          application/json: {"chat": {"id": "94c6bf33-31d9-40e3-a0e9-f94250ecedb9", "display_name": "+14155551234, +14155559876", "service": "iMessage", "is_group": false, "handles": [{"id": "550e8400-e29b-41d4-a716-446655440010", "handle": "+14155551234", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": true}, {"id": "550e8400-e29b-41d4-a716-446655440011", "handle": "+14155559876", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": false}], "message": {"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "service": "iMessage", "preferred_service": "iMessage", "parts": [{"type": "text", "value": "Hello!", "reactions": null}], "sent_at": "2025-10-23T13:07:55.019-05:00", "delivered_at": null, "delivery_status": "pending", "is_read": false, "effect": {"type": "screen", "name": "confetti"}, "from_handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "reply_to": null}}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    chatWithConfettiEffect:
+      requestBody:
+        application/json: {"from": "+12052535597", "to": ["+12052532136"], "message": {"parts": [{"type": "text", "value": "Welcome aboard! \U0001F389"}], "effect": {}}}
+      responses:
+        "201":
+          application/json: {"chat": {"id": "94c6bf33-31d9-40e3-a0e9-f94250ecedb9", "display_name": "+14155551234, +14155559876", "service": "iMessage", "is_group": false, "handles": [{"id": "550e8400-e29b-41d4-a716-446655440010", "handle": "+14155551234", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": true}, {"id": "550e8400-e29b-41d4-a716-446655440011", "handle": "+14155559876", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": false}], "message": {"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "service": "iMessage", "preferred_service": "iMessage", "parts": [{"type": "text", "value": "Hello!", "reactions": null}], "sent_at": "2025-10-23T13:07:55.019-05:00", "delivered_at": null, "delivery_status": "pending", "is_read": false, "effect": {"type": "screen", "name": "confetti"}, "from_handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "reply_to": null}}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    chatWithInvisibleInk:
+      requestBody:
+        application/json: {"from": "+12052535597", "to": ["+12052532136"], "message": {"parts": [{"type": "text", "value": "Here's a secret code: ABC123"}], "effect": {}}}
+      responses:
+        "201":
+          application/json: {"chat": {"id": "94c6bf33-31d9-40e3-a0e9-f94250ecedb9", "display_name": "+14155551234, +14155559876", "service": "iMessage", "is_group": false, "handles": [{"id": "550e8400-e29b-41d4-a716-446655440010", "handle": "+14155551234", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": true}, {"id": "550e8400-e29b-41d4-a716-446655440011", "handle": "+14155559876", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": false}], "message": {"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "service": "iMessage", "preferred_service": "iMessage", "parts": [{"type": "text", "value": "Hello!", "reactions": null}], "sent_at": "2025-10-23T13:07:55.019-05:00", "delivered_at": null, "delivery_status": "pending", "is_read": false, "effect": {"type": "screen", "name": "confetti"}, "from_handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "reply_to": null}}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    speakeasy-default-create-chat:
+      requestBody:
+        application/json: {"from": "+12052535597", "to": ["+14155559876", "+14155550123"], "message": {"parts": [{"type": "text", "value": "Check this out!"}, {"type": "media", "url": "https://skywalker-next.linqapp.com/_next/static/media/conversations-imessage.0dc825b0.png"}], "effect": {"type": "screen", "name": "confetti"}, "reply_to": {"message_id": "550e8400-e29b-41d4-a716-446655440000", "part_index": 0}, "idempotency_key": "msg-abc123xyz", "preferred_service": "iMessage"}}
+      responses:
+        "201":
+          application/json: {"chat": {"id": "94c6bf33-31d9-40e3-a0e9-f94250ecedb9", "display_name": "+14155551234, +14155559876", "service": "iMessage", "is_group": false, "handles": [{"id": "550e8400-e29b-41d4-a716-446655440010", "handle": "+14155551234", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": true}, {"id": "550e8400-e29b-41d4-a716-446655440011", "handle": "+14155559876", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": false}], "message": {"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "service": "iMessage", "preferred_service": "iMessage", "parts": [{"type": "text", "value": "Hello!", "reactions": null}], "sent_at": "2025-10-23T13:07:55.019-05:00", "delivered_at": null, "delivery_status": "pending", "is_read": false, "effect": {"type": "screen", "name": "confetti"}, "from_handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "reply_to": null}}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  listChats:
+    speakeasy-default-list-chats:
+      parameters:
+        query:
+          from: "%2B13343284472"
+          limit: 20
+          cursor: "20"
+      responses:
+        "200":
+          application/json: {"chats": [{"id": "550e8400-e29b-41d4-a716-446655440000", "display_name": "+14155551234, +14155559876", "service": "iMessage", "handles": [{"id": "550e8400-e29b-41d4-a716-446655440010", "handle": "+14155551234", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": true}, {"id": "550e8400-e29b-41d4-a716-446655440011", "handle": "+14155559876", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": false}], "is_archived": false, "is_group": false, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}]}
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  getChat:
+    speakeasy-default-get-chat:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          application/json: {"id": "550e8400-e29b-41d4-a716-446655440000", "display_name": "+14155551234, +14155559876", "service": "iMessage", "handles": [{"id": "550e8400-e29b-41d4-a716-446655440010", "handle": "+14155551234", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": true}, {"id": "550e8400-e29b-41d4-a716-446655440011", "handle": "+14155559876", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": false}], "is_archived": false, "is_group": false, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  updateChat:
+    updateName:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        application/json: {"display_name": "Team Discussion"}
+      responses:
+        "200":
+          application/json: {"id": "550e8400-e29b-41d4-a716-446655440000", "display_name": "+14155551234, +14155559876", "service": "iMessage", "handles": [{"id": "550e8400-e29b-41d4-a716-446655440010", "handle": "+14155551234", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": true}, {"id": "550e8400-e29b-41d4-a716-446655440011", "handle": "+14155559876", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": false}], "is_archived": false, "is_group": false, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    updateIcon:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        application/json: {"group_chat_icon": "https://example.com/group-icon.png"}
+      responses:
+        "200":
+          application/json: {"id": "550e8400-e29b-41d4-a716-446655440000", "display_name": "+14155551234, +14155559876", "service": "iMessage", "handles": [{"id": "550e8400-e29b-41d4-a716-446655440010", "handle": "+14155551234", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": true}, {"id": "550e8400-e29b-41d4-a716-446655440011", "handle": "+14155559876", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": false}], "is_archived": false, "is_group": false, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    updateBoth:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        application/json: {"display_name": "Team Discussion", "group_chat_icon": "https://example.com/group-icon.png"}
+      responses:
+        "200":
+          application/json: {"id": "550e8400-e29b-41d4-a716-446655440000", "display_name": "+14155551234, +14155559876", "service": "iMessage", "handles": [{"id": "550e8400-e29b-41d4-a716-446655440010", "handle": "+14155551234", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": true}, {"id": "550e8400-e29b-41d4-a716-446655440011", "handle": "+14155559876", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": false}], "is_archived": false, "is_group": false, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    speakeasy-default-update-chat:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        application/json: {"display_name": "Updated Team Name", "group_chat_icon": "https://example.com/icon.png"}
+      responses:
+        "200":
+          application/json: {"id": "550e8400-e29b-41d4-a716-446655440000", "display_name": "+14155551234, +14155559876", "service": "iMessage", "handles": [{"id": "550e8400-e29b-41d4-a716-446655440010", "handle": "+14155551234", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": true}, {"id": "550e8400-e29b-41d4-a716-446655440011", "handle": "+14155559876", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000Z", "is_me": false}], "is_archived": false, "is_group": false, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  addParticipant:
+    addUser:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        application/json: {"handle": "+12052499136"}
+      responses:
+        "202":
+          application/json: {"status": "accepted", "message": "Participant addition queued"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    speakeasy-default-add-participant:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        application/json: {"handle": "+12052532136"}
+      responses:
+        "202":
+          application/json: {"status": "accepted", "message": "Participant addition queued"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  removeParticipant:
+    removeUser:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        application/json: {"handle": "+12052499136"}
+      responses:
+        "202":
+          application/json: {"status": "accepted", "message": "Participant removal queued"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    speakeasy-default-remove-participant:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        application/json: {"handle": "+12052532136"}
+      responses:
+        "202":
+          application/json: {"status": "accepted", "message": "Participant removal queued"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  startTyping:
+    speakeasy-default-start-typing:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  stopTyping:
+    speakeasy-default-stop-typing:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  markChatAsRead:
+    speakeasy-default-mark-chat-as-read:
+      parameters:
+        path:
+          chatId: "a6dc4555-eac0-4e05-99ad-918e915f18a3"
+      responses:
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  shareContactWithChat:
+    speakeasy-default-share-contact-with-chat:
+      parameters:
+        path:
+          chatId: "ac71239d-af51-4229-bada-9a772641a88c"
+      responses:
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  sendMessageToChat:
+    simple_text:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        application/json: {"message": {"parts": [{"type": "text", "value": "Hello, world!"}]}}
+      responses:
+        "202":
+          application/json: {"chat_id": "550e8400-e29b-41d4-a716-446655440000", "message": {"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "service": "iMessage", "preferred_service": "iMessage", "parts": [], "sent_at": "2025-10-23T13:07:55.019-05:00", "delivered_at": null, "delivery_status": "pending", "is_read": false, "effect": {"type": "screen", "name": "confetti"}, "from_handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "reply_to": {"message_id": "550e8400-e29b-41d4-a716-446655440000", "part_index": 0}}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    with_confetti:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        application/json: {"message": {"parts": [{"type": "text", "value": "Congratulations! \U0001F389"}], "effect": {}}}
+      responses:
+        "202":
+          application/json: {"chat_id": "550e8400-e29b-41d4-a716-446655440000", "message": {"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "service": "iMessage", "preferred_service": "iMessage", "parts": [], "sent_at": "2025-10-23T13:07:55.019-05:00", "delivered_at": null, "delivery_status": "pending", "is_read": false, "effect": {"type": "screen", "name": "confetti"}, "from_handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "reply_to": {"message_id": "550e8400-e29b-41d4-a716-446655440000", "part_index": 0}}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    with_slam:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        application/json: {"message": {"parts": [{"type": "text", "value": "BOOM!"}], "effect": {}}}
+      responses:
+        "202":
+          application/json: {"chat_id": "550e8400-e29b-41d4-a716-446655440000", "message": {"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "service": "iMessage", "preferred_service": "iMessage", "parts": [], "sent_at": "2025-10-23T13:07:55.019-05:00", "delivered_at": null, "delivery_status": "pending", "is_read": false, "effect": {"type": "screen", "name": "confetti"}, "from_handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "reply_to": {"message_id": "550e8400-e29b-41d4-a716-446655440000", "part_index": 0}}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    with_invisible_ink:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        application/json: {"message": {"parts": [{"type": "text", "value": "This is a secret message"}], "effect": {}}}
+      responses:
+        "202":
+          application/json: {"chat_id": "550e8400-e29b-41d4-a716-446655440000", "message": {"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "service": "iMessage", "preferred_service": "iMessage", "parts": [], "sent_at": "2025-10-23T13:07:55.019-05:00", "delivered_at": null, "delivery_status": "pending", "is_read": false, "effect": {"type": "screen", "name": "confetti"}, "from_handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "reply_to": {"message_id": "550e8400-e29b-41d4-a716-446655440000", "part_index": 0}}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    speakeasy-default-send-message-to-chat:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        application/json: {"message": {"parts": [{"type": "text", "value": "Check this out!"}, {"type": "media", "url": "https://skywalker-next.linqapp.com/_next/static/media/conversations-imessage.0dc825b0.png"}], "effect": {"type": "screen", "name": "confetti"}, "reply_to": {"message_id": "550e8400-e29b-41d4-a716-446655440000", "part_index": 0}, "idempotency_key": "msg-abc123xyz", "preferred_service": "iMessage"}}
+      responses:
+        "202":
+          application/json: {"chat_id": "550e8400-e29b-41d4-a716-446655440000", "message": {"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "service": "iMessage", "preferred_service": "iMessage", "parts": [], "sent_at": "2025-10-23T13:07:55.019-05:00", "delivered_at": null, "delivery_status": "pending", "is_read": false, "effect": {"type": "screen", "name": "confetti"}, "from_handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "reply_to": {"message_id": "550e8400-e29b-41d4-a716-446655440000", "part_index": 0}}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  getMessages:
+    speakeasy-default-get-messages:
+      parameters:
+        path:
+          chatId: "550e8400-e29b-41d4-a716-446655440000"
+        query:
+          limit: 50
+      responses:
+        "200":
+          application/json: {"messages": [{"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "chat_id": "94c6bf33-31d9-40e3-a0e9-f94250ecedb9", "service": "iMessage", "preferred_service": "iMessage", "from_handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "parts": [{"type": "text", "value": "Hello!", "reactions": []}], "reply_to": {"message_id": "550e8400-e29b-41d4-a716-446655440000", "part_index": 0}, "is_from_me": true, "is_delivered": true, "is_read": false, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z", "sent_at": "2024-01-15T10:30:05Z", "delivered_at": "2024-01-15T10:30:10Z", "read_at": "2024-01-15T10:35:00Z", "effect": {"type": "screen", "name": "confetti"}}]}
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  getMessageThread:
+    speakeasy-default-get-message-thread:
+      parameters:
+        path:
+          messageId: "69a37c7d-af4f-4b5e-af42-e28e98ce873a"
+        query:
+          limit: 50
+          order: "asc"
+      responses:
+        "200":
+          application/json: {"messages": [], "next_cursor": "eyJpZCI6IjEyMzQ1Njc4OTAiLCJ0cyI6MTYzMDUwMDAwMH0="}
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  sendVoiceMemoToChat:
+    speakeasy-default-send-voice-memo-to-chat:
+      parameters:
+        path:
+          chatId: "f19ee7b8-8533-4c5c-83ec-4ef8d6d1ddbd"
+      requestBody:
+        application/json: {"from": "+12052535597", "voice_memo_url": "https://example.com/voice-memo.m4a"}
+      responses:
+        "202":
+          application/json: {"voice_memo": {"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "from": "+12052535597", "to": ["+12052532136"], "status": "queued", "service": "iMessage", "voice_memo": {"id": "550e8400-e29b-41d4-a716-446655440000", "url": "https://cdn.example.com/voice-memos/abc123.m4a", "filename": "voice-memo.m4a", "mime_type": "audio/x-m4a", "size_bytes": 524288, "duration_ms": 15000}, "created_at": "2026-09-28T10:02:38.619Z", "chat": {"id": "eea37011-cd95-4d81-8781-a1a034bb854d", "handles": [{"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}], "is_group": false, "service": "iMessage", "is_active": true}}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  getMessage:
+    speakeasy-default-get-message:
+      parameters:
+        path:
+          messageId: "69a37c7d-af4f-4b5e-af42-e28e98ce873a"
+      responses:
+        "200":
+          application/json: {"id": "69a37c7d-af4f-4b5e-af42-e28e98ce873a", "chat_id": "94c6bf33-31d9-40e3-a0e9-f94250ecedb9", "service": "iMessage", "preferred_service": "iMessage", "from_handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "parts": null, "reply_to": null, "is_from_me": true, "is_delivered": true, "is_read": false, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z", "sent_at": "2024-01-15T10:30:05Z", "delivered_at": "2024-01-15T10:30:10Z", "read_at": "2024-01-15T10:35:00Z", "effect": null}
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  deleteMessage:
+    deleteMessage:
+      parameters:
+        path:
+          messageId: "69a37c7d-af4f-4b5e-af42-e28e98ce873a"
+      requestBody:
+        application/json: {"chat_id": "94c6bf33-31d9-40e3-a0e9-f94250ecedb9"}
+      responses:
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    speakeasy-default-delete-message:
+      parameters:
+        path:
+          messageId: "69a37c7d-af4f-4b5e-af42-e28e98ce873a"
+      requestBody:
+        application/json: {"chat_id": "94c6bf33-31d9-40e3-a0e9-f94250ecedb9"}
+      responses:
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  sendReaction:
+    addLove:
+      parameters:
+        path:
+          messageId: "69a37c7d-af4f-4b5e-af42-e28e98ce873a"
+      requestBody:
+        application/json: {"operation": "add", "type": "love"}
+      responses:
+        "200":
+          application/json: {"is_me": false, "handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "type": "love", "custom_emoji": "\U0001F680"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    removeLike:
+      parameters:
+        path:
+          messageId: "69a37c7d-af4f-4b5e-af42-e28e98ce873a"
+      requestBody:
+        application/json: {"operation": "remove", "type": "like"}
+      responses:
+        "200":
+          application/json: {"is_me": false, "handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "type": "love", "custom_emoji": "\U0001F680"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    reactToMessagePart:
+      parameters:
+        path:
+          messageId: "69a37c7d-af4f-4b5e-af42-e28e98ce873a"
+      requestBody:
+        application/json: {"operation": "add", "type": "laugh", "part_index": 1}
+      responses:
+        "200":
+          application/json: {"is_me": false, "handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "type": "love", "custom_emoji": "\U0001F680"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    speakeasy-default-send-reaction:
+      parameters:
+        path:
+          messageId: "69a37c7d-af4f-4b5e-af42-e28e98ce873a"
+      requestBody:
+        application/json: {"operation": "add", "type": "love", "custom_emoji": "\U0001F60D", "part_index": 1}
+      responses:
+        "200":
+          application/json: {"is_me": false, "handle": {"id": "550e8400-e29b-41d4-a716-446655440000", "handle": "+15551234567", "service": "iMessage", "status": "active", "joined_at": "2025-05-21T15:30:00.000-05:00", "is_me": false}, "type": "love", "custom_emoji": "\U0001F680"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  requestUpload:
+    imageUpload:
+      requestBody:
+        application/json: {"filename": "photo.jpg", "content_type": "image/jpeg", "size_bytes": 1024000}
+      responses:
+        "200":
+          application/json: {"attachment_id": "abc12345-1234-5678-9abc-def012345678", "upload_url": "https://uploads.linqapp.com/attachments/abc12345?X-Amz-Algorithm=...", "download_url": "https://cdn.linqapp.com/uploads/partner-id/abc12345/photo.jpg", "http_method": "PUT", "expires_at": "2024-01-15T10:45:00Z", "required_headers": {"Content-Type": "image/jpeg"}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    videoUpload:
+      requestBody:
+        application/json: {"filename": "video.mp4", "content_type": "video/mp4", "size_bytes": 50000000}
+      responses:
+        "200":
+          application/json: {"attachment_id": "abc12345-1234-5678-9abc-def012345678", "upload_url": "https://uploads.linqapp.com/attachments/abc12345?X-Amz-Algorithm=...", "download_url": "https://cdn.linqapp.com/uploads/partner-id/abc12345/photo.jpg", "http_method": "PUT", "expires_at": "2024-01-15T10:45:00Z", "required_headers": {"Content-Type": "image/jpeg"}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    presignedUrlResponse:
+      requestBody:
+        application/json: {"filename": "photo.jpg", "content_type": "image/jpeg", "size_bytes": 1024000}
+      responses:
+        "200":
+          application/json: {"attachment_id": "550e8400-e29b-41d4-a716-446655440000", "upload_url": "https://uploads.linqapp.com/attachments/550e8400?X-Amz-Algorithm=AWS4-HMAC-SHA256&...", "download_url": "https://cdn.linqapp.com/uploads/partner-id/550e8400/photo.jpg", "http_method": "PUT", "expires_at": "2024-01-15T10:45:00Z", "required_headers": {"Content-Type": "image/jpeg"}}
+    speakeasy-default-request-upload:
+      requestBody:
+        application/json: {"filename": "photo.jpg", "content_type": "image/jpeg", "size_bytes": 1024000}
+      responses:
+        "200":
+          application/json: {"attachment_id": "abc12345-1234-5678-9abc-def012345678", "upload_url": "https://uploads.linqapp.com/attachments/abc12345?X-Amz-Algorithm=...", "download_url": "https://cdn.linqapp.com/uploads/partner-id/abc12345/photo.jpg", "http_method": "PUT", "expires_at": "2024-01-15T10:45:00Z", "required_headers": {"Content-Type": "image/jpeg"}}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  getAttachment:
+    speakeasy-default-get-attachment:
+      parameters:
+        path:
+          attachmentId: "abc12345-1234-5678-9abc-def012345678"
+      responses:
+        "200":
+          application/json: {"id": "550e8400-e29b-41d4-a716-446655440000", "filename": "photo.jpg", "content_type": "image/jpeg", "size_bytes": 1024000, "status": "complete", "created_at": "2024-01-15T10:30:00Z"}
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  listPhoneNumbers:
+    speakeasy-default-list-phone-numbers:
+      responses:
+        "200":
+          application/json: {"phone_numbers": []}
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  listWebhookEvents:
+    speakeasy-default-list-webhook-events:
+      responses:
+        "200":
+          application/json: {"events": ["chat.created"], "doc_url": "https://apidocs.linqapp.com/documentation/webhook-events"}
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  createWebhookSubscription:
+    messageEvents:
+      requestBody:
+        application/json: {"target_url": "https://webhooks.example.com/linq/events", "subscribed_events": ["message.sent", "message.delivered", "message.read"]}
+      responses:
+        "201":
+          application/json: {"id": "b2c3d4e5-f6a7-8901-bcde-f23456789012", "target_url": "https://webhooks.example.com/linq/events", "signing_secret": "whsec_abc123def456", "subscribed_events": ["message.sent", "message.delivered", "message.read"], "is_active": true, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    messageEventsWithVersion:
+      requestBody:
+        application/json: {"target_url": "https://webhooks.example.com/linq/events?version=2026-02-03", "subscribed_events": ["message.sent", "message.delivered", "message.read"]}
+      responses:
+        "201":
+          application/json: {"id": "b2c3d4e5-f6a7-8901-bcde-f23456789012", "target_url": "https://webhooks.example.com/linq/events", "signing_secret": "whsec_abc123def456", "subscribed_events": ["message.sent", "message.delivered", "message.read"], "is_active": true, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    allEvents:
+      requestBody:
+        application/json: {"target_url": "https://webhooks.example.com/linq/events", "subscribed_events": ["message.sent", "message.delivered", "message.read", "message.failed", "message.received", "reaction.added", "reaction.removed", "participant.added", "participant.removed"]}
+      responses:
+        "201":
+          application/json: {"id": "b2c3d4e5-f6a7-8901-bcde-f23456789012", "target_url": "https://webhooks.example.com/linq/events", "signing_secret": "whsec_abc123def456", "subscribed_events": ["message.sent", "message.delivered", "message.read"], "is_active": true, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    speakeasy-default-create-webhook-subscription:
+      requestBody:
+        application/json: {"target_url": "https://webhooks.example.com/linq/events", "subscribed_events": ["message.sent", "message.delivered"]}
+      responses:
+        "201":
+          application/json: {"id": "b2c3d4e5-f6a7-8901-bcde-f23456789012", "target_url": "https://webhooks.example.com/linq/events", "signing_secret": "whsec_abc123def456", "subscribed_events": ["message.sent", "message.delivered", "message.read"], "is_active": true, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  listWebhookSubscriptions:
+    speakeasy-default-list-webhook-subscriptions:
+      responses:
+        "200":
+          application/json: {"subscriptions": []}
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  getWebhookSubscription:
+    speakeasy-default-get-webhook-subscription:
+      parameters:
+        path:
+          subscriptionId: "b2c3d4e5-f6a7-8901-bcde-f23456789012"
+      responses:
+        "200":
+          application/json: {"id": "b2c3d4e5-f6a7-8901-bcde-f23456789012", "target_url": "https://webhooks.example.com/linq/events", "subscribed_events": ["message.sent", "message.delivered", "message.read"], "is_active": true, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  updateWebhookSubscription:
+    updateURL:
+      parameters:
+        path:
+          subscriptionId: "b2c3d4e5-f6a7-8901-bcde-f23456789012"
+      requestBody:
+        application/json: {"target_url": "https://webhooks.example.com/linq/events"}
+      responses:
+        "200":
+          application/json: {"id": "b2c3d4e5-f6a7-8901-bcde-f23456789012", "target_url": "https://webhooks.example.com/linq/events", "subscribed_events": ["message.sent", "message.delivered", "message.read"], "is_active": true, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    updateEvents:
+      parameters:
+        path:
+          subscriptionId: "b2c3d4e5-f6a7-8901-bcde-f23456789012"
+      requestBody:
+        application/json: {"subscribed_events": ["message.sent", "message.delivered"]}
+      responses:
+        "200":
+          application/json: {"id": "b2c3d4e5-f6a7-8901-bcde-f23456789012", "target_url": "https://webhooks.example.com/linq/events", "subscribed_events": ["message.sent", "message.delivered", "message.read"], "is_active": true, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    deactivate:
+      parameters:
+        path:
+          subscriptionId: "b2c3d4e5-f6a7-8901-bcde-f23456789012"
+      requestBody:
+        application/json: {"is_active": false}
+      responses:
+        "200":
+          application/json: {"id": "b2c3d4e5-f6a7-8901-bcde-f23456789012", "target_url": "https://webhooks.example.com/linq/events", "subscribed_events": ["message.sent", "message.delivered", "message.read"], "is_active": true, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+    speakeasy-default-update-webhook-subscription:
+      parameters:
+        path:
+          subscriptionId: "b2c3d4e5-f6a7-8901-bcde-f23456789012"
+      requestBody:
+        application/json: {"target_url": "https://webhooks.example.com/linq/events", "subscribed_events": ["message.sent", "message.delivered"], "is_active": true}
+      responses:
+        "200":
+          application/json: {"id": "b2c3d4e5-f6a7-8901-bcde-f23456789012", "target_url": "https://webhooks.example.com/linq/events", "subscribed_events": ["message.sent", "message.delivered", "message.read"], "is_active": true, "created_at": "2024-01-15T10:30:00Z", "updated_at": "2024-01-15T10:30:00Z"}
+        "400":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+  deleteWebhookSubscription:
+    speakeasy-default-delete-webhook-subscription:
+      parameters:
+        path:
+          subscriptionId: "b2c3d4e5-f6a7-8901-bcde-f23456789012"
+      responses:
+        "401":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+        "500":
+          application/json: {"error": {"status": 400, "code": 1002, "message": "Phone number must be in E.164 format"}, "success": false, "trace_id": "trace_abc123def456"}
+examplesVersion: 1.0.2

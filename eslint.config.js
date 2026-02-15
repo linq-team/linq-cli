@@ -7,7 +7,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   prettierConfig,
   {
-    ignores: ['dist/', 'node_modules/', 'src/lib/api-types.ts'],
+    ignores: ['dist/', 'node_modules/'],
   },
   {
     files: ['src/**/*.ts'],

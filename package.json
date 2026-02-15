@@ -18,12 +18,12 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "build": "npm run generate:types && tsc",
+    "build": "npm run build --workspaces && tsc",
     "clean": "rm -rf dist",
     "dev": "./bin/dev.js",
-    "generate:types": "openapi-typescript openapi.yaml -o src/gen/api-types.ts",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
+    "generate:sdk": "speakeasy generate sdk -s openapi.yaml -o packages/sdk -l typescript --auto-yes",
+    "lint": "eslint src --ext .ts && npm run lint --workspaces --if-present",
+    "lint:fix": "eslint src --ext .ts --fix && npm run lint:fix --workspaces --if-present",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "postpack": "rm -f oclif.manifest.json",
@@ -86,10 +86,10 @@
     "@oclif/core": "^4.8.0",
     "@oclif/plugin-autocomplete": "^3.2.40",
     "@oclif/plugin-help": "^6.2.37",
+    "@linqapp/sdk": "*",
     "@sentry/node": "^10.38.0",
     "chalk": "^5.6.2",
-    "open": "^11.0.0",
-    "openapi-fetch": "^0.16.0"
+    "open": "^11.0.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.1",
@@ -103,7 +103,6 @@
     "eslint-config-prettier": "^10.1.8",
     "lefthook": "^2.1.0",
     "oclif": "^4.22.77",
-    "openapi-typescript": "^7.12.0",
     "prettier": "^3.8.1",
     "semantic-release": "^25.0.3",
     "typescript": "^5.9.3",
@@ -129,5 +128,8 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }

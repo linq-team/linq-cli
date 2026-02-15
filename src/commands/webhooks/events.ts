@@ -1,7 +1,8 @@
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
+import { parseApiError } from '../../lib/errors.js';
 
 export default class WebhooksEvents extends BaseCommand {
   static override description = 'List available webhook event types';
@@ -24,18 +25,13 @@ export default class WebhooksEvents extends BaseCommand {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { data, error } = await client.GET('/v3/webhook-events');
-
-    if (error) {
-      this.error(`Failed to list webhook events: ${JSON.stringify(error)}`);
+    try {
+      const data = await client.webhooks.listWebhookEvents();
+      this.log(JSON.stringify(data, null, 2));
+    } catch (err) {
+      this.error(`Failed to list webhook events: ${parseApiError(err)}`);
     }
-
-    if (!data) {
-      this.error('Failed to list webhook events: no response data');
-    }
-
-    this.log(JSON.stringify(data, null, 2));
   }
 }

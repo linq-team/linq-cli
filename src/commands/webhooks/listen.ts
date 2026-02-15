@@ -1,11 +1,11 @@
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
 import { formatLogLine } from '../../lib/webhook-format.js';
-import type { components } from '../../gen/api-types.js';
-
-type WebhookEventType = components['schemas']['WebhookEventType'];
+import type { Linq } from '@linqapp/sdk';
+import type { WebhookEventType } from '@linqapp/sdk/models/components';
+import { parseApiError } from '../../lib/errors.js';
 
 interface WebhookEvent {
   event_type?: string;
@@ -64,7 +64,7 @@ export default class WebhooksListen extends BaseCommand {
   };
 
   private webhookId: string | null = null;
-  private client: ReturnType<typeof createApiClient> | null = null;
+  private client: Linq | null = null;
   private ws: WebSocket | null = null;
   private shuttingDown = false;
 
@@ -73,7 +73,7 @@ export default class WebhooksListen extends BaseCommand {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    this.client = createApiClient(token);
+    this.client = createLinqClient(token);
 
     // Validate events if specified
     let subscribedEvents: WebhookEventType[];
@@ -259,43 +259,31 @@ export default class WebhooksListen extends BaseCommand {
     webhookUrl: string,
     subscribedEvents: WebhookEventType[]
   ): Promise<void> {
-    const { data, error } = await this.client!.POST(
-      '/v3/webhook-subscriptions',
-      {
-        body: {
-          target_url: webhookUrl,
-          subscribed_events: subscribedEvents,
-        },
-      }
-    );
+    try {
+      const data = await this.client!.webhooks.createWebhookSubscription({
+        targetUrl: webhookUrl,
+        subscribedEvents,
+      });
 
-    if (error) {
-      this.error(`Failed to create webhook: ${JSON.stringify(error)}`);
+      this.webhookId = data.id;
+      this.log(`Webhook created: ${data.id}`);
+      this.log(`URL: ${data.targetUrl}`);
+      this.log(`Events: ${data.subscribedEvents.join(', ')}`);
+    } catch (err) {
+      this.error(`Failed to create webhook: ${parseApiError(err)}`);
     }
-
-    if (!data) {
-      this.error('Failed to create webhook: no response data');
-    }
-
-    this.webhookId = data.id;
-    this.log(`Webhook created: ${data.id}`);
-    this.log(`URL: ${data.target_url}`);
-    this.log(`Events: ${data.subscribed_events.join(', ')}`);
   }
 
   private async updateWebhookTarget(webhookUrl: string): Promise<void> {
     if (!this.webhookId || !this.client) return;
 
-    const { error } = await this.client.PUT(
-      '/v3/webhook-subscriptions/{subscriptionId}',
-      {
-        params: { path: { subscriptionId: this.webhookId } },
-        body: { target_url: webhookUrl },
-      }
-    );
-
-    if (error) {
-      this.log(`Warning: Failed to update webhook target: ${JSON.stringify(error)}`);
+    try {
+      await this.client.webhooks.updateWebhookSubscription(
+        this.webhookId,
+        { targetUrl: webhookUrl },
+      );
+    } catch (err) {
+      this.log(`Warning: Failed to update webhook target: ${parseApiError(err)}`);
     }
   }
 
@@ -314,9 +302,7 @@ export default class WebhooksListen extends BaseCommand {
     // Delete webhook subscription
     if (this.webhookId && this.client) {
       try {
-        await this.client.DELETE('/v3/webhook-subscriptions/{subscriptionId}', {
-          params: { path: { subscriptionId: this.webhookId } },
-        });
+        await this.client.webhooks.deleteWebhookSubscription(this.webhookId);
         this.log(`Webhook ${this.webhookId} deleted`);
       } catch {
         // Ignore cleanup errors

@@ -1,7 +1,8 @@
 import { Args, Flags } from '@oclif/core';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
+import { parseApiError } from '../../lib/errors.js';
 
 export default class ChatsVoicememo extends BaseCommand {
   static override description = 'Send a voice memo to a chat';
@@ -41,21 +42,17 @@ export default class ChatsVoicememo extends BaseCommand {
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
     const fromPhone = requireFromPhone(flags.from, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { data, error } = await client.POST('/v3/chats/{chatId}/voicememo', {
-      params: { path: { chatId: args.chatId } },
-      body: { from: fromPhone, voice_memo_url: flags.url },
-    });
+    try {
+      const data = await client.messages.sendVoiceMemoToChat(args.chatId, {
+        from: fromPhone,
+        voiceMemoUrl: flags.url,
+      });
 
-    if (error) {
-      this.error(`Failed to send voice memo: ${JSON.stringify(error)}`);
+      this.log(JSON.stringify(data, null, 2));
+    } catch (err) {
+      this.error(`Failed to send voice memo: ${parseApiError(err)}`);
     }
-
-    if (!data) {
-      this.error('Failed to send voice memo: no response data');
-    }
-
-    this.log(JSON.stringify(data, null, 2));
   }
 }

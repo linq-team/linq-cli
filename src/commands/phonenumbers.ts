@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../lib/base-command.js';
 import { loadConfig, requireToken } from '../lib/config.js';
-import { createApiClient } from '../lib/api-client.js';
+import { createLinqClient } from '../lib/api-client.js';
 import { formatPhoneNumbers } from '../lib/format.js';
 import { parseApiError } from '../lib/errors.js';
 
@@ -30,23 +30,18 @@ export default class PhoneNumbers extends BaseCommand {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
+    const client = createLinqClient(token);
 
-    const client = createApiClient(token);
+    try {
+      const data = await client.phoneNumbers.listPhoneNumbers();
 
-    const { data, error } = await client.GET('/v3/phonenumbers');
-
-    if (error) {
-      this.error(`Failed to list phone numbers: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to list phone numbers: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatPhoneNumbers(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatPhoneNumbers(data));
+      }
+    } catch (err) {
+      this.error(`Failed to list phone numbers: ${parseApiError(err)}`);
     }
   }
 }

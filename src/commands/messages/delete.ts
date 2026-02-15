@@ -1,7 +1,7 @@
 import { Args, Flags } from '@oclif/core';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
 import { formatDeleted } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
 
@@ -43,27 +43,18 @@ export default class MessagesDelete extends BaseCommand {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { error } = await client.DELETE('/v3/messages/{messageId}', {
-      params: {
-        path: {
-          messageId: args.messageId,
-        },
-      },
-      body: {
-        chat_id: flags.chat,
-      },
-    });
+    try {
+      await client.messages.deleteMessage(args.messageId, { chatId: flags.chat });
 
-    if (error) {
-      this.error(`Failed to delete message: ${parseApiError(error)}`);
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify({ deleted: true, messageId: args.messageId }));
-    } else {
-      this.log(formatDeleted('Message', args.messageId));
+      if (flags.json) {
+        this.log(JSON.stringify({ deleted: true, messageId: args.messageId }));
+      } else {
+        this.log(formatDeleted('Message', args.messageId));
+      }
+    } catch (err) {
+      this.error(`Failed to delete message: ${parseApiError(err)}`);
     }
   }
 }

@@ -16,6 +16,34 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
+const mockHandle = (phone: string) => ({
+  id: 'h-1',
+  handle: phone,
+  service: 'iMessage',
+  status: 'active',
+  joined_at: '2024-01-15T00:00:00Z',
+});
+
+function createChatResponse(overrides: Record<string, unknown> = {}) {
+  return {
+    chat: {
+      id: 'chat-123',
+      display_name: null,
+      service: 'iMessage',
+      is_group: false,
+      handles: [mockHandle('+19876543210'), mockHandle('+12025551234')],
+      message: {
+        id: 'msg-456',
+        parts: [{ type: 'text', value: 'Hello!' }],
+        sent_at: '2024-01-15T00:00:00Z',
+        delivery_status: 'sent',
+        is_read: false,
+      },
+      ...overrides,
+    },
+  };
+}
+
 describe('chats create', () => {
   let tempDir: string;
   let originalHome: string | undefined;
@@ -45,12 +73,7 @@ describe('chats create', () => {
   it('creates chat and sends message successfully', async () => {
     mockFetch.mockImplementation(async (request: Request) => {
       lastRequestBody = await request.json();
-      return createMockResponse(201, {
-        chat: {
-          id: 'chat-123',
-          message: { id: 'msg-456' },
-        },
-      });
+      return createMockResponse(201, createChatResponse());
     });
 
     const config = await Config.load({ root: process.cwd() });
@@ -79,9 +102,7 @@ describe('chats create', () => {
   it('includes effect when specified', async () => {
     mockFetch.mockImplementation(async (request: Request) => {
       lastRequestBody = await request.json();
-      return createMockResponse(201, {
-        chat: { id: 'chat-123', message: { id: 'msg-456' } },
-      });
+      return createMockResponse(201, createChatResponse());
     });
 
     const config = await Config.load({ root: process.cwd() });
@@ -100,9 +121,7 @@ describe('chats create', () => {
   it('supports multiple recipients for group chats', async () => {
     mockFetch.mockImplementation(async (request: Request) => {
       lastRequestBody = await request.json();
-      return createMockResponse(201, {
-        chat: { id: 'chat-123', message: { id: 'msg-456' } },
-      });
+      return createMockResponse(201, createChatResponse({ is_group: true }));
     });
 
     const config = await Config.load({ root: process.cwd() });

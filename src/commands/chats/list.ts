@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
 import { formatChatsList } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
 
@@ -46,30 +46,18 @@ export default class ChatsList extends BaseCommand {
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
     const fromPhone = requireFromPhone(flags.from, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { data, error } = await client.GET('/v3/chats', {
-      params: {
-        query: {
-          from: fromPhone,
-          limit: flags.limit,
-          cursor: flags.cursor,
-        },
-      },
-    });
+    try {
+      const data = await client.chats.listChats(fromPhone, flags.limit, flags.cursor);
 
-    if (error) {
-      this.error(`Failed to list chats: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to list chats: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatChatsList(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatChatsList(data));
+      }
+    } catch (err) {
+      this.error(`Failed to list chats: ${parseApiError(err)}`);
     }
   }
 }

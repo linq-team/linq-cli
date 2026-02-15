@@ -1,7 +1,8 @@
 import { Args, Flags } from '@oclif/core';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
+import { parseApiError } from '../../lib/errors.js';
 
 export default class ChatsShareContact extends BaseCommand {
   static override description = 'Share your contact card with a chat';
@@ -33,16 +34,13 @@ export default class ChatsShareContact extends BaseCommand {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { error } = await client.POST('/v3/chats/{chatId}/share_contact_card', {
-      params: { path: { chatId: args.chatId } },
-    });
-
-    if (error) {
-      this.error(`Failed to share contact: ${JSON.stringify(error)}`);
+    try {
+      await client.chats.shareContactWithChat(args.chatId);
+      this.log('Contact card shared successfully.');
+    } catch (err) {
+      this.error(`Failed to share contact: ${parseApiError(err)}`);
     }
-
-    this.log('Contact card shared successfully.');
   }
 }

@@ -11,3 +11,5 @@ pre-commit:
       run: npm run lint
     typecheck:
       run: npx tsc --noEmit
+    typecheck-sdk:
+      run: npm run build --workspace=packages/sdk -- --noEmit

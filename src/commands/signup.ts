@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import open from 'open';
 import { BaseCommand } from '../lib/base-command.js';
 import { loadConfig, saveConfig } from '../lib/config.js';
-import { createApiClient } from '../lib/api-client.js';
+import { createLinqClient } from '../lib/api-client.js';
 import { LOGO } from '../lib/banner.js';
 
 // TODO: Create GitHub OAuth App and update this
@@ -138,20 +138,18 @@ export default class Signup extends BaseCommand {
 
     // Send welcome message (requires inbound message first)
     try {
-      const client = createApiClient(data.token);
-      await client.POST('/v3/chats', {
-        body: {
-          from: data.sandboxPhone,
-          to: [data.userPhone],
-          message: {
-            parts: [
-              {
-                type: 'text',
-                value: `Hey! 👋 Your Linq sandbox is live! This number is yours for the next 3 hours. Happy hacking!`,
-              },
-            ],
-            effect: { type: 'screen', name: 'confetti' },
-          },
+      const client = createLinqClient(data.token);
+      await client.chats.createChat({
+        from: data.sandboxPhone,
+        to: [data.userPhone],
+        message: {
+          parts: [
+            {
+              type: 'text',
+              value: `Hey! 👋 Your Linq sandbox is live! This number is yours for the next 3 hours. Happy hacking!`,
+            },
+          ],
+          effect: { type: 'screen', name: 'confetti' },
         },
       });
     } catch {

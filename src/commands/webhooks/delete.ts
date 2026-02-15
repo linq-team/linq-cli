@@ -1,7 +1,7 @@
 import { Args, Flags } from '@oclif/core';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
-import { createApiClient } from '../../lib/api-client.js';
+import { createLinqClient } from '../../lib/api-client.js';
 import { formatDeleted } from '../../lib/format.js';
 import { parseApiError } from '../../lib/errors.js';
 
@@ -37,27 +37,18 @@ export default class WebhooksDelete extends BaseCommand {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const client = createApiClient(token);
+    const client = createLinqClient(token);
 
-    const { error } = await client.DELETE(
-      '/v3/webhook-subscriptions/{subscriptionId}',
-      {
-        params: {
-          path: {
-            subscriptionId: args.subscriptionId,
-          },
-        },
+    try {
+      await client.webhooks.deleteWebhookSubscription(args.subscriptionId);
+
+      if (flags.json) {
+        this.log(JSON.stringify({ deleted: true, subscriptionId: args.subscriptionId }));
+      } else {
+        this.log(formatDeleted('Webhook', args.subscriptionId));
       }
-    );
-
-    if (error) {
-      this.error(`Failed to delete webhook: ${parseApiError(error)}`);
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify({ deleted: true, subscriptionId: args.subscriptionId }));
-    } else {
-      this.log(formatDeleted('Webhook', args.subscriptionId));
+    } catch (err) {
+      this.error(`Failed to delete webhook: ${parseApiError(err)}`);
     }
   }
 }

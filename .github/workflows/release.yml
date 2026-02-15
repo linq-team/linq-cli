@@ -34,6 +34,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Test SDK
+        run: npm test --workspace=packages/sdk
+
       - name: Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
