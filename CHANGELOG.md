@@ -1,3 +1,29 @@
+## [1.8.3](https://github.com/linq-team/linq-cli/compare/v1.8.2...v1.8.3) (2026-02-14)
+
+
+### Bug Fixes
+
+* allow full chat id in list command ([97df3e1](https://github.com/linq-team/linq-cli/commit/97df3e14f2041d38a743810df60d579d8b866521))
+
+
+### Performance Improvements
+
+* lazy-load Sentry and use close() for faster shutdown ([8f9928f](https://github.com/linq-team/linq-cli/commit/8f9928f08b4db30d33c68681a50e05d5dcbb9951))
+
+## [1.8.2](https://github.com/linq-team/linq-cli/compare/v1.8.1...v1.8.2) (2026-02-14)
+
+
+### Bug Fixes
+
+* allow more time for phone prep ([d214630](https://github.com/linq-team/linq-cli/commit/d21463075aee0c1b220c66656b506ead46d21c4f))
+
+## [1.8.1](https://github.com/linq-team/linq-cli/compare/v1.8.0...v1.8.1) (2026-02-13)
+
+
+### Bug Fixes
+
+* add loading spinner during sandbox phone setup ([769c645](https://github.com/linq-team/linq-cli/commit/769c6457101f9272e60aed5234b087076b72ce51))
+
 # [1.8.0](https://github.com/linq-team/linq-cli/compare/v1.7.2...v1.8.0) (2026-02-13)
 
 

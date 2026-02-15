@@ -1,4 +1,4 @@
-import { Flags } from '@oclif/core';
+import { Flags, ux } from '@oclif/core';
 import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
 import open from 'open';
@@ -126,7 +126,12 @@ export default class Signup extends BaseCommand {
     };
     await saveConfig(config);
 
-    this.log(`  Your sandbox number: ${chalk.bold(data.sandboxPhone)}\n`);
+    // Wait for mac-agent to reconcile
+    ux.action.start('Preparing your sandbox phone');
+    await this.sleep(10000);
+    ux.action.stop('ready!');
+
+    this.log(`\n  Your sandbox number: ${chalk.bold(data.sandboxPhone)}\n`);
     this.log(`  Send a text from your phone to ${chalk.bold(data.sandboxPhone)} to activate it.\n`);
 
     await input({ message: 'Press Enter once you\'ve sent a message...' });

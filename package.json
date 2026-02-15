@@ -1,6 +1,6 @@
 {
   "name": "@linqapp/cli",
-  "version": "1.8.0",
+  "version": "1.8.3",
   "description": "CLI for Linq messaging API",
   "type": "module",
   "bin": {
@@ -117,9 +117,14 @@
     "sms"
   ],
   "license": "Apache-2.0",
+  "author": "Josh Flayhart <npm@linqapp.com>",
+  "homepage": "https://github.com/linq-team/linq-cli#readme",
   "repository": {
     "type": "git",
     "url": "https://github.com/linq-team/linq-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/linq-team/linq-cli/issues"
   },
   "publishConfig": {
     "access": "public"

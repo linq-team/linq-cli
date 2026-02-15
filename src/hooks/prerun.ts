@@ -1,9 +1,10 @@
 import { Hook } from '@oclif/core';
-import * as Sentry from '@sentry/node';
 import {
   startCommandSpan,
   isTelemetryEnabled,
   shouldShowTelemetryNotice,
+  setTag,
+  setContext,
 } from '../lib/telemetry.js';
 import { loadConfigFile, saveConfigFile } from '../lib/config.js';
 
@@ -27,12 +28,12 @@ const hook: Hook<'prerun'> = async function (opts) {
   if (!isTelemetryEnabled()) return;
 
   // Set Sentry context for this command
-  Sentry.setTag('command', commandId);
+  setTag('command', commandId);
 
   // Record flag names only (no values) for debugging context
   const flagNames = Object.keys(opts.argv ?? {});
   if (flagNames.length > 0) {
-    Sentry.setContext('flags', { names: flagNames });
+    setContext('flags', { names: flagNames });
   }
 
   startCommandSpan(commandId);
