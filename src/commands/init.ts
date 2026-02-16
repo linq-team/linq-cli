@@ -1,6 +1,14 @@
-import { password, select } from '@inquirer/prompts';
+import { Flags } from '@oclif/core';
+import { password, select, input } from '@inquirer/prompts';
 import { BaseCommand } from '../lib/base-command.js';
-import { saveConfig } from '../lib/config.js';
+import {
+  saveProfile,
+  setCurrentProfile,
+  getCurrentProfile,
+  listProfiles,
+  SANDBOX_PROFILE,
+} from '../lib/config.js';
+import { fetchPartnerId } from '../lib/partner.js';
 import { createApiClient } from '../lib/api-client.js';
 import { LOGO } from '../lib/banner.js';
 
@@ -9,9 +17,47 @@ const INIT_BANNER = LOGO + '\n  Welcome to Linq CLI Setup\n';
 export default class Init extends BaseCommand {
   static override description = 'Interactive setup wizard for Linq CLI';
 
-  static override examples = ['<%= config.bin %> <%= command.id %>'];
+  static override examples = [
+    '<%= config.bin %> <%= command.id %>',
+    '<%= config.bin %> <%= command.id %> --profile work',
+  ];
+
+  static override flags = {
+    profile: Flags.string({
+      char: 'p',
+      description: 'Profile to save credentials to',
+    }),
+  };
 
   async run(): Promise<void> {
+    const { flags } = await this.parse(Init);
+
+    let profileName = flags.profile;
+
+    if (profileName === SANDBOX_PROFILE) {
+      this.error(`The "${SANDBOX_PROFILE}" profile is reserved for \`linq signup\`. Use --profile <name> to init a different profile.`);
+    }
+
+    if (!profileName) {
+      const current = await getCurrentProfile() || 'default';
+      const profiles = (await listProfiles()).filter(p => p !== SANDBOX_PROFILE);
+      const choices = [
+        ...profiles.map(p => ({
+          name: p === current ? `${p} (active)` : p,
+          value: p,
+        })),
+        { name: 'Create new profile', value: '__new__' },
+      ];
+      const chosen = await select({
+        message: 'Which profile would you like to set up?',
+        choices,
+        default: current !== SANDBOX_PROFILE ? current : undefined,
+      });
+      profileName = chosen === '__new__'
+        ? await input({ message: 'Profile name:', validate: v => v.trim() ? true : 'Name cannot be empty' })
+        : chosen;
+    }
+
     console.log(INIT_BANNER);
 
     this.log(
@@ -67,13 +113,18 @@ export default class Init extends BaseCommand {
       this.log('');
     }
 
-    // Save config
-    await saveConfig({
+    // Fetch partner ID
+    const partnerId = await fetchPartnerId(token.trim());
+
+    // Save to profile
+    await saveProfile(profileName, {
       token: token.trim(),
       ...(fromPhone && { fromPhone }),
+      ...(partnerId && { partnerId }),
     });
+    await setCurrentProfile(profileName);
 
-    this.log('\n\u2713 Configuration saved to ~/.linq/config.json\n');
+    this.log(`\n\u2713 Configuration saved to profile "${profileName}"\n`);
     this.log('Next steps:');
     this.log('  linq phonenumbers                                     List your phone numbers');
     this.log(

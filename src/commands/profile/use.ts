@@ -2,7 +2,7 @@ import { Args } from '@oclif/core';
 import { BaseCommand } from '../../lib/base-command.js';
 import { setCurrentProfile, listProfiles } from '../../lib/config.js';
 
-export default class ConfigUse extends BaseCommand {
+export default class ProfileUse extends BaseCommand {
   static override description = 'Switch to a different configuration profile';
 
   static override examples = [
@@ -18,14 +18,14 @@ export default class ConfigUse extends BaseCommand {
   };
 
   async run(): Promise<void> {
-    const { args } = await this.parse(ConfigUse);
+    const { args } = await this.parse(ProfileUse);
 
     const profiles = await listProfiles();
 
     if (!profiles.includes(args.profile)) {
       this.error(
         `Profile "${args.profile}" not found. Available profiles: ${profiles.join(', ')}\n` +
-          `Create it with: linq config set token YOUR_TOKEN --profile ${args.profile}`
+          `Create it with: linq profile set token YOUR_TOKEN --profile ${args.profile}`
       );
     }
 

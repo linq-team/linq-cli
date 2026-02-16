@@ -3,7 +3,13 @@ import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
 import open from 'open';
 import { BaseCommand } from '../lib/base-command.js';
-import { loadConfig, saveConfig } from '../lib/config.js';
+import {
+  getSandboxProfile,
+  isSandboxExpired,
+  saveSandboxProfile,
+  setCurrentProfile,
+  SANDBOX_PROFILE,
+} from '../lib/config.js';
 import { fetchPartnerId } from '../lib/partner.js';
 import { createApiClient } from '../lib/api-client.js';
 import { formatLogLine } from '../lib/webhook-format.js';
@@ -40,16 +46,14 @@ export default class Signup extends BaseCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Signup);
-    const config = await loadConfig();
 
     // Check for existing sandbox
-    if (config.sandbox?.expiresAt) {
-      const expires = new Date(config.sandbox.expiresAt);
-      if (expires > new Date()) {
-        this.log(`\nYou have an active sandbox: ${config.sandbox.phone}`);
-        this.log(`Expires: ${expires.toLocaleTimeString()}\n`);
-        return;
-      }
+    const existing = await getSandboxProfile();
+    if (existing && !isSandboxExpired(existing)) {
+      const expires = new Date(existing.expiresAt!);
+      this.log(`\nYou have an active sandbox: ${existing.fromPhone}`);
+      this.log(`Expires: ${expires.toLocaleTimeString()}\n`);
+      return;
     }
 
     console.log(SIGNUP_BANNER);
@@ -125,17 +129,16 @@ export default class Signup extends BaseCommand {
       githubLogin: string;
     };
 
-    // Save to config
-    config.token = data.token;
-    config.fromPhone = data.sandboxPhone;
-    config.partnerId = data.partnerId ?? await fetchPartnerId(data.token) ?? undefined;
-    config.sandbox = {
-      phone: data.sandboxPhone,
-      userPhone: data.userPhone,
+    // Save to sandbox profile
+    const partnerId = data.partnerId ?? await fetchPartnerId(data.token) ?? undefined;
+    await saveSandboxProfile({
+      token: data.token,
+      fromPhone: data.sandboxPhone,
+      partnerId,
       expiresAt: data.expiresAt,
       githubLogin: data.githubLogin,
-    };
-    await saveConfig(config);
+    });
+    await setCurrentProfile(SANDBOX_PROFILE);
 
     // Wait for mac-agent to reconcile
     ux.action.start('Preparing your sandbox phone');

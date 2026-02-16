@@ -73,8 +73,8 @@
       "webhooks": {
         "description": "Manage webhook subscriptions"
       },
-      "config": {
-        "description": "Manage CLI configuration and profiles"
+      "profile": {
+        "description": "Manage CLI profiles"
       },
       "attachments": {
         "description": "Manage file attachments"
