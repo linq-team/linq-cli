@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/linq-team/linq-cli/compare/v1.0.1...v1.0.2) (2026-02-16)
+
+
+### Bug Fixes
+
+* replace manual prompt with ephemeral webhook in signup flow ([f68561a](https://github.com/linq-team/linq-cli/commit/f68561a804327b71ffd544a216067c64c0a6571b))
+
 ## [1.0.1](https://github.com/linq-team/linq-cli/compare/v1.0.0...v1.0.1) (2026-02-15)
 
 
