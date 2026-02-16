@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/linq-team/linq-cli/compare/v1.1.1...v1.1.2) (2026-02-16)
+
+
+### Bug Fixes
+
+* use human-readable names for release artifacts ([#7](https://github.com/linq-team/linq-cli/issues/7)) ([33c2694](https://github.com/linq-team/linq-cli/commit/33c2694d95d168edb163e191f7fb39edf0f4b902))
+
 ## [1.1.1](https://github.com/linq-team/linq-cli/compare/v1.1.0...v1.1.1) (2026-02-16)
 
 
