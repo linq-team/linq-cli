@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/linq-team/linq-cli/compare/v1.0.2...v1.1.0) (2026-02-16)
+
+
+### Features
+
+* multi-profile config with dedicated sandbox profile ([0f4a204](https://github.com/linq-team/linq-cli/commit/0f4a204ae0070a11ffb86db18fe82a0f6985c4a5))
+
 ## [1.0.2](https://github.com/linq-team/linq-cli/compare/v1.0.1...v1.0.2) (2026-02-16)
 
 
