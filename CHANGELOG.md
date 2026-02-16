@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/linq-team/linq-cli/compare/v1.1.0...v1.1.1) (2026-02-16)
+
+
+### Bug Fixes
+
+* cache GitHub token and handle non-TTY in signup ([bfdd3b6](https://github.com/linq-team/linq-cli/commit/bfdd3b622cfa7c2bc5e86359d144e08226cb9cb9))
+
 # [1.1.0](https://github.com/linq-team/linq-cli/compare/v1.0.2...v1.1.0) (2026-02-16)
 
 
