@@ -11,12 +11,12 @@ Download the latest installer for your platform from the [Releases](https://gith
 
 | Platform | File | Install Command |
 |----------|------|-----------------|
-| **macOS (Intel)** | `linq-*-x64.pkg` | Double-click to install |
-| **macOS (Apple Silicon)** | `linq-*-arm64.pkg` | Double-click to install |
-| **Windows (x64)** | `linq-*-x64.exe` | Run the installer |
-| **Windows (ARM)** | `linq-*-arm64.exe` | Run the installer |
-| **Debian/Ubuntu (x64)** | `linq_*_amd64.deb` | `sudo dpkg -i linq_*.deb` |
-| **Debian/Ubuntu (ARM)** | `linq_*_arm64.deb` | `sudo dpkg -i linq_*.deb` |
+| **macOS (Apple Silicon)** | `linq-*-mac-apple-silicon.pkg` | Double-click to install |
+| **macOS (Intel)** | `linq-*-mac-intel.pkg` | Double-click to install |
+| **Windows (x64)** | `linq-*-windows-x64.exe` | Run the installer |
+| **Windows (ARM)** | `linq-*-windows-arm64.exe` | Run the installer |
+| **Linux (x64)** | `linq-*-linux-x64.deb` | `sudo dpkg -i linq-*.deb` |
+| **Linux (ARM)** | `linq-*-linux-arm64.deb` | `sudo dpkg -i linq-*.deb` |
 
 After installation, the `linq` command will be available in your terminal.
 
