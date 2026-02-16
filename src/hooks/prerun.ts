@@ -6,7 +6,7 @@ import {
   setTag,
   setContext,
 } from '../lib/telemetry.js';
-import { loadConfigFile, saveConfigFile } from '../lib/config.js';
+import { loadConfig, loadConfigFile, saveConfigFile, getCurrentProfile } from '../lib/config.js';
 
 const hook: Hook<'prerun'> = async function (opts) {
   const commandId = opts.Command.id;
@@ -14,7 +14,7 @@ const hook: Hook<'prerun'> = async function (opts) {
   // First-run notice: show once then persist opt-in
   if (shouldShowTelemetryNotice()) {
     process.stderr.write(
-      'Linq CLI collects anonymous usage data. Disable with: linq config set telemetry false\n'
+      'Linq CLI collects anonymous usage data. Disable with: linq profile set telemetry false\n'
     );
     try {
       const configFile = await loadConfigFile();
@@ -29,6 +29,19 @@ const hook: Hook<'prerun'> = async function (opts) {
 
   // Set Sentry context for this command
   setTag('command', commandId);
+
+  // Tag active profile and partner ID
+  try {
+    const activeProfile = await getCurrentProfile();
+    setTag('profile', activeProfile);
+
+    const config = await loadConfig();
+    if (config.partnerId) {
+      setTag('partner_id', config.partnerId);
+    }
+  } catch {
+    // Non-fatal
+  }
 
   // Record flag names only (no values) for debugging context
   const flagNames = Object.keys(opts.argv ?? {});

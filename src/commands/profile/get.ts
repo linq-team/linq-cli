@@ -10,8 +10,8 @@ import {
 const VALID_KEYS: (keyof Profile)[] = ['token', 'fromPhone'];
 const GLOBAL_KEYS = ['telemetry'] as const;
 
-export default class ConfigGet extends BaseCommand {
-  static override description = 'Get a configuration value';
+export default class ProfileGet extends BaseCommand {
+  static override description = 'Get a profile configuration value';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> token',
@@ -35,7 +35,7 @@ export default class ConfigGet extends BaseCommand {
   };
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(ConfigGet);
+    const { args, flags } = await this.parse(ProfileGet);
 
     const currentProfile = await getCurrentProfile();
     const profileName = flags.profile || currentProfile;

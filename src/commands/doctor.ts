@@ -61,7 +61,7 @@ export default class Doctor extends BaseCommand {
       this.log(`\u2713 Default phone number is set (${config.fromPhone})`);
       passed++;
     } else {
-      this.log('\u2717 Default phone number is not set — run `linq config set fromPhone +1234567890`');
+      this.log('\u2717 Default phone number is not set — run `linq profile set fromPhone +1234567890`');
       failed++;
     }
 
@@ -87,6 +87,19 @@ export default class Doctor extends BaseCommand {
     } else {
       this.log('\u2717 API connectivity — skipped (no token)');
       failed++;
+    }
+
+    // Check 5: Sandbox status
+    const sandboxProfile = configFile.profiles.sandbox;
+    if (sandboxProfile?.fromPhone && sandboxProfile?.expiresAt) {
+      const expires = new Date(sandboxProfile.expiresAt);
+      if (expires > new Date()) {
+        this.log(`\u2713 Sandbox active (${sandboxProfile.fromPhone}, expires ${expires.toLocaleTimeString()})`);
+        passed++;
+      } else {
+        this.log(`\u2717 Sandbox expired (${sandboxProfile.fromPhone}, expired ${expires.toLocaleTimeString()})`);
+        failed++;
+      }
     }
 
     this.log(

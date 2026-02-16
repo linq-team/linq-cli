@@ -1,6 +1,6 @@
 {
   "name": "@linqapp/cli",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "CLI for Linq messaging API",
   "type": "module",
   "bin": {
@@ -73,8 +73,8 @@
       "webhooks": {
         "description": "Manage webhook subscriptions"
       },
-      "config": {
-        "description": "Manage CLI configuration and profiles"
+      "profile": {
+        "description": "Manage CLI profiles"
       },
       "attachments": {
         "description": "Manage file attachments"

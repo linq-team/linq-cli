@@ -54,7 +54,7 @@ linq init
 
 #### `linq signup`
 
-Get a sandbox phone number for testing. Authenticates via GitHub and provisions a temporary sandbox number (valid for 3 hours).
+Get a sandbox phone number for testing. Authenticates via GitHub and provisions a temporary sandbox number (valid for 3 hours). Credentials are saved to the `sandbox` profile.
 
 ```bash
 linq signup
@@ -80,61 +80,86 @@ linq login
 
 # Or provide token directly
 linq login --token YOUR_API_TOKEN
+
+# Save to a specific profile
+linq login --profile work
 ```
 
-Your token is saved to `~/.linq/config.json`.
+Your token is saved to the active profile in `~/.linq/config.json`.
 
-#### `linq config get|set`
+#### `linq profile get|set`
 
-Manage configuration values.
+Manage profile configuration values.
 
 ```bash
-# View current config
-linq config get
+# View current profile config
+linq profile get
 
 # Set your API token
-linq config set token YOUR_API_TOKEN
+linq profile set token YOUR_API_TOKEN
 
 # Set default sender phone (must be one from `linq phonenumbers`)
-linq config set fromPhone +12025551234
+linq profile set fromPhone +12025551234
 ```
 
-#### `linq config list`
+#### `linq profile list`
 
 List all configuration profiles.
 
 ```bash
-linq config list
+linq profile list
 # Output:
 # Profiles:
 #   default (active)
 #   personal
 #   work
+#   sandbox (sandbox +14043848368, expires 8:12:53 PM)
 ```
 
-#### `linq config use`
+#### `linq profile use`
 
 Switch to a different profile.
 
 ```bash
-linq config use work
+linq profile use work
+```
+
+#### `linq profile create`
+
+Create a new named profile.
+
+```bash
+linq profile create staging
+linq profile create work --token YOUR_TOKEN --from-phone +12025551234
+```
+
+#### `linq profile delete`
+
+Delete a named profile.
+
+```bash
+linq profile delete staging
 ```
 
 ### Profiles
 
 Profiles work like AWS CLI profiles - switch between different accounts or phone numbers easily.
 
+The `sandbox` profile is reserved and managed by `linq signup`. It stores credentials for your temporary sandbox phone number.
+
 ```bash
 # Create a work profile
-linq config set token WORK_TOKEN --profile work
-linq config set fromPhone +18005551234 --profile work
+linq profile create work
+linq profile set token WORK_TOKEN --profile work
+linq profile set fromPhone +18005551234 --profile work
 
 # Create a personal profile
-linq config set token PERSONAL_TOKEN --profile personal
-linq config set fromPhone +12025551234 --profile personal
+linq profile create personal
+linq profile set token PERSONAL_TOKEN --profile personal
+linq profile set fromPhone +12025551234 --profile personal
 
 # Switch default profile
-linq config use work
+linq profile use work
 
 # Or use --profile flag with any command
 linq chats create --to +19876543210 --message "Hello" --profile personal
@@ -536,8 +561,8 @@ Linq CLI collects anonymous usage data to help improve the tool. This includes:
 ### Opt out
 
 ```bash
-# Via config
-linq config set telemetry false
+# Via profile config
+linq profile set telemetry false
 
 # Or via environment variable
 export LINQ_TELEMETRY=0
