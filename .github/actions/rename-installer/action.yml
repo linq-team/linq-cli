@@ -1,0 +1,69 @@
+name: Rename Installer
+description: Rename built installer artifacts with human-readable names and optionally upload to a release
+
+inputs:
+  dist-dir:
+    description: Directory containing built artifacts (e.g., dist/deb)
+    required: true
+  extension:
+    description: File extension to match (e.g., deb, exe, pkg)
+    required: true
+  platform:
+    description: Platform label used in the filename (e.g., linux, windows, mac)
+    required: true
+  arch-map:
+    description: |
+      Newline-separated arch mappings in "from=to" format.
+      Unmapped architectures pass through as-is.
+      Example:
+        amd64=x64
+        arm64=apple-silicon
+    required: false
+    default: ''
+  tag:
+    description: Release tag for uploading assets (skip upload if empty)
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Rename artifacts
+      shell: bash
+      run: |
+        # Derive version from tag or package.json
+        if [ -n "${{ inputs.tag }}" ]; then
+          VERSION="${{ inputs.tag }}"
+          VERSION="${VERSION#v}"
+        else
+          VERSION=$(node -p "require('$GITHUB_WORKSPACE/package.json').version")
+        fi
+
+        cd "$GITHUB_WORKSPACE/${{ inputs.dist-dir }}"
+
+        # Build arch mapping from input
+        declare -A ARCH_MAP
+        while IFS='=' read -r from to; do
+          [ -n "$from" ] && ARCH_MAP["$from"]="$to"
+        done <<< "${{ inputs.arch-map }}"
+
+        for file in *.${{ inputs.extension }}; do
+          [ -f "$file" ] || continue
+          raw_arch=$(echo "$file" | grep -oE '(amd64|arm64|armel|x64|x86)')
+          arch="${ARCH_MAP[$raw_arch]:-$raw_arch}"
+          mv "$file" "linq-${VERSION}-${{ inputs.platform }}-${arch}.${{ inputs.extension }}"
+        done
+
+        echo "=== Renamed artifacts ==="
+        ls -la *.${{ inputs.extension }} 2>/dev/null || echo "No .${{ inputs.extension }} files found"
+
+    - name: Upload to release
+      if: ${{ inputs.tag != '' }}
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        cd "$GITHUB_WORKSPACE/${{ inputs.dist-dir }}"
+        for file in *.${{ inputs.extension }}; do
+          [ -f "$file" ] && gh release upload "${{ inputs.tag }}" "$file" --clobber
+        done

@@ -20,26 +20,13 @@ jobs:
         run: npx oclif pack deb
 
       - name: Rename and upload
-        if: ${{ inputs.tag != '' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="${{ inputs.tag }}"
-          VERSION="${VERSION#v}"
-          cd dist/deb
-          for file in *.deb; do
-            [ -f "$file" ] || continue
-            raw_arch=$(echo "$file" | grep -oE '(amd64|arm64|armel)')
-            case "$raw_arch" in
-              amd64) arch="x64" ;;
-              *) arch="$raw_arch" ;;
-            esac
-            mv "$file" "linq-${VERSION}-linux-${arch}.deb"
-          done
-          ls -la
-          for file in *.deb; do
-            [ -f "$file" ] && gh release upload "${{ inputs.tag }}" "$file" --clobber
-          done
+        uses: ./.github/actions/rename-installer
+        with:
+          dist-dir: dist/deb
+          extension: deb
+          platform: linux
+          arch-map: amd64=x64
+          tag: ${{ inputs.tag }}
 
   build-windows:
     runs-on: windows-latest
@@ -57,23 +44,12 @@ jobs:
           npx oclif pack win
 
       - name: Rename and upload
-        if: ${{ inputs.tag != '' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          VERSION="${{ inputs.tag }}"
-          VERSION="${VERSION#v}"
-          cd dist/win32
-          for file in *.exe; do
-            [ -f "$file" ] || continue
-            arch=$(echo "$file" | grep -oE '(x64|x86|arm64)')
-            mv "$file" "linq-${VERSION}-windows-${arch}.exe"
-          done
-          ls -la
-          for file in *.exe; do
-            [ -f "$file" ] && gh release upload "${{ inputs.tag }}" "$file" --clobber
-          done
+        uses: ./.github/actions/rename-installer
+        with:
+          dist-dir: dist/win32
+          extension: exe
+          platform: windows
+          tag: ${{ inputs.tag }}
 
   build-macos:
     runs-on: macos-latest
@@ -205,24 +181,12 @@ jobs:
         run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
 
       - name: Rename and upload
-        if: ${{ inputs.tag != '' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="${{ inputs.tag }}"
-          VERSION="${VERSION#v}"
-          cd dist/macos
-          for file in *.pkg; do
-            [ -f "$file" ] || continue
-            raw_arch=$(echo "$file" | grep -oE '(x64|arm64)')
-            case "$raw_arch" in
-              arm64) arch="apple-silicon" ;;
-              x64) arch="intel" ;;
-              *) arch="$raw_arch" ;;
-            esac
-            mv "$file" "linq-${VERSION}-mac-${arch}.pkg"
-          done
-          ls -la
-          for file in *.pkg; do
-            [ -f "$file" ] && gh release upload "${{ inputs.tag }}" "$file" --clobber
-          done
+        uses: ./.github/actions/rename-installer
+        with:
+          dist-dir: dist/macos
+          extension: pkg
+          platform: mac
+          arch-map: |
+            arm64=apple-silicon
+            x64=intel
+          tag: ${{ inputs.tag }}
