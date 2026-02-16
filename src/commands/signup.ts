@@ -1,3 +1,6 @@
+import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { Flags, ux } from '@oclif/core';
 import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
@@ -18,8 +21,7 @@ import type { components } from '../gen/api-types.js';
 
 type WebhookEventType = components['schemas']['WebhookEventType'];
 
-// TODO: Create GitHub OAuth App and update this
-const GITHUB_CLIENT_ID = 'Ov23liGRjTnm4bJgatLx';
+const GITHUB_CLIENT_ID = 'Ov23lifn0bcZx3W7pmqr';
 const WEBHOOK_BASE_URL =
   process.env.WEBHOOK_BASE_URL || 'https://webhook.linqapp.com';
 const SANDBOX_API_URL =
@@ -58,38 +60,55 @@ export default class Signup extends BaseCommand {
 
     console.log(SIGNUP_BANNER);
 
-    // Step 1: GitHub OAuth
-    this.log('Opening browser for GitHub authentication...\n');
-
-    const githubToken = await this.githubAuth();
-    if (!githubToken) {
-      this.log(chalk.red('\n  GitHub authentication failed or was cancelled.\n'));
-      this.exit(1);
+    // Step 1: GitHub OAuth (check cache first)
+    let githubToken: string;
+    const cached = await this.getCachedGitHubToken();
+    if (cached) {
+      // Validate the cached token
+      try {
+        const user = await this.getGitHubUser(cached.token);
+        if (user.login) {
+          githubToken = cached.token;
+          this.log(`Resuming as @${user.login}\n`);
+        } else {
+          throw new Error('invalid');
+        }
+      } catch {
+        await this.clearGitHubCache();
+        githubToken = await this.doGitHubAuth();
+      }
+    } else {
+      githubToken = await this.doGitHubAuth();
     }
-
-    // Get GitHub user for display
-    const ghUser = await this.getGitHubUser(githubToken);
-    this.log(`✓ Authenticated as @${ghUser.login}\n`);
 
     // Step 2: Collect phone number
     let phone = flags.phone;
     if (!phone) {
-      phone = await input({
-        message: 'Your phone number (e.g. +11234567890):',
-        validate: (v) => {
-          const digits = v.replace(/\D/g, '');
-          if (digits.length === 10) {
-            return true; // US number without country code
-          }
-          if (digits.length === 11 && digits.startsWith('1')) {
-            return true; // US number with country code
-          }
-          if (digits.length >= 11 && digits.length <= 15) {
-            return true; // International number
-          }
-          return 'Enter a valid phone number with country code (e.g. +12025550199)';
-        },
-      });
+      try {
+        phone = await input({
+          message: 'Your phone number (e.g. +11234567890):',
+          validate: (v) => {
+            const digits = v.replace(/\D/g, '');
+            if (digits.length === 10) {
+              return true; // US number without country code
+            }
+            if (digits.length === 11 && digits.startsWith('1')) {
+              return true; // US number with country code
+            }
+            if (digits.length >= 11 && digits.length <= 15) {
+              return true; // International number
+            }
+            return 'Enter a valid phone number with country code (e.g. +12025550199)';
+          },
+        });
+      } catch (error) {
+        if (error instanceof Error && error.name === 'ExitPromptError') {
+          this.log(chalk.yellow('\nNon-interactive terminal detected. Use --phone to provide your number.\n'));
+          this.log(`  Example: ${chalk.cyan('linq signup --phone +11234567890')}\n`);
+          this.exit(1);
+        }
+        throw error;
+      }
     }
     phone = this.normalizePhone(phone);
 
@@ -185,6 +204,23 @@ export default class Signup extends BaseCommand {
     this.log('  Get started:\n');
     this.log(`    ${chalk.cyan('linq webhooks listen')}`);
     this.log(`    ${chalk.cyan(`linq chats create --to ${data.userPhone} -m "Hello from Linq CLI!"`)}\n`);
+  }
+
+  private async doGitHubAuth(): Promise<string> {
+    this.log('Opening browser for GitHub authentication...\n');
+
+    const githubToken = await this.githubAuth();
+    if (!githubToken) {
+      this.log(chalk.red('\n  GitHub authentication failed or was cancelled.\n'));
+      this.exit(1);
+    }
+
+    const ghUser = await this.getGitHubUser(githubToken);
+    this.log(`✓ Authenticated as @${ghUser.login}\n`);
+
+    await this.cacheGitHubToken(githubToken, ghUser.login);
+
+    return githubToken;
   }
 
   private async githubAuth(): Promise<string | null> {
@@ -370,6 +406,37 @@ export default class Signup extends BaseCommand {
           });
         } catch { /* ignore cleanup errors */ }
       }
+    }
+  }
+
+  private getGitHubCachePath(): string {
+    return join(process.env.HOME || homedir(), '.linq', '.github-cache.json');
+  }
+
+  private async cacheGitHubToken(token: string, login: string): Promise<void> {
+    const path = this.getGitHubCachePath();
+    await mkdir(join(path, '..'), { recursive: true, mode: 0o700 });
+    await writeFile(path, JSON.stringify({ token, login }), { mode: 0o600 });
+  }
+
+  private async getCachedGitHubToken(): Promise<{ token: string; login: string } | null> {
+    try {
+      const data = await readFile(this.getGitHubCachePath(), 'utf-8');
+      const parsed = JSON.parse(data) as { token?: string; login?: string };
+      if (parsed.token && parsed.login) {
+        return { token: parsed.token, login: parsed.login };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async clearGitHubCache(): Promise<void> {
+    try {
+      await unlink(this.getGitHubCachePath());
+    } catch {
+      // ignore if file doesn't exist
     }
   }
 
