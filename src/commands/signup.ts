@@ -6,7 +6,11 @@ import { BaseCommand } from '../lib/base-command.js';
 import { loadConfig, saveConfig } from '../lib/config.js';
 import { fetchPartnerId } from '../lib/partner.js';
 import { createApiClient } from '../lib/api-client.js';
+import { formatLogLine } from '../lib/webhook-format.js';
 import { LOGO } from '../lib/banner.js';
+import type { components } from '../gen/api-types.js';
+
+type WebhookEventType = components['schemas']['WebhookEventType'];
 
 // TODO: Create GitHub OAuth App and update this
 const GITHUB_CLIENT_ID = 'Ov23liGRjTnm4bJgatLx';
@@ -14,6 +18,8 @@ const WEBHOOK_BASE_URL =
   process.env.WEBHOOK_BASE_URL || 'https://webhook.linqapp.com';
 const SANDBOX_API_URL =
   process.env.SANDBOX_API_URL || `${WEBHOOK_BASE_URL}/sandbox`;
+const WS_URL = process.env.LINQ_RELAY_WS_URL || 'wss://9r8ugjg4s0.execute-api.us-east-1.amazonaws.com/prod';
+const RELAY_URL = process.env.LINQ_RELAY_URL || 'https://webhook.linqapp.com';
 
 const SIGNUP_BANNER = LOGO + '\n  Get a sandbox phone for testing\n';
 
@@ -65,7 +71,7 @@ export default class Signup extends BaseCommand {
     let phone = flags.phone;
     if (!phone) {
       phone = await input({
-        message: 'Your phone number (e.g. +1 123-456-7890):',
+        message: 'Your phone number (e.g. +11234567890):',
         validate: (v) => {
           const digits = v.replace(/\D/g, '');
           if (digits.length === 10) {
@@ -77,7 +83,7 @@ export default class Signup extends BaseCommand {
           if (digits.length >= 11 && digits.length <= 15) {
             return true; // International number
           }
-          return 'Enter a valid phone number with country code (e.g. +1 202-555-0199)';
+          return 'Enter a valid phone number with country code (e.g. +12025550199)';
         },
       });
     }
@@ -139,11 +145,18 @@ export default class Signup extends BaseCommand {
     this.log(`\n  Your sandbox number: ${chalk.bold(data.sandboxPhone)}\n`);
     this.log(`  Send a text from your phone to ${chalk.bold(data.sandboxPhone)} to activate it.\n`);
 
-    await input({ message: 'Press Enter once you\'ve sent a message...' });
+    // Set up an ephemeral webhook to detect the first inbound message
+    const client = createApiClient(data.token);
+    const firstEvent = await this.waitForFirstMessage(client, data.token);
+
+    if (firstEvent) {
+      this.log('');
+      this.log(formatLogLine(firstEvent));
+      this.log('');
+    }
 
     // Send welcome message (requires inbound message first)
     try {
-      const client = createApiClient(data.token);
       await client.POST('/v3/chats', {
         body: {
           from: data.sandboxPhone,
@@ -163,12 +176,12 @@ export default class Signup extends BaseCommand {
       // Non-fatal
     }
 
-    this.log('\n✓ Sandbox ready!\n');
+    this.log(chalk.green('✓ Sandbox activated!\n'));
     this.log(`  Phone:   ${data.sandboxPhone}`);
     this.log(`  Expires: ${new Date(data.expiresAt).toLocaleTimeString()}\n`);
-    this.log(`  Next steps:\n`);
+    this.log('  Get started:\n');
     this.log(`    ${chalk.cyan('linq webhooks listen')}`);
-    this.log(`    ${chalk.cyan(`linq chats create --to ${data.userPhone} -m "First message with Linq CLI!"`)}\n`);
+    this.log(`    ${chalk.cyan(`linq chats create --to ${data.userPhone} -m "Hello from Linq CLI!"`)}\n`);
   }
 
   private async githubAuth(): Promise<string | null> {
@@ -267,6 +280,94 @@ export default class Signup extends BaseCommand {
     if (digits.length === 10) return `+1${digits}`;
     if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
     return `+${digits}`;
+  }
+
+  private async waitForFirstMessage(
+    client: ReturnType<typeof createApiClient>,
+    token: string,
+  ): Promise<Record<string, unknown> | null> {
+    let ws: WebSocket | null = null;
+    let webhookId: string | null = null;
+
+    try {
+      // Connect to WebSocket relay
+      const connectionId = await new Promise<string>((resolve, reject) => {
+        const url = `${WS_URL}?token=${encodeURIComponent(token)}`;
+        ws = new WebSocket(url);
+
+        const timeout = setTimeout(() => {
+          ws?.close();
+          reject(new Error('WebSocket connection timed out'));
+        }, 10_000);
+
+        ws.addEventListener('open', () => {
+          ws!.send(JSON.stringify({ action: 'init' }));
+        });
+
+        ws.addEventListener('message', (event) => {
+          try {
+            const msg = JSON.parse(typeof event.data === 'string' ? event.data : '');
+            if (msg.connectionId) {
+              clearTimeout(timeout);
+              resolve(msg.connectionId);
+            }
+          } catch { /* ignore malformed */ }
+        });
+
+        ws.addEventListener('error', () => {
+          clearTimeout(timeout);
+          reject(new Error('Failed to connect to relay'));
+        });
+      });
+
+      // Create ephemeral webhook subscription
+      const { data: whData } = await client.POST('/v3/webhook-subscriptions', {
+        body: {
+          target_url: `${RELAY_URL}/relay/${connectionId}`,
+          subscribed_events: ['message.received'] as WebhookEventType[],
+        },
+      });
+      webhookId = whData?.id ?? null;
+
+      // Wait for the first message.received event (up to 3 minutes)
+      ux.action.start('Waiting for your text message');
+      const event = await new Promise<Record<string, unknown> | null>((resolve) => {
+        const timeout = setTimeout(() => resolve(null), 3 * 60 * 1000);
+
+        ws!.addEventListener('message', (msg) => {
+          try {
+            const payload = JSON.parse(typeof msg.data === 'string' ? msg.data : '') as Record<string, unknown>;
+            if (payload.event_type === 'message.received') {
+              clearTimeout(timeout);
+              resolve(payload);
+            }
+          } catch { /* ignore */ }
+        });
+
+        ws!.addEventListener('close', () => {
+          clearTimeout(timeout);
+          resolve(null);
+        });
+      });
+      ux.action.stop(event ? 'received!' : 'timed out');
+
+      return event;
+    } catch {
+      ux.action.stop('skipped');
+      return null;
+    } finally {
+      // Clean up: close WebSocket and delete webhook
+      if (ws && (ws as WebSocket).readyState !== WebSocket.CLOSED) {
+        (ws as WebSocket).close();
+      }
+      if (webhookId) {
+        try {
+          await client.DELETE('/v3/webhook-subscriptions/{subscriptionId}', {
+            params: { path: { subscriptionId: webhookId } },
+          });
+        } catch { /* ignore cleanup errors */ }
+      }
+    }
   }
 
   private sleep(ms: number): Promise<void> {
