@@ -42,12 +42,16 @@ describe('chats get', () => {
     mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'chat-123',
+        created_at: '2024-01-15T10:00:00Z',
         display_name: 'Test Chat',
-        service: 'iMessage',
         handles: [
-          { handle: '+19876543210', service: 'iMessage' },
-          { handle: '+15555555555', service: 'iMessage' },
+          { id: 'h-1', handle: '+19876543210', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' },
+          { id: 'h-2', handle: '+15555555555', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' },
         ],
+        is_archived: false,
+        is_group: false,
+        service: 'iMessage',
+        updated_at: '2024-01-15T10:00:00Z',
       })
     );
 

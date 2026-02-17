@@ -135,8 +135,12 @@ describe('webhooks listen', () => {
       if (url.includes('/webhook-subscriptions') && !url.includes('/webhook-subscriptions/') && method === 'POST') {
         return createMockResponse(201, {
           id: 'wh_test123',
-          target_url: 'https://test-relay.example.com/relay/test-conn-id',
+          created_at: '2024-01-15T10:00:00Z',
+          is_active: true,
+          signing_secret: 'test-secret',
           subscribed_events: ['message.received', 'message.sent'],
+          target_url: 'https://test-relay.example.com/relay/test-conn-id',
+          updated_at: '2024-01-15T10:00:00Z',
         });
       }
       if (url.includes('/webhook-subscriptions/') && method === 'DELETE') {

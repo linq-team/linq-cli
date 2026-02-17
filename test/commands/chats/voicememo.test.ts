@@ -44,8 +44,27 @@ describe('chats voicememo', () => {
   it('sends voice memo to chat', async () => {
     mockFetch.mockResolvedValue(
       createMockResponse(202, {
-        chat_id: 'chat-123',
-        message: { id: 'msg-456' },
+        voice_memo: {
+          id: 'vm-123',
+          chat: {
+            id: 'chat-123',
+            handles: [{ id: 'h-1', handle: '+19876543210', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' }],
+            is_active: true,
+            is_group: false,
+            service: 'iMessage',
+          },
+          created_at: '2024-01-15T10:00:00Z',
+          from: '+12025551234',
+          status: 'queued',
+          to: ['+19876543210'],
+          voice_memo: {
+            id: 'file-123',
+            filename: 'memo.m4a',
+            mime_type: 'audio/mp4',
+            size_bytes: 50000,
+            url: 'https://example.com/memo.m4a',
+          },
+        },
       })
     );
 

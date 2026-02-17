@@ -42,8 +42,26 @@ describe('messages thread', () => {
     mockFetch.mockResolvedValue(
       createMockResponse(200, {
         messages: [
-          { id: 'msg-1', parts: [{ type: 'text', value: 'Original' }] },
-          { id: 'msg-2', parts: [{ type: 'text', value: 'Reply' }] },
+          {
+            id: 'msg-1',
+            chat_id: 'chat-123',
+            created_at: '2024-01-15T10:00:00Z',
+            is_delivered: true,
+            is_from_me: false,
+            is_read: true,
+            updated_at: '2024-01-15T10:00:00Z',
+            parts: [{ type: 'text', value: 'Original', reactions: null }],
+          },
+          {
+            id: 'msg-2',
+            chat_id: 'chat-123',
+            created_at: '2024-01-15T10:01:00Z',
+            is_delivered: true,
+            is_from_me: true,
+            is_read: true,
+            updated_at: '2024-01-15T10:01:00Z',
+            parts: [{ type: 'text', value: 'Reply', reactions: null }],
+          },
         ],
       })
     );

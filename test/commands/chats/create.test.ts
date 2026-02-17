@@ -45,7 +45,20 @@ describe('chats create', () => {
       createMockResponse(201, {
         chat: {
           id: 'chat-123',
-          message: { id: 'msg-456' },
+          display_name: null,
+          handles: [
+            { id: 'h-1', handle: '+12025551234', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage', is_me: true },
+            { id: 'h-2', handle: '+19876543210', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' },
+          ],
+          is_group: false,
+          service: 'iMessage',
+          message: {
+            id: 'msg-456',
+            delivery_status: 'sent',
+            is_read: false,
+            parts: [{ type: 'text', value: 'Hello!', reactions: null }],
+            sent_at: '2024-01-15T10:00:00Z',
+          },
         },
       })
     );
@@ -72,7 +85,20 @@ describe('chats create', () => {
   it('includes effect when specified', async () => {
     mockFetch.mockResolvedValue(
       createMockResponse(201, {
-        chat: { id: 'chat-123', message: { id: 'msg-456' } },
+        chat: {
+          id: 'chat-123',
+          display_name: null,
+          handles: [{ id: 'h-1', handle: '+19876543210', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' }],
+          is_group: false,
+          service: 'iMessage',
+          message: {
+            id: 'msg-456',
+            delivery_status: 'sent',
+            is_read: false,
+            parts: [{ type: 'text', value: 'Party!', reactions: null }],
+            sent_at: '2024-01-15T10:00:00Z',
+          },
+        },
       })
     );
 
@@ -91,7 +117,23 @@ describe('chats create', () => {
   it('supports multiple recipients for group chats', async () => {
     mockFetch.mockResolvedValue(
       createMockResponse(201, {
-        chat: { id: 'chat-123', message: { id: 'msg-456' } },
+        chat: {
+          id: 'chat-123',
+          display_name: null,
+          handles: [
+            { id: 'h-1', handle: '+1111111111', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' },
+            { id: 'h-2', handle: '+2222222222', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' },
+          ],
+          is_group: true,
+          service: 'iMessage',
+          message: {
+            id: 'msg-456',
+            delivery_status: 'sent',
+            is_read: false,
+            parts: [{ type: 'text', value: 'Group message', reactions: null }],
+            sent_at: '2024-01-15T10:00:00Z',
+          },
+        },
       })
     );
 

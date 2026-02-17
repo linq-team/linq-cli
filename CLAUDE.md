@@ -32,7 +32,7 @@ npm run format         # Prettier
 
 **Formatters** (`src/lib/format.ts`): All human-readable output goes through dedicated format functions. Uses chalk for colors.
 
-**Error handling**: SDK throws errors on failure. Commands catch errors in try/catch and use `e.message` for display. `parseApiError()` in `src/lib/errors.ts` provides fallback extraction for non-Error objects.
+**Error handling**: SDK throws errors on failure. Commands catch errors in try/catch and use `e.message` for display.
 
 **Commands use oclif topic separator as space** (not colon) — e.g., `linq chats create`, not `linq chats:create`. File paths determine command hierarchy: `src/commands/chats/create.ts` → `linq chats create`.
 

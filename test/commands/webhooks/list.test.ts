@@ -44,15 +44,19 @@ describe('webhooks list', () => {
         subscriptions: [
           {
             id: 'webhook-123',
-            target_url: 'https://example.com/webhook1',
+            created_at: '2024-01-15T10:00:00Z',
             is_active: true,
             subscribed_events: ['message.received', 'message.sent'],
+            target_url: 'https://example.com/webhook1',
+            updated_at: '2024-01-15T10:00:00Z',
           },
           {
             id: 'webhook-456',
-            target_url: 'https://example.com/webhook2',
+            created_at: '2024-01-14T09:00:00Z',
             is_active: false,
             subscribed_events: ['chat.created'],
+            target_url: 'https://example.com/webhook2',
+            updated_at: '2024-01-14T09:00:00Z',
           },
         ],
       })

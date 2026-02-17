@@ -40,7 +40,11 @@ describe('messages react', () => {
 
   it('adds reaction to message', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { success: true })
+      createMockResponse(200, {
+        handle: { id: 'h-1', handle: '+12025551234', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' },
+        is_me: true,
+        type: 'love',
+      })
     );
 
     const config = await Config.load({ root: process.cwd() });
@@ -59,7 +63,11 @@ describe('messages react', () => {
 
   it('removes reaction from message', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { success: true })
+      createMockResponse(200, {
+        handle: { id: 'h-1', handle: '+12025551234', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' },
+        is_me: true,
+        type: 'love',
+      })
     );
 
     const config = await Config.load({ root: process.cwd() });
@@ -74,7 +82,11 @@ describe('messages react', () => {
 
   it('supports custom emoji', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { success: true })
+      createMockResponse(200, {
+        handle: { id: 'h-1', handle: '+12025551234', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' },
+        is_me: true,
+        type: 'love',
+      })
     );
 
     const config = await Config.load({ root: process.cwd() });

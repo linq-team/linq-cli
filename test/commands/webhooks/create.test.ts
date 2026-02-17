@@ -42,10 +42,12 @@ describe('webhooks create', () => {
     mockFetch.mockResolvedValue(
       createMockResponse(201, {
         id: 'webhook-123',
-        target_url: 'https://example.com/webhook',
-        subscribed_events: ['message.received', 'message.sent'],
+        created_at: '2024-01-15T10:00:00Z',
         is_active: true,
         signing_secret: 'secret-123',
+        subscribed_events: ['message.received', 'message.sent'],
+        target_url: 'https://example.com/webhook',
+        updated_at: '2024-01-15T10:00:00Z',
       })
     );
 
@@ -70,10 +72,12 @@ describe('webhooks create', () => {
     mockFetch.mockResolvedValue(
       createMockResponse(201, {
         id: 'webhook-123',
-        target_url: 'https://example.com/webhook',
-        subscribed_events: ['message.sent', 'message.received'],
+        created_at: '2024-01-15T10:00:00Z',
         is_active: true,
         signing_secret: 'secret-123',
+        subscribed_events: ['message.sent', 'message.received'],
+        target_url: 'https://example.com/webhook',
+        updated_at: '2024-01-15T10:00:00Z',
       })
     );
 

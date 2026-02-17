@@ -40,9 +40,15 @@ describe('messages send', () => {
 
   it('sends message to existing chat', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(201, {
+      createMockResponse(202, {
         chat_id: 'chat-123',
-        message: { id: 'msg-456' },
+        message: {
+          id: 'msg-456',
+          delivery_status: 'sent',
+          is_read: false,
+          parts: [{ type: 'text', value: 'Hello!', reactions: null }],
+          sent_at: '2024-01-15T10:00:00Z',
+        },
       })
     );
 
@@ -64,9 +70,15 @@ describe('messages send', () => {
 
   it('includes effect when specified', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(201, {
+      createMockResponse(202, {
         chat_id: 'chat-123',
-        message: { id: 'msg-456' },
+        message: {
+          id: 'msg-456',
+          delivery_status: 'sent',
+          is_read: false,
+          parts: [{ type: 'text', value: 'Hello!', reactions: null }],
+          sent_at: '2024-01-15T10:00:00Z',
+        },
       })
     );
 
@@ -84,9 +96,15 @@ describe('messages send', () => {
 
   it('includes reply-to when specified', async () => {
     mockFetch.mockResolvedValue(
-      createMockResponse(201, {
+      createMockResponse(202, {
         chat_id: 'chat-123',
-        message: { id: 'msg-456' },
+        message: {
+          id: 'msg-456',
+          delivery_status: 'sent',
+          is_read: false,
+          parts: [{ type: 'text', value: 'Hello!', reactions: null }],
+          sent_at: '2024-01-15T10:00:00Z',
+        },
       })
     );
 

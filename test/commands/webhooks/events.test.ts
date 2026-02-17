@@ -41,6 +41,7 @@ describe('webhooks events', () => {
   it('lists available webhook event types', async () => {
     mockFetch.mockResolvedValue(
       createMockResponse(200, {
+        doc_url: 'https://apidocs.linqapp.com/documentation/webhook-events',
         events: [
           'message.sent',
           'message.received',

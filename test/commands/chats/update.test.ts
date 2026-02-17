@@ -42,7 +42,12 @@ describe('chats update', () => {
     mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'chat-123',
+        created_at: '2024-01-15T10:00:00Z',
         display_name: 'Team Discussion',
+        handles: [{ id: 'h-1', handle: '+19876543210', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' }],
+        is_archived: false,
+        is_group: true,
+        updated_at: '2024-01-15T11:00:00Z',
       })
     );
 
@@ -62,7 +67,13 @@ describe('chats update', () => {
     mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'chat-123',
+        created_at: '2024-01-15T10:00:00Z',
+        display_name: null,
+        handles: [{ id: 'h-1', handle: '+19876543210', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' }],
+        is_archived: false,
+        is_group: true,
         group_chat_icon: 'https://example.com/icon.png',
+        updated_at: '2024-01-15T11:00:00Z',
       })
     );
 

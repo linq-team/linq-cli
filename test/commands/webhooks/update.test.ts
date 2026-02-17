@@ -42,9 +42,11 @@ describe('webhooks update', () => {
     mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'webhook-123',
-        target_url: 'https://new-url.com/webhook',
+        created_at: '2024-01-15T10:00:00Z',
         is_active: true,
         subscribed_events: ['message.received'],
+        target_url: 'https://new-url.com/webhook',
+        updated_at: '2024-01-15T11:00:00Z',
       })
     );
 
@@ -70,9 +72,11 @@ describe('webhooks update', () => {
     mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'webhook-123',
-        target_url: 'https://example.com/webhook',
+        created_at: '2024-01-15T10:00:00Z',
         is_active: true,
         subscribed_events: ['message.received', 'chat.created'],
+        target_url: 'https://example.com/webhook',
+        updated_at: '2024-01-15T11:00:00Z',
       })
     );
 
@@ -92,9 +96,11 @@ describe('webhooks update', () => {
     mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'webhook-123',
-        target_url: 'https://example.com/webhook',
+        created_at: '2024-01-15T10:00:00Z',
         is_active: true,
         subscribed_events: ['message.received'],
+        target_url: 'https://example.com/webhook',
+        updated_at: '2024-01-15T11:00:00Z',
       })
     );
 
@@ -111,9 +117,11 @@ describe('webhooks update', () => {
     mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'webhook-123',
-        target_url: 'https://example.com/webhook',
+        created_at: '2024-01-15T10:00:00Z',
         is_active: false,
         subscribed_events: ['message.received'],
+        target_url: 'https://example.com/webhook',
+        updated_at: '2024-01-15T11:00:00Z',
       })
     );
 

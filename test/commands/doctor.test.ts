@@ -56,7 +56,15 @@ describe('doctor', () => {
     );
 
     mockFetch.mockResolvedValue(
-      createMockResponse(200, [{ phone_number: '+12025551234' }])
+      createMockResponse(200, {
+        phone_numbers: [{
+          id: 'pn-1',
+          phone_number: '+12025551234',
+          type: 'APPLE_ID',
+          country_code: 'US',
+          capabilities: { sms: true, mms: true, voice: false },
+        }],
+      })
     );
 
     const config = await Config.load({ root: process.cwd() });
@@ -129,7 +137,15 @@ describe('doctor', () => {
     );
 
     mockFetch.mockResolvedValue(
-      createMockResponse(200, [{ phone_number: '+12025551234' }])
+      createMockResponse(200, {
+        phone_numbers: [{
+          id: 'pn-1',
+          phone_number: '+12025551234',
+          type: 'APPLE_ID',
+          country_code: 'US',
+          capabilities: { sms: true, mms: true, voice: false },
+        }],
+      })
     );
 
     const config = await Config.load({ root: process.cwd() });
