@@ -22,9 +22,6 @@ Thumbs.db
 # Test coverage
 coverage/
 
-# Generated types (regenerated on build)
-src/gen/
-
 # Logs
 *.log
 npm-debug.log*

@@ -9,40 +9,37 @@ Linq CLI — open source command-line interface for the [Linq](https://linqapp.c
 ## Commands
 
 ```bash
-npm run build          # Generate API types from OpenAPI spec + compile TypeScript
+npm run build          # Compile TypeScript
 npm test               # Run all tests (vitest)
 npm run test:watch     # Run tests in watch mode
 npx vitest run test/commands/chats/create.test.ts  # Run a single test file
 npm run lint           # ESLint
 npm run lint:fix       # ESLint with auto-fix
 npm run format         # Prettier
-npm run generate:types # Regenerate src/gen/api-types.ts from openapi.yaml
 ./bin/dev.js           # Run CLI in dev mode (no build needed)
 ```
 
 ## Architecture
 
-**API types are auto-generated** — `openapi.yaml` → `npm run generate:types` → `src/gen/api-types.ts`. Never edit `api-types.ts` by hand. Always check this file for exact response shapes before writing code.
-
-**API client** (`src/lib/api-client.ts`): Uses `openapi-fetch` for type-safe HTTP calls. Created via `createApiClient(token)` which returns a client with typed `GET`, `POST`, `PUT`, `DELETE` methods keyed to API paths.
+**API client** (`src/lib/api-client.ts`): Uses `@linqapp/sdk` for type-safe API calls. Created via `createApiClient(token)` which returns a `Linq` client instance with namespaced methods (e.g., `client.chats.create(...)`, `client.messages.send(...)`, `client.webhooks.create(...)`). SDK types are accessed via `Linq.Chats.ChatCreateParams`, `Linq.Messages.MessageSendParams`, etc.
 
 **Config** (`src/lib/config.ts`): Multi-profile config stored at `~/.linq/config.json`. Supports profiles (like AWS CLI), env var overrides (`LINQ_TOKEN`, `LINQ_FROM_PHONE`, `LINQ_PROFILE`). Tests override `process.env.HOME` to a temp dir.
 
 **Command pattern**: Every command follows the same structure:
 1. Parse flags → `loadConfig(flags.profile)` → `requireToken(flags.token, config)` → `createApiClient(token)`
-2. Make API call, check `{ data, error }` response
+2. Make SDK call in a try/catch block
 3. Output via formatter (`src/lib/format.ts`) or `--json` for raw JSON
 
 **Formatters** (`src/lib/format.ts`): All human-readable output goes through dedicated format functions. Uses chalk for colors.
 
-**Error handling** (`src/lib/errors.ts`): `parseApiError()` extracts messages from the Linq API error shape `{ error: { message: "..." } }`.
+**Error handling**: SDK throws errors on failure. Commands catch errors in try/catch and use `e.message` for display. `parseApiError()` in `src/lib/errors.ts` provides fallback extraction for non-Error objects.
 
 **Commands use oclif topic separator as space** (not colon) — e.g., `linq chats create`, not `linq chats:create`. File paths determine command hierarchy: `src/commands/chats/create.ts` → `linq chats create`.
 
 ## Testing
 
 - **Framework**: vitest with globals enabled
-- **HTTP mocking**: `vi.stubGlobal('fetch', mockFetch)` — mock the global fetch, create responses with `new Response(JSON.stringify(body), { status, headers })`
+- **HTTP mocking**: `vi.stubGlobal('fetch', mockFetch)` — mock the global fetch. SDK validates responses with Zod, so mocks must include all required fields
 - **Config isolation**: Create a temp dir via `fs.mkdtemp()`, set `process.env.HOME` to it, write a test config file, restore in `afterEach`
 - **Command instantiation**: `new Cmd(argv, await Config.load({ root: process.cwd() }))`
 - **Module mocking** (e.g., `@inquirer/prompts`): Use `vi.mock()` then dynamic `await import()`
@@ -58,4 +55,4 @@ npm run generate:types # Regenerate src/gen/api-types.ts from openapi.yaml
 - Node.js >=22, npm >=10
 - This is a **public open source project** — never include secrets, PII, or proprietary information of any kind
 - Keep README.md in sync with code changes
-- API response shapes can be surprising (e.g., `GET /v3/phonenumbers` returns `{ phone_numbers: [...] }`, not a direct array) — always verify against `src/gen/api-types.ts`
+- API types come from `@linqapp/sdk` — check SDK types (e.g., `Linq.Chats`, `Linq.Messages`) for request/response shapes

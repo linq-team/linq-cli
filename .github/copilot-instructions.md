@@ -14,10 +14,10 @@ When reviewing pull requests, check for:
 - Sensitive values must come from config (`~/.linq/config.json`) or environment variables
 
 ### Architecture
-- API types are auto-generated from `openapi.yaml` — never edit `src/gen/api-types.ts` by hand
-- Commands follow the pattern: parse flags → `loadConfig()` → `requireToken()` → `createApiClient()` → API call → format output
+- API types come from `@linqapp/sdk` — uses namespaced methods (e.g., `client.chats.create(...)`, `client.messages.send(...)`)
+- Commands follow the pattern: parse flags → `loadConfig()` → `requireToken()` → `createApiClient()` → SDK call in try/catch → format output
 - All human-readable output goes through formatter functions in `src/lib/format.ts`
-- Error handling uses `parseApiError()` from `src/lib/errors.ts`
+- SDK throws errors on failure; commands catch and display via `e.message`
 - Commands use space as topic separator (e.g., `linq chats create`), not colons
 
 ### Code Quality
