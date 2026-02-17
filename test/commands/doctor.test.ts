@@ -55,7 +55,7 @@ describe('doctor', () => {
       })
     );
 
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, [{ phone_number: '+12025551234' }])
     );
 
@@ -99,7 +99,7 @@ describe('doctor', () => {
       })
     );
 
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(401, { error: 'Unauthorized' })
     );
 
@@ -110,7 +110,7 @@ describe('doctor', () => {
 
     const output = logs.join('\n');
     expect(output).toContain('\u2713 API token is configured');
-    expect(output).toContain('\u2717 API request failed');
+    expect(output).toContain('\u2717 API connection failed');
   });
 
   it('masks token values in output', async () => {
@@ -128,7 +128,7 @@ describe('doctor', () => {
       })
     );
 
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, [{ phone_number: '+12025551234' }])
     );
 

@@ -39,7 +39,7 @@ describe('messages list', () => {
   });
 
   it('lists messages in a chat', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         messages: [
           {
@@ -67,12 +67,12 @@ describe('messages list', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toContain('/v3/chats/chat-123/messages');
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain('/v3/chats/chat-123/messages');
   });
 
   it('handles pagination parameters', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         messages: [],
         next_cursor: 'next-page',
@@ -81,15 +81,14 @@ describe('messages list', () => {
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new MessagesList(
-      ['chat-123', '--limit', '50', '--order', 'asc', '--cursor', 'prev-cursor'],
+      ['chat-123', '--limit', '50', '--cursor', 'prev-cursor'],
       config
     );
     await cmd.run();
 
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toContain('limit=50');
-    expect(request.url).toContain('order=asc');
-    expect(request.url).toContain('cursor=prev-cursor');
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain('limit=50');
+    expect(url).toContain('cursor=prev-cursor');
   });
 
   it('requires chat ID argument', async () => {

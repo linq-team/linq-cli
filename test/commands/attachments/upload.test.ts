@@ -39,7 +39,7 @@ describe('attachments upload', () => {
   });
 
   it('requests presigned upload URL', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         attachment_id: 'att-123',
         upload_url: 'https://uploads.example.com/presigned',
@@ -58,10 +58,10 @@ describe('attachments upload', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/attachments');
-    expect(request.method).toBe('POST');
-    const body = await request.json();
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/attachments');
+    expect((init as RequestInit).method).toBe('POST');
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.filename).toBe('photo.jpg');
     expect(body.content_type).toBe('image/jpeg');
     expect(body.size_bytes).toBe(1024000);

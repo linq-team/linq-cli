@@ -3,7 +3,6 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatMessagesList } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
 
 export default class MessagesList extends BaseCommand {
   static override description = 'List messages in a chat';
@@ -11,7 +10,6 @@ export default class MessagesList extends BaseCommand {
   static override examples = [
     '<%= config.bin %> <%= command.id %> CHAT_ID',
     '<%= config.bin %> <%= command.id %> CHAT_ID --limit 50',
-    '<%= config.bin %> <%= command.id %> CHAT_ID --order asc',
   ];
 
   static override args = {
@@ -23,16 +21,11 @@ export default class MessagesList extends BaseCommand {
 
   static override flags = {
     limit: Flags.integer({
-      description: 'Maximum number of messages to return (default: 20, max: 100)',
-      default: 20,
+      description: 'Maximum number of messages to return (default: 50, max: 100)',
+      default: 50,
     }),
     cursor: Flags.string({
       description: 'Pagination cursor from previous response',
-    }),
-    order: Flags.string({
-      description: 'Sort order (asc or desc)',
-      options: ['asc', 'desc'],
-      default: 'desc',
     }),
     json: Flags.boolean({
       description: 'Output as JSON',
@@ -55,31 +48,19 @@ export default class MessagesList extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { data, error } = await client.GET('/v3/chats/{chatId}/messages', {
-      params: {
-        path: {
-          chatId: args.chatId,
-        },
-        query: {
-          limit: flags.limit,
-          cursor: flags.cursor,
-          order: flags.order as 'asc' | 'desc',
-        },
-      },
-    });
+    try {
+      const data = await client.chats.messages.list(args.chatId, {
+        limit: flags.limit,
+        cursor: flags.cursor,
+      });
 
-    if (error) {
-      this.error(`Failed to list messages: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to list messages: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatMessagesList(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatMessagesList(data));
+      }
+    } catch (e) {
+      this.error(`Failed to list messages: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

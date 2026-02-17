@@ -39,7 +39,7 @@ describe('messages thread', () => {
   });
 
   it('gets message thread', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         messages: [
           { id: 'msg-1', parts: [{ type: 'text', value: 'Original' }] },
@@ -53,15 +53,15 @@ describe('messages thread', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe(
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe(
       'https://api.linqapp.com/api/partner/v3/messages/msg-1/thread'
     );
-    expect(request.method).toBe('GET');
+    expect((init as RequestInit).method).toBe('GET');
   });
 
   it('passes pagination and order params', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, { messages: [], next_cursor: null })
     );
 
@@ -72,10 +72,10 @@ describe('messages thread', () => {
     );
     await cmd.run();
 
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    const url = new URL(request.url);
-    expect(url.searchParams.get('limit')).toBe('10');
-    expect(url.searchParams.get('order')).toBe('desc');
+    const [url] = mockFetch.mock.calls[0];
+    const parsedUrl = new URL(url as string);
+    expect(parsedUrl.searchParams.get('limit')).toBe('10');
+    expect(parsedUrl.searchParams.get('order')).toBe('desc');
   });
 
   it('requires message ID argument', async () => {

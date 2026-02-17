@@ -3,10 +3,9 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatReaction } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
-import type { components } from '../../gen/api-types.js';
+import type Linq from '@linqapp/sdk';
 
-type ReactionType = components['schemas']['ReactionType'];
+type ReactionType = Linq.MessageAddReactionParams['type'];
 
 const REACTION_TYPES: ReactionType[] = [
   'love',
@@ -23,7 +22,7 @@ export default class MessagesReact extends BaseCommand {
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> MESSAGE_ID --type love',
-    '<%= config.bin %> <%= command.id %> MESSAGE_ID --type custom --emoji "🎉"',
+    '<%= config.bin %> <%= command.id %> MESSAGE_ID --type custom --emoji "party"',
     '<%= config.bin %> <%= command.id %> MESSAGE_ID --type love --operation remove',
   ];
 
@@ -84,32 +83,21 @@ export default class MessagesReact extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { data, error } = await client.POST('/v3/messages/{messageId}/reactions', {
-      params: {
-        path: {
-          messageId: args.messageId,
-        },
-      },
-      body: {
+    try {
+      const data = await client.messages.addReaction(args.messageId, {
         operation: flags.operation as 'add' | 'remove',
         type: flags.type as ReactionType,
         custom_emoji: flags.type === 'custom' ? flags.emoji : undefined,
         part_index: flags['part-index'],
-      },
-    });
+      });
 
-    if (error) {
-      this.error(`Failed to ${flags.operation} reaction: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error(`Failed to ${flags.operation} reaction: no response data`);
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatReaction(flags.operation!, flags.type, args.messageId));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatReaction(flags.operation!, flags.type, args.messageId));
+      }
+    } catch (e) {
+      this.error(`Failed to ${flags.operation} reaction: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

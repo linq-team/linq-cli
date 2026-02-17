@@ -53,7 +53,9 @@ describe('signup', () => {
     exitError.name = 'ExitPromptError';
     mockInput.mockRejectedValueOnce(exitError);
 
-    // Mock GitHub device flow: code request → token poll → user info
+    // Mock GitHub device flow: code request -> token poll -> user info
+    // signup.ts calls fetch directly for GitHub APIs (not via SDK),
+    // so these still use the Request object pattern
     mockFetch
       .mockResolvedValueOnce(
         createMockResponse(200, {
@@ -126,7 +128,7 @@ describe('signup', () => {
     await expect(cmd.run()).rejects.toThrow(/EEXIT: 1/);
 
     // Should have validated the cached token, NOT started device flow
-    // Device flow calls POST github.com/login/device/code — our mock only
+    // Device flow calls POST github.com/login/device/code -- our mock only
     // received GET /user and POST /sandbox/create
     expect(mockFetch).toHaveBeenCalledTimes(2);
     const [firstUrl] = mockFetch.mock.calls[0];
@@ -141,8 +143,8 @@ describe('signup', () => {
       JSON.stringify({ token: 'expired-token', login: 'olduser' })
     );
 
-    // First fetch: validate cached token → 401 (invalid)
-    // Then device flow: code request → token poll → user info
+    // First fetch: validate cached token -> 401 (invalid)
+    // Then device flow: code request -> token poll -> user info
     // Then sandbox create (fail to keep test short)
     mockFetch
       .mockResolvedValueOnce(createMockResponse(401, { message: 'Bad credentials' }))
@@ -176,7 +178,7 @@ describe('signup', () => {
   });
 
   it('caches GitHub token after successful device flow auth', async () => {
-    // Device flow: code request → token poll → user info → sandbox fail
+    // Device flow: code request -> token poll -> user info -> sandbox fail
     mockFetch
       .mockResolvedValueOnce(
         createMockResponse(200, {

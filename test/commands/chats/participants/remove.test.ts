@@ -39,7 +39,7 @@ describe('chats participants remove', () => {
   });
 
   it('removes participant from chat', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(202, { status: 'accepted', message: 'Participant removal queued' })
     );
 
@@ -48,10 +48,10 @@ describe('chats participants remove', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123/participants');
-    expect(request.method).toBe('DELETE');
-    const body = await request.json();
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123/participants');
+    expect((init as RequestInit).method).toBe('DELETE');
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.handle).toBe('+19876543210');
   });
 

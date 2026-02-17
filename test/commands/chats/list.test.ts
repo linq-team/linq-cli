@@ -39,7 +39,7 @@ describe('chats list', () => {
   });
 
   it('lists chats successfully', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         chats: [
           {
@@ -61,13 +61,13 @@ describe('chats list', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toContain('/v3/chats');
-    expect(request.url).toContain('from=%2B12025551234');
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain('/v3/chats');
+    expect(url).toContain('from=%2B12025551234');
   });
 
   it('handles pagination cursor', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         chats: [{ id: 'chat-789', handles: [{ handle: '+11111111111', service: 'iMessage' }] }],
         next_cursor: 'next-page-cursor',
@@ -78,8 +78,8 @@ describe('chats list', () => {
     const cmd = new ChatsList(['--from', '+12025551234', '--cursor', 'prev-cursor'], config);
     await cmd.run();
 
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toContain('cursor=prev-cursor');
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain('cursor=prev-cursor');
   });
 
   it('requires from flag or config fromPhone', async () => {

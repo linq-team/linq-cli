@@ -3,11 +3,10 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatMessageSent } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
-import type { components } from '../../gen/api-types.js';
+import type Linq from '@linqapp/sdk';
 
-type MessagePart = components['schemas']['MessagePart'];
-type MessageEffect = components['schemas']['MessageEffect'];
+type MessagePart = Linq.Chats.MessageSendParams['message']['parts'][number];
+type MessageEffect = Linq.Chats.MessageSendParams['message']['effect'];
 
 const SCREEN_EFFECTS = [
   'confetti',
@@ -78,7 +77,8 @@ export default class MessagesSend extends BaseCommand {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const fromPhone = requireFromPhone(flags.from, config);
+    // fromPhone resolved but not sent — SDK's MessageSendParams doesn't include `from`
+    requireFromPhone(flags.from, config);
     const client = createApiClient(token);
 
     // Build message parts
@@ -99,14 +99,8 @@ export default class MessagesSend extends BaseCommand {
       }
     }
 
-    const { data, error } = await client.POST('/v3/chats/{chatId}/messages', {
-      params: {
-        path: {
-          chatId: args.chatId,
-        },
-      },
-      body: {
-        from: fromPhone,
+    try {
+      const data = await client.chats.messages.send(args.chatId, {
         message: {
           parts: [textPart],
           effect,
@@ -114,21 +108,15 @@ export default class MessagesSend extends BaseCommand {
             ? { message_id: flags['reply-to'], part_index: 0 }
             : undefined,
         },
-      },
-    });
+      });
 
-    if (error) {
-      this.error(`Failed to send message: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to send message: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatMessageSent(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatMessageSent(data));
+      }
+    } catch (e) {
+      this.error(`Failed to send message: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

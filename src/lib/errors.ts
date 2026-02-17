@@ -1,7 +1,8 @@
 export function parseApiError(error: unknown): string {
+  if (error instanceof Error) return error.message;
+
   if (error === null || error === undefined) return 'Unknown error';
 
-  // Handle the standard Linq API error shape: { error: { message: "..." } }
   if (typeof error === 'object') {
     const obj = error as Record<string, unknown>;
     if (obj.error && typeof obj.error === 'object') {

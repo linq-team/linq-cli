@@ -3,10 +3,9 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatWebhookDetail } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
-import type { components } from '../../gen/api-types.js';
+import type Linq from '@linqapp/sdk';
 
-type WebhookEventType = components['schemas']['WebhookEventType'];
+type WebhookEventType = Linq.Webhooks.SubscriptionCreateParams['subscribed_events'][number];
 
 const WEBHOOK_EVENTS: WebhookEventType[] = [
   'message.sent',
@@ -25,6 +24,7 @@ const WEBHOOK_EVENTS: WebhookEventType[] = [
   'chat.group_icon_update_failed',
   'chat.typing_indicator.started',
   'chat.typing_indicator.stopped',
+  'phone_number.status_updated',
 ];
 
 export default class WebhooksUpdate extends BaseCommand {
@@ -103,34 +103,20 @@ export default class WebhooksUpdate extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { data, error } = await client.PUT(
-      '/v3/webhook-subscriptions/{subscriptionId}',
-      {
-        params: {
-          path: {
-            subscriptionId: args.subscriptionId,
-          },
-        },
-        body: {
-          target_url: flags.url,
-          subscribed_events: subscribedEvents,
-          is_active: isActive,
-        },
+    try {
+      const data = await client.webhooks.subscriptions.update(args.subscriptionId, {
+        target_url: flags.url,
+        subscribed_events: subscribedEvents,
+        is_active: isActive,
+      });
+
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatWebhookDetail(data));
       }
-    );
-
-    if (error) {
-      this.error(`Failed to update webhook: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to update webhook: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatWebhookDetail(data));
+    } catch (e) {
+      this.error(`Failed to update webhook: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

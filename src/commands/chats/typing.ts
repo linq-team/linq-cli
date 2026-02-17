@@ -40,26 +40,16 @@ export default class ChatsTyping extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    if (flags.stop) {
-      const { error } = await client.DELETE('/v3/chats/{chatId}/typing', {
-        params: { path: { chatId: args.chatId } },
-      });
-
-      if (error) {
-        this.error(`Failed to stop typing: ${JSON.stringify(error)}`);
+    try {
+      if (flags.stop) {
+        await client.chats.typing.stop(args.chatId);
+        this.log('Typing indicator stopped.');
+      } else {
+        await client.chats.typing.start(args.chatId);
+        this.log('Typing indicator started.');
       }
-
-      this.log('Typing indicator stopped.');
-    } else {
-      const { error } = await client.POST('/v3/chats/{chatId}/typing', {
-        params: { path: { chatId: args.chatId } },
-      });
-
-      if (error) {
-        this.error(`Failed to start typing: ${JSON.stringify(error)}`);
-      }
-
-      this.log('Typing indicator started.');
+    } catch (e) {
+      this.error(`Failed to ${flags.stop ? 'stop' : 'start'} typing: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

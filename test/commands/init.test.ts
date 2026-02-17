@@ -54,7 +54,7 @@ describe('init', () => {
     mockSelect.mockResolvedValueOnce('default'); // profile selection
     mockPassword.mockResolvedValueOnce('test-token-123');
 
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, { phone_numbers: [{ phone_number: '+12025551234' }] })
     );
 
@@ -72,7 +72,7 @@ describe('init', () => {
     mockPassword.mockResolvedValueOnce('test-token-123');
     mockSelect.mockResolvedValueOnce('+18005551234'); // phone selection
 
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         phone_numbers: [
           { phone_number: '+12025551234' },
@@ -95,7 +95,7 @@ describe('init', () => {
     mockSelect.mockResolvedValueOnce('default'); // profile selection
     mockPassword.mockResolvedValueOnce('bad-token');
 
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(401, { error: 'Unauthorized' })
     );
 
@@ -108,7 +108,7 @@ describe('init', () => {
   it('saves to a specific profile with --profile flag', async () => {
     mockPassword.mockResolvedValueOnce('work-token');
 
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, { phone_numbers: [{ phone_number: '+18005551234' }] })
     );
 

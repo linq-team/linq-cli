@@ -3,10 +3,9 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatWebhookDetail } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
-import type { components } from '../../gen/api-types.js';
+import type Linq from '@linqapp/sdk';
 
-type WebhookEventType = components['schemas']['WebhookEventType'];
+type WebhookEventType = Linq.Webhooks.SubscriptionCreateParams['subscribed_events'][number];
 
 const WEBHOOK_EVENTS: WebhookEventType[] = [
   'message.sent',
@@ -25,7 +24,8 @@ const WEBHOOK_EVENTS: WebhookEventType[] = [
   'chat.group_icon_update_failed',
   'chat.typing_indicator.started',
   'chat.typing_indicator.stopped',
-] as const;
+  'phone_number.status_updated',
+];
 
 export default class WebhooksCreate extends BaseCommand {
   static override description = 'Create a new webhook subscription';
@@ -84,25 +84,19 @@ export default class WebhooksCreate extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { data, error } = await client.POST('/v3/webhook-subscriptions', {
-      body: {
+    try {
+      const data = await client.webhooks.subscriptions.create({
         target_url: flags.url,
         subscribed_events: subscribedEvents,
-      },
-    });
+      });
 
-    if (error) {
-      this.error(`Failed to create webhook: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to create webhook: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatWebhookDetail(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatWebhookDetail(data));
+      }
+    } catch (e) {
+      this.error(`Failed to create webhook: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

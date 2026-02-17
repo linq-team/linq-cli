@@ -18,14 +18,12 @@ function createMockResponse(status: number, body: unknown) {
 describe('webhooks update', () => {
   let tempDir: string;
   let originalHome: string | undefined;
-  let lastRequestBody: unknown;
 
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'linq-test-'));
     originalHome = process.env.HOME;
     process.env.HOME = tempDir;
     mockFetch.mockReset();
-    lastRequestBody = null;
 
     const configDir = path.join(tempDir, '.linq');
     await fs.mkdir(configDir, { recursive: true });
@@ -41,15 +39,14 @@ describe('webhooks update', () => {
   });
 
   it('updates webhook URL', async () => {
-    mockFetch.mockImplementation(async (request: Request) => {
-      lastRequestBody = await request.json();
-      return createMockResponse(200, {
+    mockFetch.mockResolvedValue(
+      createMockResponse(200, {
         id: 'webhook-123',
         target_url: 'https://new-url.com/webhook',
         is_active: true,
         subscribed_events: ['message.received'],
-      });
-    });
+      })
+    );
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new WebhooksUpdate(
@@ -59,26 +56,25 @@ describe('webhooks update', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe(
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe(
       'https://api.linqapp.com/api/partner/v3/webhook-subscriptions/webhook-123'
     );
-    expect(request.method).toBe('PUT');
+    expect((init as RequestInit).method).toBe('PUT');
 
-    const body = lastRequestBody as { target_url: string };
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.target_url).toBe('https://new-url.com/webhook');
   });
 
   it('updates webhook events', async () => {
-    mockFetch.mockImplementation(async (request: Request) => {
-      lastRequestBody = await request.json();
-      return createMockResponse(200, {
+    mockFetch.mockResolvedValue(
+      createMockResponse(200, {
         id: 'webhook-123',
         target_url: 'https://example.com/webhook',
         is_active: true,
         subscribed_events: ['message.received', 'chat.created'],
-      });
-    });
+      })
+    );
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new WebhooksUpdate(
@@ -87,45 +83,46 @@ describe('webhooks update', () => {
     );
     await cmd.run();
 
-    const body = lastRequestBody as { subscribed_events: string[] };
+    const [, init] = mockFetch.mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.subscribed_events).toEqual(['message.received', 'chat.created']);
   });
 
   it('activates webhook', async () => {
-    mockFetch.mockImplementation(async (request: Request) => {
-      lastRequestBody = await request.json();
-      return createMockResponse(200, {
+    mockFetch.mockResolvedValue(
+      createMockResponse(200, {
         id: 'webhook-123',
         target_url: 'https://example.com/webhook',
         is_active: true,
         subscribed_events: ['message.received'],
-      });
-    });
+      })
+    );
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new WebhooksUpdate(['webhook-123', '--activate'], config);
     await cmd.run();
 
-    const body = lastRequestBody as { is_active: boolean };
+    const [, init] = mockFetch.mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.is_active).toBe(true);
   });
 
   it('deactivates webhook', async () => {
-    mockFetch.mockImplementation(async (request: Request) => {
-      lastRequestBody = await request.json();
-      return createMockResponse(200, {
+    mockFetch.mockResolvedValue(
+      createMockResponse(200, {
         id: 'webhook-123',
         target_url: 'https://example.com/webhook',
         is_active: false,
         subscribed_events: ['message.received'],
-      });
-    });
+      })
+    );
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new WebhooksUpdate(['webhook-123', '--deactivate'], config);
     await cmd.run();
 
-    const body = lastRequestBody as { is_active: boolean };
+    const [, init] = mockFetch.mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.is_active).toBe(false);
   });
 

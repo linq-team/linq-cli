@@ -3,7 +3,6 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatChatDetail } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
 
 export default class ChatsUpdate extends BaseCommand {
   static override description = 'Update a chat (display name, group icon)';
@@ -56,23 +55,16 @@ export default class ChatsUpdate extends BaseCommand {
     if (flags.name) body.display_name = flags.name;
     if (flags.icon) body.group_chat_icon = flags.icon;
 
-    const { data, error } = await client.PUT('/v3/chats/{chatId}', {
-      params: { path: { chatId: args.chatId } },
-      body,
-    });
+    try {
+      const data = await client.chats.update(args.chatId, body);
 
-    if (error) {
-      this.error(`Failed to update chat: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to update chat: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatChatDetail(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatChatDetail(data));
+      }
+    } catch (e) {
+      this.error(`Failed to update chat: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

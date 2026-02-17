@@ -42,16 +42,16 @@ describe('chats read', () => {
   });
 
   it('marks chat as read', async () => {
-    mockFetch.mockResolvedValueOnce(createMockResponse(204));
+    mockFetch.mockResolvedValue(createMockResponse(204));
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new ChatsRead(['chat-123'], config);
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123/read');
-    expect(request.method).toBe('POST');
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123/read');
+    expect((init as RequestInit).method).toBe('POST');
   });
 
   it('requires chat ID argument', async () => {

@@ -39,7 +39,7 @@ describe('webhooks get', () => {
   });
 
   it('gets webhook by ID', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'webhook-123',
         target_url: 'https://example.com/webhook',
@@ -55,11 +55,11 @@ describe('webhooks get', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe(
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe(
       'https://api.linqapp.com/api/partner/v3/webhook-subscriptions/webhook-123'
     );
-    expect(request.method).toBe('GET');
+    expect((init as RequestInit).method).toBe('GET');
   });
 
   it('requires subscription ID argument', async () => {

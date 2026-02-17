@@ -35,14 +35,11 @@ export default class ChatsRead extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { error } = await client.POST('/v3/chats/{chatId}/read', {
-      params: { path: { chatId: args.chatId } },
-    });
-
-    if (error) {
-      this.error(`Failed to mark chat as read: ${JSON.stringify(error)}`);
+    try {
+      await client.chats.markAsRead(args.chatId);
+      this.log(`Chat ${args.chatId} marked as read.`);
+    } catch (e) {
+      this.error(`Failed to mark chat as read: ${e instanceof Error ? e.message : String(e)}`);
     }
-
-    this.log(`Chat ${args.chatId} marked as read.`);
   }
 }

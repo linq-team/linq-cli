@@ -39,7 +39,7 @@ describe('chats update', () => {
   });
 
   it('updates chat display name', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'chat-123',
         display_name: 'Team Discussion',
@@ -51,15 +51,15 @@ describe('chats update', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123');
-    expect(request.method).toBe('PUT');
-    const body = await request.json();
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123');
+    expect((init as RequestInit).method).toBe('PUT');
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.display_name).toBe('Team Discussion');
   });
 
   it('updates chat icon', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'chat-123',
         group_chat_icon: 'https://example.com/icon.png',
@@ -71,8 +71,8 @@ describe('chats update', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    const body = await request.json();
+    const [, init] = mockFetch.mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.group_chat_icon).toBe('https://example.com/icon.png');
   });
 

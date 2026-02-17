@@ -128,9 +128,9 @@ describe('webhooks listen', () => {
   }
 
   function setupApiMocks() {
-    mockFetch.mockImplementation(async (input: Request | string) => {
-      const url = typeof input === 'string' ? input : input.url;
-      const method = typeof input === 'string' ? 'GET' : input.method;
+    mockFetch.mockImplementation(async (urlArg: string, initArg?: RequestInit) => {
+      const url = urlArg;
+      const method = initArg?.method ?? 'GET';
 
       if (url.includes('/webhook-subscriptions') && !url.includes('/webhook-subscriptions/') && method === 'POST') {
         return createMockResponse(201, {
@@ -149,7 +149,7 @@ describe('webhooks listen', () => {
   /** Start command, wait for events, then shut it down cleanly. */
   async function runAndShutdown(cmd: WebhooksListen) {
     const promise = cmd.run();
-    // Let microtasks (WS open → init → connectionId → events) settle
+    // Let microtasks (WS open -> init -> connectionId -> events) settle
     await new Promise((r) => setTimeout(r, 50));
     // Trigger graceful shutdown so listenLoop exits
     await (cmd as unknown as { cleanup(): Promise<void> }).cleanup();
@@ -209,14 +209,14 @@ describe('webhooks listen', () => {
     captureOutput(cmd);
     await runAndShutdown(cmd);
 
-    const postCall = mockFetch.mock.calls.find(([input]: [Request | string]) => {
-      const url = typeof input === 'string' ? input : input.url;
-      return url.includes('/webhook-subscriptions') && !url.includes('/webhook-subscriptions/');
+    const postCall = mockFetch.mock.calls.find(([urlArg, initArg]: [string, RequestInit?]) => {
+      return urlArg.includes('/webhook-subscriptions') && !urlArg.includes('/webhook-subscriptions/') && initArg?.method === 'POST';
     });
     expect(postCall).toBeDefined();
-    const body = await (postCall![0] as Request).clone().text();
-    expect(body).toContain('test-conn-id');
-    expect(body).toContain('https://test-relay.example.com/relay/test-conn-id');
+    const body = postCall![1] as RequestInit;
+    const bodyText = body.body as string;
+    expect(bodyText).toContain('test-conn-id');
+    expect(bodyText).toContain('https://test-relay.example.com/relay/test-conn-id');
   });
 
   it('handles authentication failure via WebSocket close code 4001', async () => {

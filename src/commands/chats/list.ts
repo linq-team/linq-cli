@@ -3,7 +3,6 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatChatsList } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
 
 export default class ChatsList extends BaseCommand {
   static override description = 'List all chats for a phone number';
@@ -48,28 +47,20 @@ export default class ChatsList extends BaseCommand {
     const fromPhone = requireFromPhone(flags.from, config);
     const client = createApiClient(token);
 
-    const { data, error } = await client.GET('/v3/chats', {
-      params: {
-        query: {
-          from: fromPhone,
-          limit: flags.limit,
-          cursor: flags.cursor,
-        },
-      },
-    });
+    try {
+      const data = await client.chats.list({
+        from: fromPhone,
+        limit: flags.limit,
+        cursor: flags.cursor,
+      });
 
-    if (error) {
-      this.error(`Failed to list chats: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to list chats: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatChatsList(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatChatsList(data));
+      }
+    } catch (e) {
+      this.error(`Failed to list chats: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

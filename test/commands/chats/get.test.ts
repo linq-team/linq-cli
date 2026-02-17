@@ -39,7 +39,7 @@ describe('chats get', () => {
   });
 
   it('gets chat by ID successfully', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'chat-123',
         display_name: 'Test Chat',
@@ -56,9 +56,9 @@ describe('chats get', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123');
-    expect(request.method).toBe('GET');
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123');
+    expect((init as RequestInit).method).toBe('GET');
   });
 
   it('requires chat ID argument', async () => {

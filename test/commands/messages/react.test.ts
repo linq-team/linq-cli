@@ -18,14 +18,12 @@ function createMockResponse(status: number, body: unknown) {
 describe('messages react', () => {
   let tempDir: string;
   let originalHome: string | undefined;
-  let lastRequestBody: unknown;
 
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'linq-test-'));
     originalHome = process.env.HOME;
     process.env.HOME = tempDir;
     mockFetch.mockReset();
-    lastRequestBody = null;
 
     const configDir = path.join(tempDir, '.linq');
     await fs.mkdir(configDir, { recursive: true });
@@ -41,53 +39,52 @@ describe('messages react', () => {
   });
 
   it('adds reaction to message', async () => {
-    mockFetch.mockImplementation(async (request: Request) => {
-      lastRequestBody = await request.json();
-      return createMockResponse(200, { success: true });
-    });
+    mockFetch.mockResolvedValue(
+      createMockResponse(200, { success: true })
+    );
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new MessagesReact(['msg-123', '--type', 'love'], config);
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/messages/msg-123/reactions');
-    expect(request.method).toBe('POST');
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/messages/msg-123/reactions');
+    expect((init as RequestInit).method).toBe('POST');
 
-    const body = lastRequestBody as { operation: string; type: string };
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.operation).toBe('add');
     expect(body.type).toBe('love');
   });
 
   it('removes reaction from message', async () => {
-    mockFetch.mockImplementation(async (request: Request) => {
-      lastRequestBody = await request.json();
-      return createMockResponse(200, { success: true });
-    });
+    mockFetch.mockResolvedValue(
+      createMockResponse(200, { success: true })
+    );
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new MessagesReact(['msg-123', '--type', 'like', '--operation', 'remove'], config);
     await cmd.run();
 
-    const body = lastRequestBody as { operation: string; type: string };
+    const [, init] = mockFetch.mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.operation).toBe('remove');
     expect(body.type).toBe('like');
   });
 
   it('supports custom emoji', async () => {
-    mockFetch.mockImplementation(async (request: Request) => {
-      lastRequestBody = await request.json();
-      return createMockResponse(200, { success: true });
-    });
+    mockFetch.mockResolvedValue(
+      createMockResponse(200, { success: true })
+    );
 
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new MessagesReact(['msg-123', '--type', 'custom', '--emoji', '🎉'], config);
+    const cmd = new MessagesReact(['msg-123', '--type', 'custom', '--emoji', '\u{1F389}'], config);
     await cmd.run();
 
-    const body = lastRequestBody as { type: string; custom_emoji: string };
+    const [, init] = mockFetch.mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.type).toBe('custom');
-    expect(body.custom_emoji).toBe('🎉');
+    expect(body.custom_emoji).toBe('\u{1F389}');
   });
 
   it('requires emoji for custom type', async () => {
