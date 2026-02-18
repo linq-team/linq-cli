@@ -3,7 +3,6 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatWebhooksList } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
 
 export default class WebhooksList extends BaseCommand {
   static override description = 'List all webhook subscriptions';
@@ -32,20 +31,16 @@ export default class WebhooksList extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { data, error } = await client.GET('/v3/webhook-subscriptions');
+    try {
+      const data = await client.webhooks.subscriptions.list();
 
-    if (error) {
-      this.error(`Failed to list webhooks: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to list webhooks: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatWebhooksList(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatWebhooksList(data));
+      }
+    } catch (e) {
+      this.error(`Failed to list webhooks: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

@@ -43,19 +43,15 @@ export default class ChatsVoicememo extends BaseCommand {
     const fromPhone = requireFromPhone(flags.from, config);
     const client = createApiClient(token);
 
-    const { data, error } = await client.POST('/v3/chats/{chatId}/voicememo', {
-      params: { path: { chatId: args.chatId } },
-      body: { from: fromPhone, voice_memo_url: flags.url },
-    });
+    try {
+      const data = await client.chats.sendVoicememo(args.chatId, {
+        from: fromPhone,
+        voice_memo_url: flags.url,
+      });
 
-    if (error) {
-      this.error(`Failed to send voice memo: ${JSON.stringify(error)}`);
+      this.log(JSON.stringify(data, null, 2));
+    } catch (e) {
+      this.error(`Failed to send voice memo: ${e instanceof Error ? e.message : String(e)}`);
     }
-
-    if (!data) {
-      this.error('Failed to send voice memo: no response data');
-    }
-
-    this.log(JSON.stringify(data, null, 2));
   }
 }

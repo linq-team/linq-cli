@@ -41,7 +41,7 @@ describe('phonenumbers', () => {
   });
 
   it('calls API with correct endpoint', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         phone_numbers: [
           {
@@ -60,8 +60,8 @@ describe('phonenumbers', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe(
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toBe(
       'https://api.linqapp.com/api/partner/v3/phonenumbers'
     );
   });

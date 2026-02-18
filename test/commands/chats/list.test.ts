@@ -39,18 +39,28 @@ describe('chats list', () => {
   });
 
   it('lists chats successfully', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         chats: [
           {
             id: 'chat-123',
-            handles: [{ handle: '+19876543210', service: 'iMessage' }],
+            created_at: '2024-01-15T10:00:00Z',
+            display_name: null,
+            handles: [{ id: 'h-1', handle: '+19876543210', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' }],
+            is_archived: false,
+            is_group: false,
             service: 'iMessage',
+            updated_at: '2024-01-15T10:00:00Z',
           },
           {
             id: 'chat-456',
-            handles: [{ handle: '+15555555555', service: 'SMS' }],
+            created_at: '2024-01-14T09:00:00Z',
+            display_name: null,
+            handles: [{ id: 'h-2', handle: '+15555555555', joined_at: '2024-01-14T09:00:00Z', service: 'SMS' }],
+            is_archived: false,
+            is_group: false,
             service: 'SMS',
+            updated_at: '2024-01-14T09:00:00Z',
           },
         ],
       })
@@ -61,15 +71,23 @@ describe('chats list', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toContain('/v3/chats');
-    expect(request.url).toContain('from=%2B12025551234');
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain('/v3/chats');
+    expect(url).toContain('from=%2B12025551234');
   });
 
   it('handles pagination cursor', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
-        chats: [{ id: 'chat-789', handles: [{ handle: '+11111111111', service: 'iMessage' }] }],
+        chats: [{
+          id: 'chat-789',
+          created_at: '2024-01-15T10:00:00Z',
+          display_name: null,
+          handles: [{ id: 'h-3', handle: '+11111111111', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' }],
+          is_archived: false,
+          is_group: false,
+          updated_at: '2024-01-15T10:00:00Z',
+        }],
         next_cursor: 'next-page-cursor',
       })
     );
@@ -78,8 +96,8 @@ describe('chats list', () => {
     const cmd = new ChatsList(['--from', '+12025551234', '--cursor', 'prev-cursor'], config);
     await cmd.run();
 
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toContain('cursor=prev-cursor');
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain('cursor=prev-cursor');
   });
 
   it('requires from flag or config fromPhone', async () => {

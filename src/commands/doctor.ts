@@ -70,18 +70,13 @@ export default class Doctor extends BaseCommand {
       const client = createApiClient(config.token);
       const start = Date.now();
       try {
-        const { error } = await client.GET('/v3/phonenumbers');
+        await client.phoneNumbers.list();
         const latency = Date.now() - start;
-        if (error) {
-          this.log(`\u2717 API request failed (${latency}ms) — check your token`);
-          failed++;
-        } else {
-          this.log(`\u2713 API connection successful (${latency}ms)`);
-          passed++;
-        }
+        this.log(`\u2713 API connection successful (${latency}ms)`);
+        passed++;
       } catch {
         const latency = Date.now() - start;
-        this.log(`\u2717 API connection failed (${latency}ms) — check your network`);
+        this.log(`\u2717 API connection failed (${latency}ms) — check your token or network`);
         failed++;
       }
     } else {

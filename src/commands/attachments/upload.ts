@@ -3,8 +3,7 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatUploadUrl } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
-import type { components } from '../../gen/api-types.js';
+import type Linq from '@linqapp/sdk';
 
 export default class AttachmentsUpload extends BaseCommand {
   static override description = 'Request a presigned upload URL for a file';
@@ -47,26 +46,20 @@ export default class AttachmentsUpload extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { data, error } = await client.POST('/v3/attachments', {
-      body: {
+    try {
+      const data = await client.attachments.create({
         filename: flags.filename,
-        content_type: flags['content-type'] as components['schemas']['SupportedContentType'],
+        content_type: flags['content-type'] as Linq.AttachmentCreateParams['content_type'],
         size_bytes: flags.size,
-      },
-    });
+      });
 
-    if (error) {
-      this.error(`Failed to request upload: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to request upload: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatUploadUrl(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatUploadUrl(data));
+      }
+    } catch (e) {
+      this.error(`Failed to request upload: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

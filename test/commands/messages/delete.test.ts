@@ -21,14 +21,12 @@ function createMockResponse(status: number, body?: unknown) {
 describe('messages delete', () => {
   let tempDir: string;
   let originalHome: string | undefined;
-  let lastRequestBody: unknown;
 
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'linq-test-'));
     originalHome = process.env.HOME;
     process.env.HOME = tempDir;
     mockFetch.mockReset();
-    lastRequestBody = null;
 
     const configDir = path.join(tempDir, '.linq');
     await fs.mkdir(configDir, { recursive: true });
@@ -44,21 +42,18 @@ describe('messages delete', () => {
   });
 
   it('deletes message successfully', async () => {
-    mockFetch.mockImplementation(async (request: Request) => {
-      lastRequestBody = await request.json();
-      return createMockResponse(204, {});
-    });
+    mockFetch.mockResolvedValue(createMockResponse(204, {}));
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new MessagesDelete(['msg-123', '--chat', 'chat-456'], config);
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/messages/msg-123');
-    expect(request.method).toBe('DELETE');
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/messages/msg-123');
+    expect((init as RequestInit).method).toBe('DELETE');
 
-    const body = lastRequestBody as { chat_id: string };
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.chat_id).toBe('chat-456');
   });
 

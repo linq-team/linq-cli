@@ -33,12 +33,11 @@ npm run build
 ### Development Scripts
 
 ```bash
-npm run build        # Generate types from OpenAPI spec + compile TypeScript
+npm run build        # Compile TypeScript
 npm test         # Run tests
 npm test:watch   # Run tests in watch mode
 npm run lint         # Lint code
 npm run format       # Format code
-npm run generate:types  # Regenerate API types from OpenAPI spec
 ```
 
 ## Making Changes
@@ -91,10 +90,8 @@ linq-cli/
 │   │   ├── config/
 │   │   ├── messages/
 │   │   └── webhooks/
-│   ├── gen/            # Generated types (do not edit)
 │   └── lib/            # Shared utilities
 ├── test/               # Test files
-├── openapi.yaml        # API specification
 └── bin/                # CLI entry points
 ```
 
@@ -148,10 +145,9 @@ export default class MyCommand extends Command {
 
 When the Linq API changes:
 
-1. Update `openapi.yaml` with the new specification
-2. Run `npm run generate:types` to regenerate TypeScript types
-3. Update affected commands
-4. Add/update tests
+1. Update `@linqapp/sdk` to the latest version
+2. Update affected commands to use new SDK types/methods
+3. Add/update tests
 
 ## Pull Requests
 

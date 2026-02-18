@@ -3,9 +3,9 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatLogLine } from '../../lib/webhook-format.js';
-import type { components } from '../../gen/api-types.js';
+import type Linq from '@linqapp/sdk';
 
-type WebhookEventType = components['schemas']['WebhookEventType'];
+type WebhookEventType = Linq.Webhooks.SubscriptionCreateParams['subscribed_events'][number];
 
 interface WebhookEvent {
   event_type?: string;
@@ -29,6 +29,7 @@ const WEBHOOK_EVENTS: WebhookEventType[] = [
   'chat.group_icon_update_failed',
   'chat.typing_indicator.started',
   'chat.typing_indicator.stopped',
+  'phone_number.status_updated',
 ];
 
 const DEFAULT_WS_URL = 'wss://9r8ugjg4s0.execute-api.us-east-1.amazonaws.com/prod';
@@ -259,43 +260,30 @@ export default class WebhooksListen extends BaseCommand {
     webhookUrl: string,
     subscribedEvents: WebhookEventType[]
   ): Promise<void> {
-    const { data, error } = await this.client!.POST(
-      '/v3/webhook-subscriptions',
-      {
-        body: {
-          target_url: webhookUrl,
-          subscribed_events: subscribedEvents,
-        },
-      }
-    );
+    try {
+      const data = await this.client!.webhooks.subscriptions.create({
+        target_url: webhookUrl,
+        subscribed_events: subscribedEvents,
+      });
 
-    if (error) {
-      this.error(`Failed to create webhook: ${JSON.stringify(error)}`);
+      this.webhookId = data.id;
+      this.log(`Webhook created: ${data.id}`);
+      this.log(`URL: ${data.target_url}`);
+      this.log(`Events: ${data.subscribed_events.join(', ')}`);
+    } catch (e) {
+      this.error(`Failed to create webhook: ${e instanceof Error ? e.message : String(e)}`);
     }
-
-    if (!data) {
-      this.error('Failed to create webhook: no response data');
-    }
-
-    this.webhookId = data.id;
-    this.log(`Webhook created: ${data.id}`);
-    this.log(`URL: ${data.target_url}`);
-    this.log(`Events: ${data.subscribed_events.join(', ')}`);
   }
 
   private async updateWebhookTarget(webhookUrl: string): Promise<void> {
     if (!this.webhookId || !this.client) return;
 
-    const { error } = await this.client.PUT(
-      '/v3/webhook-subscriptions/{subscriptionId}',
-      {
-        params: { path: { subscriptionId: this.webhookId } },
-        body: { target_url: webhookUrl },
-      }
-    );
-
-    if (error) {
-      this.log(`Warning: Failed to update webhook target: ${JSON.stringify(error)}`);
+    try {
+      await this.client.webhooks.subscriptions.update(this.webhookId, {
+        target_url: webhookUrl,
+      });
+    } catch (e) {
+      this.log(`Warning: Failed to update webhook target: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
@@ -314,9 +302,7 @@ export default class WebhooksListen extends BaseCommand {
     // Delete webhook subscription
     if (this.webhookId && this.client) {
       try {
-        await this.client.DELETE('/v3/webhook-subscriptions/{subscriptionId}', {
-          params: { path: { subscriptionId: this.webhookId } },
-        });
+        await this.client.webhooks.subscriptions.delete(this.webhookId);
         this.log(`Webhook ${this.webhookId} deleted`);
       } catch {
         // Ignore cleanup errors

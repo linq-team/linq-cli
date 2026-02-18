@@ -55,8 +55,16 @@ describe('doctor', () => {
       })
     );
 
-    mockFetch.mockResolvedValueOnce(
-      createMockResponse(200, [{ phone_number: '+12025551234' }])
+    mockFetch.mockResolvedValue(
+      createMockResponse(200, {
+        phone_numbers: [{
+          id: 'pn-1',
+          phone_number: '+12025551234',
+          type: 'APPLE_ID',
+          country_code: 'US',
+          capabilities: { sms: true, mms: true, voice: false },
+        }],
+      })
     );
 
     const config = await Config.load({ root: process.cwd() });
@@ -99,7 +107,7 @@ describe('doctor', () => {
       })
     );
 
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(401, { error: 'Unauthorized' })
     );
 
@@ -110,7 +118,7 @@ describe('doctor', () => {
 
     const output = logs.join('\n');
     expect(output).toContain('\u2713 API token is configured');
-    expect(output).toContain('\u2717 API request failed');
+    expect(output).toContain('\u2717 API connection failed');
   });
 
   it('masks token values in output', async () => {
@@ -128,8 +136,16 @@ describe('doctor', () => {
       })
     );
 
-    mockFetch.mockResolvedValueOnce(
-      createMockResponse(200, [{ phone_number: '+12025551234' }])
+    mockFetch.mockResolvedValue(
+      createMockResponse(200, {
+        phone_numbers: [{
+          id: 'pn-1',
+          phone_number: '+12025551234',
+          type: 'APPLE_ID',
+          country_code: 'US',
+          capabilities: { sms: true, mms: true, voice: false },
+        }],
+      })
     );
 
     const config = await Config.load({ root: process.cwd() });

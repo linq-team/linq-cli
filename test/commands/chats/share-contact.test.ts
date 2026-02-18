@@ -36,18 +36,18 @@ describe('chats share-contact', () => {
   });
 
   it('shares contact card with chat', async () => {
-    mockFetch.mockResolvedValueOnce(createMockResponse(204));
+    mockFetch.mockResolvedValue(createMockResponse(204));
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new ChatsShareContact(['chat-123'], config);
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe(
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe(
       'https://api.linqapp.com/api/partner/v3/chats/chat-123/share_contact_card'
     );
-    expect(request.method).toBe('POST');
+    expect((init as RequestInit).method).toBe('POST');
   });
 
   it('requires chat ID argument', async () => {

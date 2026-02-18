@@ -39,8 +39,9 @@ describe('webhooks events', () => {
   });
 
   it('lists available webhook event types', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
+        doc_url: 'https://apidocs.linqapp.com/documentation/webhook-events',
         events: [
           'message.sent',
           'message.received',
@@ -56,8 +57,8 @@ describe('webhooks events', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/webhook-events');
-    expect(request.method).toBe('GET');
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/webhook-events');
+    expect((init as RequestInit).method).toBe('GET');
   });
 });

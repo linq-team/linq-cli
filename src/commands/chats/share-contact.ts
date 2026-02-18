@@ -35,14 +35,11 @@ export default class ChatsShareContact extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { error } = await client.POST('/v3/chats/{chatId}/share_contact_card', {
-      params: { path: { chatId: args.chatId } },
-    });
-
-    if (error) {
-      this.error(`Failed to share contact: ${JSON.stringify(error)}`);
+    try {
+      await client.chats.shareContactCard(args.chatId);
+      this.log('Contact card shared successfully.');
+    } catch (e) {
+      this.error(`Failed to share contact: ${e instanceof Error ? e.message : String(e)}`);
     }
-
-    this.log('Contact card shared successfully.');
   }
 }

@@ -3,7 +3,6 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatMessagesList } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
 
 export default class MessagesThread extends BaseCommand {
   static override description = 'Get all messages in a thread';
@@ -52,29 +51,20 @@ export default class MessagesThread extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { data, error } = await client.GET('/v3/messages/{messageId}/thread', {
-      params: {
-        path: { messageId: args.messageId },
-        query: {
-          limit: flags.limit,
-          cursor: flags.cursor,
-          order: flags.order as 'asc' | 'desc' | undefined,
-        },
-      },
-    });
+    try {
+      const data = await client.messages.retrieveThread(args.messageId, {
+        limit: flags.limit,
+        cursor: flags.cursor,
+        order: flags.order as 'asc' | 'desc' | undefined,
+      });
 
-    if (error) {
-      this.error(`Failed to get thread: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to get thread: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatMessagesList(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatMessagesList(data));
+      }
+    } catch (e) {
+      this.error(`Failed to get thread: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

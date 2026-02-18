@@ -39,19 +39,14 @@ export default class ParticipantsRemove extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { data, error } = await client.DELETE('/v3/chats/{chatId}/participants', {
-      params: { path: { chatId: args.chatId } },
-      body: { handle: flags.handle },
-    });
+    try {
+      const data = await client.chats.participants.remove(args.chatId, {
+        handle: flags.handle,
+      });
 
-    if (error) {
-      this.error(`Failed to remove participant: ${JSON.stringify(error)}`);
+      this.log(JSON.stringify(data, null, 2));
+    } catch (e) {
+      this.error(`Failed to remove participant: ${e instanceof Error ? e.message : String(e)}`);
     }
-
-    if (!data) {
-      this.error('Failed to remove participant: no response data');
-    }
-
-    this.log(JSON.stringify(data, null, 2));
   }
 }

@@ -39,16 +39,19 @@ describe('messages get', () => {
   });
 
   it('gets message by ID', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'msg-123',
         chat_id: 'chat-456',
+        created_at: '2024-01-15T10:30:00Z',
         from: '+19876543210',
-        service: 'iMessage',
         is_delivered: true,
+        is_from_me: false,
         is_read: false,
+        updated_at: '2024-01-15T10:30:00Z',
+        service: 'iMessage',
         sent_at: '2024-01-15T10:30:00Z',
-        parts: [{ type: 'text', value: 'Hello!' }],
+        parts: [{ type: 'text', value: 'Hello!', reactions: null }],
       })
     );
 
@@ -57,9 +60,9 @@ describe('messages get', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/messages/msg-123');
-    expect(request.method).toBe('GET');
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/messages/msg-123');
+    expect((init as RequestInit).method).toBe('GET');
   });
 
   it('requires message ID argument', async () => {

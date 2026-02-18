@@ -81,16 +81,13 @@ export default class Init extends BaseCommand {
     this.log('\nValidating token...');
     const client = createApiClient(token.trim());
 
-    const { data, error } = await client.GET('/v3/phonenumbers');
-
-    if (error) {
+    let data;
+    try {
+      data = await client.phoneNumbers.list();
+    } catch {
       this.error(
         'Invalid token or API error. Please check your token and try again.'
       );
-    }
-
-    if (!data) {
-      this.error('Failed to validate token: no response data');
     }
 
     this.log('\u2713 Token is valid!\n');

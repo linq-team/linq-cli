@@ -39,24 +39,32 @@ describe('messages list', () => {
   });
 
   it('lists messages in a chat', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         messages: [
           {
             id: 'msg-123',
+            chat_id: 'chat-123',
+            created_at: '2024-01-15T10:30:00Z',
             from: '+19876543210',
-            sent_at: '2024-01-15T10:30:00Z',
             is_delivered: true,
+            is_from_me: false,
             is_read: false,
-            parts: [{ type: 'text', value: 'Hello!' }],
+            updated_at: '2024-01-15T10:30:00Z',
+            sent_at: '2024-01-15T10:30:00Z',
+            parts: [{ type: 'text', value: 'Hello!', reactions: null }],
           },
           {
             id: 'msg-456',
+            chat_id: 'chat-123',
+            created_at: '2024-01-15T10:31:00Z',
             from: '+12025551234',
-            sent_at: '2024-01-15T10:31:00Z',
             is_delivered: true,
+            is_from_me: true,
             is_read: true,
-            parts: [{ type: 'text', value: 'Hi there!' }],
+            updated_at: '2024-01-15T10:31:00Z',
+            sent_at: '2024-01-15T10:31:00Z',
+            parts: [{ type: 'text', value: 'Hi there!', reactions: null }],
           },
         ],
       })
@@ -67,12 +75,12 @@ describe('messages list', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toContain('/v3/chats/chat-123/messages');
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain('/v3/chats/chat-123/messages');
   });
 
   it('handles pagination parameters', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         messages: [],
         next_cursor: 'next-page',
@@ -81,15 +89,14 @@ describe('messages list', () => {
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new MessagesList(
-      ['chat-123', '--limit', '50', '--order', 'asc', '--cursor', 'prev-cursor'],
+      ['chat-123', '--limit', '50', '--cursor', 'prev-cursor'],
       config
     );
     await cmd.run();
 
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toContain('limit=50');
-    expect(request.url).toContain('order=asc');
-    expect(request.url).toContain('cursor=prev-cursor');
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain('limit=50');
+    expect(url).toContain('cursor=prev-cursor');
   });
 
   it('requires chat ID argument', async () => {

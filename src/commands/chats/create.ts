@@ -3,11 +3,10 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatChatCreated } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
-import type { components } from '../../gen/api-types.js';
+import type Linq from '@linqapp/sdk';
 
-type MessagePart = components['schemas']['MessagePart'];
-type MessageEffect = components['schemas']['MessageEffect'];
+type MessagePart = Linq.Chats.ChatCreateParams['message']['parts'][number];
+type MessageEffect = Linq.Chats.ChatCreateParams['message']['effect'];
 
 const SCREEN_EFFECTS = [
   'confetti',
@@ -95,29 +94,23 @@ export default class ChatsCreate extends BaseCommand {
       }
     }
 
-    const { data, error } = await client.POST('/v3/chats', {
-      body: {
+    try {
+      const data = await client.chats.create({
         from: fromPhone,
         to: flags.to,
         message: {
           parts: [textPart],
           effect,
         },
-      },
-    });
+      });
 
-    if (error) {
-      this.error(`Failed to create chat: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to create chat: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatChatCreated(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatChatCreated(data));
+      }
+    } catch (e) {
+      this.error(`Failed to create chat: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

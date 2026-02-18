@@ -19,14 +19,12 @@ function createMockResponse(status: number, body: unknown) {
 describe('chats create', () => {
   let tempDir: string;
   let originalHome: string | undefined;
-  let lastRequestBody: unknown;
 
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'linq-test-'));
     originalHome = process.env.HOME;
     process.env.HOME = tempDir;
     mockFetch.mockReset();
-    lastRequestBody = null;
 
     // Create config with token
     const configDir = path.join(tempDir, '.linq');
@@ -43,15 +41,27 @@ describe('chats create', () => {
   });
 
   it('creates chat and sends message successfully', async () => {
-    mockFetch.mockImplementation(async (request: Request) => {
-      lastRequestBody = await request.json();
-      return createMockResponse(201, {
+    mockFetch.mockResolvedValue(
+      createMockResponse(201, {
         chat: {
           id: 'chat-123',
-          message: { id: 'msg-456' },
+          display_name: null,
+          handles: [
+            { id: 'h-1', handle: '+12025551234', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage', is_me: true },
+            { id: 'h-2', handle: '+19876543210', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' },
+          ],
+          is_group: false,
+          service: 'iMessage',
+          message: {
+            id: 'msg-456',
+            delivery_status: 'sent',
+            is_read: false,
+            parts: [{ type: 'text', value: 'Hello!', reactions: null }],
+            sent_at: '2024-01-15T10:00:00Z',
+          },
         },
-      });
-    });
+      })
+    );
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new ChatsCreate(
@@ -62,27 +72,35 @@ describe('chats create', () => {
 
     // Verify the API call
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/chats');
-    expect(request.method).toBe('POST');
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/chats');
+    expect((init as RequestInit).method).toBe('POST');
 
-    const body = lastRequestBody as {
-      to: string[];
-      from: string;
-      message: { parts: { value: string }[] };
-    };
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.to).toEqual(['+19876543210']);
     expect(body.from).toBe('+12025551234');
     expect(body.message.parts[0].value).toBe('Hello!');
   });
 
   it('includes effect when specified', async () => {
-    mockFetch.mockImplementation(async (request: Request) => {
-      lastRequestBody = await request.json();
-      return createMockResponse(201, {
-        chat: { id: 'chat-123', message: { id: 'msg-456' } },
-      });
-    });
+    mockFetch.mockResolvedValue(
+      createMockResponse(201, {
+        chat: {
+          id: 'chat-123',
+          display_name: null,
+          handles: [{ id: 'h-1', handle: '+19876543210', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' }],
+          is_group: false,
+          service: 'iMessage',
+          message: {
+            id: 'msg-456',
+            delivery_status: 'sent',
+            is_read: false,
+            parts: [{ type: 'text', value: 'Party!', reactions: null }],
+            sent_at: '2024-01-15T10:00:00Z',
+          },
+        },
+      })
+    );
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new ChatsCreate(
@@ -91,19 +109,33 @@ describe('chats create', () => {
     );
     await cmd.run();
 
-    const body = lastRequestBody as {
-      message: { effect: { type: string; name: string } };
-    };
+    const [, init] = mockFetch.mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.message.effect).toEqual({ type: 'screen', name: 'confetti' });
   });
 
   it('supports multiple recipients for group chats', async () => {
-    mockFetch.mockImplementation(async (request: Request) => {
-      lastRequestBody = await request.json();
-      return createMockResponse(201, {
-        chat: { id: 'chat-123', message: { id: 'msg-456' } },
-      });
-    });
+    mockFetch.mockResolvedValue(
+      createMockResponse(201, {
+        chat: {
+          id: 'chat-123',
+          display_name: null,
+          handles: [
+            { id: 'h-1', handle: '+1111111111', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' },
+            { id: 'h-2', handle: '+2222222222', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' },
+          ],
+          is_group: true,
+          service: 'iMessage',
+          message: {
+            id: 'msg-456',
+            delivery_status: 'sent',
+            is_read: false,
+            parts: [{ type: 'text', value: 'Group message', reactions: null }],
+            sent_at: '2024-01-15T10:00:00Z',
+          },
+        },
+      })
+    );
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new ChatsCreate(
@@ -112,11 +144,8 @@ describe('chats create', () => {
     );
     await cmd.run();
 
-    const body = lastRequestBody as {
-      to: string[];
-      from: string;
-      message: { parts: { value: string }[] };
-    };
+    const [, init] = mockFetch.mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.to).toEqual(['+1111111111', '+2222222222']);
     expect(body.from).toBe('+12025551234');
     expect(body.message.parts[0].value).toBe('Group message');

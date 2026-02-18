@@ -17,9 +17,9 @@ import { fetchPartnerId } from '../lib/partner.js';
 import { createApiClient } from '../lib/api-client.js';
 import { formatLogLine } from '../lib/webhook-format.js';
 import { LOGO } from '../lib/banner.js';
-import type { components } from '../gen/api-types.js';
+import type Linq from '@linqapp/sdk';
 
-type WebhookEventType = components['schemas']['WebhookEventType'];
+type WebhookEventType = Linq.Webhooks.SubscriptionCreateParams['subscribed_events'][number];
 
 const GITHUB_CLIENT_ID = 'Ov23lifn0bcZx3W7pmqr';
 const WEBHOOK_BASE_URL =
@@ -179,19 +179,17 @@ export default class Signup extends BaseCommand {
 
     // Send welcome message (requires inbound message first)
     try {
-      await client.POST('/v3/chats', {
-        body: {
-          from: data.sandboxPhone,
-          to: [data.userPhone],
-          message: {
-            parts: [
-              {
-                type: 'text',
-                value: `Hey! 👋 Your Linq sandbox is live! This number is yours for the next 3 hours. Happy hacking!`,
-              },
-            ],
-            effect: { type: 'screen', name: 'confetti' },
-          },
+      await client.chats.create({
+        from: data.sandboxPhone,
+        to: [data.userPhone],
+        message: {
+          parts: [
+            {
+              type: 'text',
+              value: `Hey! 👋 Your Linq sandbox is live! This number is yours for the next 3 hours. Happy hacking!`,
+            },
+          ],
+          effect: { type: 'screen', name: 'confetti' },
         },
       });
     } catch {
@@ -360,13 +358,11 @@ export default class Signup extends BaseCommand {
       });
 
       // Create ephemeral webhook subscription
-      const { data: whData } = await client.POST('/v3/webhook-subscriptions', {
-        body: {
-          target_url: `${RELAY_URL}/relay/${connectionId}`,
-          subscribed_events: ['message.received'] as WebhookEventType[],
-        },
+      const whData = await client.webhooks.subscriptions.create({
+        target_url: `${RELAY_URL}/relay/${connectionId}`,
+        subscribed_events: ['message.received'] as WebhookEventType[],
       });
-      webhookId = whData?.id ?? null;
+      webhookId = whData.id;
 
       // Wait for the first message.received event (up to 3 minutes)
       ux.action.start('Waiting for your text message');
@@ -401,9 +397,7 @@ export default class Signup extends BaseCommand {
       }
       if (webhookId) {
         try {
-          await client.DELETE('/v3/webhook-subscriptions/{subscriptionId}', {
-            params: { path: { subscriptionId: webhookId } },
-          });
+          await client.webhooks.subscriptions.delete(webhookId);
         } catch { /* ignore cleanup errors */ }
       }
     }

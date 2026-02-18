@@ -3,7 +3,6 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatMessageDetail } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
 
 export default class MessagesGet extends BaseCommand {
   static override description = 'Get a message by ID';
@@ -39,26 +38,16 @@ export default class MessagesGet extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { data, error } = await client.GET('/v3/messages/{messageId}', {
-      params: {
-        path: {
-          messageId: args.messageId,
-        },
-      },
-    });
+    try {
+      const data = await client.messages.retrieve(args.messageId);
 
-    if (error) {
-      this.error(`Failed to get message: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to get message: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatMessageDetail(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatMessageDetail(data));
+      }
+    } catch (e) {
+      this.error(`Failed to get message: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

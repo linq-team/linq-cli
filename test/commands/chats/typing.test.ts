@@ -36,29 +36,29 @@ describe('chats typing', () => {
   });
 
   it('starts typing indicator', async () => {
-    mockFetch.mockResolvedValueOnce(createMockResponse(204));
+    mockFetch.mockResolvedValue(createMockResponse(204));
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new ChatsTyping(['chat-123'], config);
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123/typing');
-    expect(request.method).toBe('POST');
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123/typing');
+    expect((init as RequestInit).method).toBe('POST');
   });
 
   it('stops typing indicator', async () => {
-    mockFetch.mockResolvedValueOnce(createMockResponse(204));
+    mockFetch.mockResolvedValue(createMockResponse(204));
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new ChatsTyping(['chat-123', '--stop'], config);
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123/typing');
-    expect(request.method).toBe('DELETE');
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123/typing');
+    expect((init as RequestInit).method).toBe('DELETE');
   });
 
   it('requires chat ID argument', async () => {

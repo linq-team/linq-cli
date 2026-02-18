@@ -39,10 +39,15 @@ describe('chats update', () => {
   });
 
   it('updates chat display name', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'chat-123',
+        created_at: '2024-01-15T10:00:00Z',
         display_name: 'Team Discussion',
+        handles: [{ id: 'h-1', handle: '+19876543210', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' }],
+        is_archived: false,
+        is_group: true,
+        updated_at: '2024-01-15T11:00:00Z',
       })
     );
 
@@ -51,18 +56,24 @@ describe('chats update', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123');
-    expect(request.method).toBe('PUT');
-    const body = await request.json();
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/chats/chat-123');
+    expect((init as RequestInit).method).toBe('PUT');
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.display_name).toBe('Team Discussion');
   });
 
   it('updates chat icon', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'chat-123',
+        created_at: '2024-01-15T10:00:00Z',
+        display_name: null,
+        handles: [{ id: 'h-1', handle: '+19876543210', joined_at: '2024-01-15T10:00:00Z', service: 'iMessage' }],
+        is_archived: false,
+        is_group: true,
         group_chat_icon: 'https://example.com/icon.png',
+        updated_at: '2024-01-15T11:00:00Z',
       })
     );
 
@@ -71,8 +82,8 @@ describe('chats update', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    const body = await request.json();
+    const [, init] = mockFetch.mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.group_chat_icon).toBe('https://example.com/icon.png');
   });
 

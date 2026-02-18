@@ -26,16 +26,11 @@ export default class WebhooksEvents extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { data, error } = await client.GET('/v3/webhook-events');
-
-    if (error) {
-      this.error(`Failed to list webhook events: ${JSON.stringify(error)}`);
+    try {
+      const data = await client.webhooks.events.list();
+      this.log(JSON.stringify(data, null, 2));
+    } catch (e) {
+      this.error(`Failed to list webhook events: ${e instanceof Error ? e.message : String(e)}`);
     }
-
-    if (!data) {
-      this.error('Failed to list webhook events: no response data');
-    }
-
-    this.log(JSON.stringify(data, null, 2));
   }
 }

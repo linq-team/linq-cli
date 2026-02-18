@@ -39,20 +39,24 @@ describe('webhooks list', () => {
   });
 
   it('lists webhooks successfully', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         subscriptions: [
           {
             id: 'webhook-123',
-            target_url: 'https://example.com/webhook1',
+            created_at: '2024-01-15T10:00:00Z',
             is_active: true,
             subscribed_events: ['message.received', 'message.sent'],
+            target_url: 'https://example.com/webhook1',
+            updated_at: '2024-01-15T10:00:00Z',
           },
           {
             id: 'webhook-456',
-            target_url: 'https://example.com/webhook2',
+            created_at: '2024-01-14T09:00:00Z',
             is_active: false,
             subscribed_events: ['chat.created'],
+            target_url: 'https://example.com/webhook2',
+            updated_at: '2024-01-14T09:00:00Z',
           },
         ],
       })
@@ -63,13 +67,13 @@ describe('webhooks list', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/webhook-subscriptions');
-    expect(request.method).toBe('GET');
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/webhook-subscriptions');
+    expect((init as RequestInit).method).toBe('GET');
   });
 
   it('handles empty list', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         subscriptions: [],
       })

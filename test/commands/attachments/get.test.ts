@@ -39,7 +39,7 @@ describe('attachments get', () => {
   });
 
   it('gets attachment metadata', async () => {
-    mockFetch.mockResolvedValueOnce(
+    mockFetch.mockResolvedValue(
       createMockResponse(200, {
         id: 'att-123',
         filename: 'photo.jpg',
@@ -56,9 +56,9 @@ describe('attachments get', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/attachments/att-123');
-    expect(request.method).toBe('GET');
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/attachments/att-123');
+    expect((init as RequestInit).method).toBe('GET');
   });
 
   it('requires attachment ID argument', async () => {

@@ -3,7 +3,6 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatChatDetail } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
 
 export default class ChatsGet extends BaseCommand {
   static override description = 'Get a chat by ID';
@@ -41,26 +40,16 @@ export default class ChatsGet extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { data, error } = await client.GET('/v3/chats/{chatId}', {
-      params: {
-        path: {
-          chatId: args.chatId,
-        },
-      },
-    });
+    try {
+      const data = await client.chats.retrieve(args.chatId);
 
-    if (error) {
-      this.error(`Failed to get chat: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to get chat: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatChatDetail(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatChatDetail(data));
+      }
+    } catch (e) {
+      this.error(`Failed to get chat: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

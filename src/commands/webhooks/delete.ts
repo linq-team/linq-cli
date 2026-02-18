@@ -3,7 +3,6 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatDeleted } from '../../lib/format.js';
-import { parseApiError } from '../../lib/errors.js';
 
 export default class WebhooksDelete extends BaseCommand {
   static override description = 'Delete a webhook subscription';
@@ -39,25 +38,16 @@ export default class WebhooksDelete extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    const { error } = await client.DELETE(
-      '/v3/webhook-subscriptions/{subscriptionId}',
-      {
-        params: {
-          path: {
-            subscriptionId: args.subscriptionId,
-          },
-        },
+    try {
+      await client.webhooks.subscriptions.delete(args.subscriptionId);
+
+      if (flags.json) {
+        this.log(JSON.stringify({ deleted: true, subscriptionId: args.subscriptionId }));
+      } else {
+        this.log(formatDeleted('Webhook', args.subscriptionId));
       }
-    );
-
-    if (error) {
-      this.error(`Failed to delete webhook: ${parseApiError(error)}`);
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify({ deleted: true, subscriptionId: args.subscriptionId }));
-    } else {
-      this.log(formatDeleted('Webhook', args.subscriptionId));
+    } catch (e) {
+      this.error(`Failed to delete webhook: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }

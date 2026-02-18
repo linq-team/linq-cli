@@ -42,18 +42,18 @@ describe('webhooks delete', () => {
   });
 
   it('deletes webhook successfully', async () => {
-    mockFetch.mockResolvedValueOnce(createMockResponse(204, {}));
+    mockFetch.mockResolvedValue(createMockResponse(204, {}));
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new WebhooksDelete(['webhook-123'], config);
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe(
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe(
       'https://api.linqapp.com/api/partner/v3/webhook-subscriptions/webhook-123'
     );
-    expect(request.method).toBe('DELETE');
+    expect((init as RequestInit).method).toBe('DELETE');
   });
 
   it('requires subscription ID argument', async () => {

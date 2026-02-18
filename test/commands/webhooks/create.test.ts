@@ -18,14 +18,12 @@ function createMockResponse(status: number, body: unknown) {
 describe('webhooks create', () => {
   let tempDir: string;
   let originalHome: string | undefined;
-  let lastRequestBody: unknown;
 
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'linq-test-'));
     originalHome = process.env.HOME;
     process.env.HOME = tempDir;
     mockFetch.mockReset();
-    lastRequestBody = null;
 
     const configDir = path.join(tempDir, '.linq');
     await fs.mkdir(configDir, { recursive: true });
@@ -41,16 +39,17 @@ describe('webhooks create', () => {
   });
 
   it('creates webhook with specified events', async () => {
-    mockFetch.mockImplementation(async (request: Request) => {
-      lastRequestBody = await request.json();
-      return createMockResponse(201, {
+    mockFetch.mockResolvedValue(
+      createMockResponse(201, {
         id: 'webhook-123',
-        target_url: 'https://example.com/webhook',
-        subscribed_events: ['message.received', 'message.sent'],
+        created_at: '2024-01-15T10:00:00Z',
         is_active: true,
         signing_secret: 'secret-123',
-      });
-    });
+        subscribed_events: ['message.received', 'message.sent'],
+        target_url: 'https://example.com/webhook',
+        updated_at: '2024-01-15T10:00:00Z',
+      })
+    );
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new WebhooksCreate(
@@ -60,26 +59,27 @@ describe('webhooks create', () => {
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
-    const [request] = mockFetch.mock.calls[0] as [Request];
-    expect(request.url).toBe('https://api.linqapp.com/api/partner/v3/webhook-subscriptions');
-    expect(request.method).toBe('POST');
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.linqapp.com/api/partner/v3/webhook-subscriptions');
+    expect((init as RequestInit).method).toBe('POST');
 
-    const body = lastRequestBody as { target_url: string; subscribed_events: string[] };
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.target_url).toBe('https://example.com/webhook');
     expect(body.subscribed_events).toEqual(['message.received', 'message.sent']);
   });
 
   it('creates webhook with all events', async () => {
-    mockFetch.mockImplementation(async (request: Request) => {
-      lastRequestBody = await request.json();
-      return createMockResponse(201, {
+    mockFetch.mockResolvedValue(
+      createMockResponse(201, {
         id: 'webhook-123',
-        target_url: 'https://example.com/webhook',
-        subscribed_events: ['message.sent', 'message.received'],
+        created_at: '2024-01-15T10:00:00Z',
         is_active: true,
         signing_secret: 'secret-123',
-      });
-    });
+        subscribed_events: ['message.sent', 'message.received'],
+        target_url: 'https://example.com/webhook',
+        updated_at: '2024-01-15T10:00:00Z',
+      })
+    );
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new WebhooksCreate(
@@ -88,7 +88,8 @@ describe('webhooks create', () => {
     );
     await cmd.run();
 
-    const body = lastRequestBody as { subscribed_events: string[] };
+    const [, init] = mockFetch.mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
     expect(body.subscribed_events.length).toBeGreaterThan(5);
   });
 

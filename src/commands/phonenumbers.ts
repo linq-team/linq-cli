@@ -3,7 +3,6 @@ import { BaseCommand } from '../lib/base-command.js';
 import { loadConfig, requireToken } from '../lib/config.js';
 import { createApiClient } from '../lib/api-client.js';
 import { formatPhoneNumbers } from '../lib/format.js';
-import { parseApiError } from '../lib/errors.js';
 
 export default class PhoneNumbers extends BaseCommand {
   static override description = 'List your available phone numbers';
@@ -33,20 +32,16 @@ export default class PhoneNumbers extends BaseCommand {
 
     const client = createApiClient(token);
 
-    const { data, error } = await client.GET('/v3/phonenumbers');
+    try {
+      const data = await client.phoneNumbers.list();
 
-    if (error) {
-      this.error(`Failed to list phone numbers: ${parseApiError(error)}`);
-    }
-
-    if (!data) {
-      this.error('Failed to list phone numbers: no response data');
-    }
-
-    if (flags.json) {
-      this.log(JSON.stringify(data, null, 2));
-    } else {
-      this.log(formatPhoneNumbers(data));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(formatPhoneNumbers(data));
+      }
+    } catch (e) {
+      this.error(`Failed to list phone numbers: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 }
