@@ -7,7 +7,17 @@ A command-line interface for the [Linq](https://linqapp.com) messaging API. Send
 
 ## Installation
 
-Download the latest installer for your platform from the [Releases](https://github.com/linq-team/linq-cli/releases) page:
+### Quick Install (macOS / Linux)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/linq-team/linq-cli/main/install.sh | sh
+```
+
+Automatically detects your OS and architecture, downloads the latest release, and installs it.
+
+### Manual Download
+
+Download the latest installer for your platform from the [Releases](https://github.com/linq-team/linq-cli/releases/latest) page:
 
 | Platform | File | Install Command |
 |----------|------|-----------------|
