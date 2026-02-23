@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/stainless-sdks/linq-api-v3-cli/internal/apiquery"
+	"github.com/linq-team/linq-cli/internal/apiquery"
 	"github.com/stainless-sdks/linq-api-v3-go"
 	"github.com/stainless-sdks/linq-api-v3-go/option"
 	"github.com/tidwall/gjson"

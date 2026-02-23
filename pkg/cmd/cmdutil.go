@@ -14,7 +14,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/stainless-sdks/linq-api-v3-cli/internal/jsonview"
+	"github.com/linq-team/linq-cli/internal/jsonview"
 	"github.com/stainless-sdks/linq-api-v3-go/option"
 
 	"github.com/charmbracelet/x/term"

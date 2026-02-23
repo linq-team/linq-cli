@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/stainless-sdks/linq-api-v3-cli/internal/apiquery"
-	"github.com/stainless-sdks/linq-api-v3-cli/internal/requestflag"
+	"github.com/linq-team/linq-cli/internal/apiquery"
+	"github.com/linq-team/linq-cli/internal/requestflag"
 	"github.com/stainless-sdks/linq-api-v3-go"
 	"github.com/urfave/cli/v3"
 )
