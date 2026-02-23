@@ -1,36 +1,4 @@
-# Dependencies
-node_modules/
-
-# Build output
+.prism.log
 dist/
-*.tsbuildinfo
-
-# oclif
-oclif.manifest.json
-tmp/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Test coverage
-coverage/
-
-# Logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Claude
-.claude
+/linq-api-v3
+*.exe
