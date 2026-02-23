@@ -1,0 +1,4 @@
+.prism.log
+dist/
+/linq-api-v3
+*.exe
