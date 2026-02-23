@@ -14,10 +14,10 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/stainless-sdks/linq-api-v3-cli/internal/apiform"
-	"github.com/stainless-sdks/linq-api-v3-cli/internal/apiquery"
-	"github.com/stainless-sdks/linq-api-v3-cli/internal/debugmiddleware"
-	"github.com/stainless-sdks/linq-api-v3-cli/internal/requestflag"
+	"github.com/linq-team/linq-cli/internal/apiform"
+	"github.com/linq-team/linq-cli/internal/apiquery"
+	"github.com/linq-team/linq-cli/internal/debugmiddleware"
+	"github.com/linq-team/linq-cli/internal/requestflag"
 	"github.com/stainless-sdks/linq-api-v3-go/option"
 
 	"github.com/goccy/go-yaml"

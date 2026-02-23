@@ -5,8 +5,8 @@ package cmd
 import (
 	"testing"
 
-	"github.com/stainless-sdks/linq-api-v3-cli/internal/mocktest"
-	"github.com/stainless-sdks/linq-api-v3-cli/internal/requestflag"
+	"github.com/linq-team/linq-cli/internal/mocktest"
+	"github.com/linq-team/linq-cli/internal/requestflag"
 )
 
 func TestChatsCreate(t *testing.T) {

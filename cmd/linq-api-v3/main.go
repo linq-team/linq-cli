@@ -10,7 +10,7 @@ import (
 	"os"
 	"slices"
 
-	"github.com/stainless-sdks/linq-api-v3-cli/pkg/cmd"
+	"github.com/linq-team/linq-cli/pkg/cmd"
 	"github.com/stainless-sdks/linq-api-v3-go"
 	"github.com/tidwall/gjson"
 	"github.com/urfave/cli/v3"

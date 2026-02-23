@@ -5,7 +5,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/stainless-sdks/linq-api-v3-cli/internal/mocktest"
+	"github.com/linq-team/linq-cli/internal/mocktest"
 )
 
 func TestChatsParticipantsAdd(t *testing.T) {
