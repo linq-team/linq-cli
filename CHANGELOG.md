@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/linq-team/linq-cli/compare/v1.1.2...v1.1.3) (2026-02-24)
+
+
+### Bug Fixes
+
+* add Sentry instrumentation for signup funnel ([0012554](https://github.com/linq-team/linq-cli/commit/00125542a4ab7d0e1a45f4447b78ffe770fd837e))
+
 ## [1.1.2](https://github.com/linq-team/linq-cli/compare/v1.1.1...v1.1.2) (2026-02-16)
 
 
