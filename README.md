@@ -7,6 +7,12 @@ A command-line interface for the [Linq](https://linqapp.com) messaging API. Send
 
 ## Installation
 
+### Homebrew (macOS / Linux)
+
+```bash
+brew install linq-team/tap/linq
+```
+
 ### Quick Install (macOS / Linux)
 
 ```bash

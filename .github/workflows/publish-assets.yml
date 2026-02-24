@@ -36,3 +36,65 @@ jobs:
     with:
       tag: ${{ needs.get-release.outputs.tag }}
     secrets: inherit
+
+  update-homebrew:
+    needs: get-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update Homebrew formula
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          TAG="${{ needs.get-release.outputs.tag }}"
+          VERSION="${TAG#v}"
+
+          # Get sha256 of the source tarball
+          SHA256=$(curl -sL "https://github.com/${{ github.repository }}/archive/refs/tags/${TAG}.tar.gz" | shasum -a 256 | awk '{print $1}')
+          echo "Version: ${VERSION}"
+          echo "SHA256: ${SHA256}"
+
+          # Clone the tap repo
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/linq-team/homebrew-tap.git"
+          cd homebrew-tap
+
+          # Generate the formula
+          mkdir -p Formula
+          cat > Formula/linq.rb << FORMULA
+          class Linq < Formula
+            desc "CLI for the Linq messaging API (iMessage, SMS)"
+            homepage "https://linqapp.com"
+            url "https://github.com/linq-team/linq-cli/archive/refs/tags/v${VERSION}.tar.gz"
+            sha256 "${SHA256}"
+            license "Apache-2.0"
+
+            depends_on "node"
+
+            def install
+              system "npm", "ci"
+              system "npm", "run", "build"
+              system "npx", "oclif", "manifest"
+              system "npm", "prune", "--omit=dev"
+
+              libexec.install Dir["*"]
+              bin.install_symlink libexec/"bin/run.js" => "linq"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/linq --version")
+            end
+          end
+          FORMULA
+
+          # Remove leading whitespace from heredoc indentation
+          sed -i 's/^          //' Formula/linq.rb
+
+          # Commit and push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/linq.rb
+          if git diff --staged --quiet; then
+            echo "No changes to formula"
+          else
+            git commit -m "linq ${VERSION}"
+            git push
+          fi
