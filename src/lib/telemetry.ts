@@ -132,6 +132,42 @@ export function setContext(name: string, context: Record<string, unknown>): void
   sentry.setContext(name, context);
 }
 
+export function recordDistribution(
+  name: string,
+  value: number,
+  unit?: string,
+  attributes?: Record<string, string>,
+): void {
+  if (!telemetryEnabled || !sentry) return;
+  sentry.metrics.distribution(name, value, { unit, attributes });
+}
+
+export function addBreadcrumb(
+  message: string,
+  data?: Record<string, unknown>,
+): void {
+  if (!telemetryEnabled || !sentry) return;
+  sentry.addBreadcrumb({ message, data, level: 'info' });
+}
+
+type Span = ReturnType<SentryModule['startInactiveSpan']>;
+
+export function startChildSpan(name: string, op: string): Span | undefined {
+  if (!telemetryEnabled || !sentry) return undefined;
+  return sentry.startInactiveSpan({ name, op });
+}
+
+export function finishChildSpan(
+  span: Span | undefined,
+  status?: 'ok' | 'error',
+): void {
+  if (!span) return;
+  if (status) {
+    span.setStatus({ code: status === 'ok' ? 1 : 2 });
+  }
+  span.end();
+}
+
 /**
  * Returns whether the first-run telemetry notice should be shown.
  * This is true when the telemetry key has never been set in config.

@@ -17,6 +17,13 @@ import { fetchPartnerId } from '../lib/partner.js';
 import { createApiClient } from '../lib/api-client.js';
 import { formatLogLine } from '../lib/webhook-format.js';
 import { LOGO } from '../lib/banner.js';
+import {
+  addBreadcrumb,
+  finishChildSpan,
+  recordDistribution,
+  setTag,
+  startChildSpan,
+} from '../lib/telemetry.js';
 import type Linq from '@linqapp/sdk';
 
 type WebhookEventType = Linq.Webhooks.SubscriptionCreateParams['subscribed_events'][number];
@@ -48,6 +55,8 @@ export default class Signup extends BaseCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Signup);
+    const signupStart = Date.now();
+    let funnelStage = 'started';
 
     // Check for existing sandbox
     const existing = await getSandboxProfile();
@@ -61,7 +70,9 @@ export default class Signup extends BaseCommand {
     console.log(SIGNUP_BANNER);
 
     // Step 1: GitHub OAuth (check cache first)
+    const authSpan = startChildSpan('signup.github_auth', 'signup.stage');
     let githubToken: string;
+    let githubCached = false;
     const cached = await this.getCachedGitHubToken();
     if (cached) {
       // Validate the cached token
@@ -69,6 +80,7 @@ export default class Signup extends BaseCommand {
         const user = await this.getGitHubUser(cached.token);
         if (user.login) {
           githubToken = cached.token;
+          githubCached = true;
           this.log(`Resuming as @${user.login}\n`);
         } else {
           throw new Error('invalid');
@@ -80,8 +92,13 @@ export default class Signup extends BaseCommand {
     } else {
       githubToken = await this.doGitHubAuth();
     }
+    funnelStage = 'github_auth';
+    setTag('signup.github_cached', String(githubCached));
+    addBreadcrumb('GitHub auth complete', { cached: githubCached });
+    finishChildSpan(authSpan, 'ok');
 
     // Step 2: Collect phone number
+    const phoneSpan = startChildSpan('signup.phone_input', 'signup.stage');
     let phone = flags.phone;
     if (!phone) {
       try {
@@ -102,7 +119,9 @@ export default class Signup extends BaseCommand {
           },
         });
       } catch (error) {
+        finishChildSpan(phoneSpan, 'error');
         if (error instanceof Error && error.name === 'ExitPromptError') {
+          setTag('signup.funnel_stage', funnelStage);
           this.log(chalk.yellow('\nNon-interactive terminal detected. Use --phone to provide your number.\n'));
           this.log(`  Example: ${chalk.cyan('linq signup --phone +11234567890')}\n`);
           this.exit(1);
@@ -111,8 +130,12 @@ export default class Signup extends BaseCommand {
       }
     }
     phone = this.normalizePhone(phone);
+    funnelStage = 'phone_input';
+    addBreadcrumb('Phone number collected');
+    finishChildSpan(phoneSpan, 'ok');
 
     // Step 3: Create sandbox
+    const sandboxSpan = startChildSpan('signup.sandbox_create', 'signup.stage');
     this.log('\nSetting up your sandbox...\n');
 
     const res = await fetch(`${SANDBOX_API_URL}/create`, {
@@ -122,6 +145,8 @@ export default class Signup extends BaseCommand {
     });
 
     if (!res.ok) {
+      finishChildSpan(sandboxSpan, 'error');
+      setTag('signup.funnel_stage', funnelStage);
       let message = 'Signup failed';
       try {
         const err = (await res.json()) as { message?: string; error?: string };
@@ -163,13 +188,30 @@ export default class Signup extends BaseCommand {
     ux.action.start('Preparing your sandbox phone');
     await this.sleep(10000);
     ux.action.stop('ready!');
+    funnelStage = 'sandbox_created';
+    addBreadcrumb('Sandbox created', { sandboxPhone: data.sandboxPhone });
+    finishChildSpan(sandboxSpan, 'ok');
 
     this.log(`\n  Your sandbox number: ${chalk.bold(data.sandboxPhone)}\n`);
     this.log(`  Send a text from your phone to ${chalk.bold(data.sandboxPhone)} to activate it.\n`);
 
     // Set up an ephemeral webhook to detect the first inbound message
+    const waitSpan = startChildSpan('signup.wait_for_message', 'signup.stage');
     const client = createApiClient(data.token);
     const firstEvent = await this.waitForFirstMessage(client, data.token);
+    const messageReceived = firstEvent !== null;
+    setTag('signup.message_received', String(messageReceived));
+
+    if (messageReceived) {
+      funnelStage = 'message_received';
+      addBreadcrumb('First message received');
+      recordDistribution(
+        'signup.time_to_first_message',
+        Date.now() - signupStart,
+        'millisecond',
+      );
+    }
+    finishChildSpan(waitSpan, messageReceived ? 'ok' : 'error');
 
     if (firstEvent) {
       this.log('');
@@ -178,6 +220,7 @@ export default class Signup extends BaseCommand {
     }
 
     // Send welcome message (requires inbound message first)
+    const welcomeSpan = startChildSpan('signup.welcome_send', 'signup.stage');
     try {
       await client.chats.create({
         from: data.sandboxPhone,
@@ -192,9 +235,15 @@ export default class Signup extends BaseCommand {
           effect: { type: 'screen', name: 'confetti' },
         },
       });
+      finishChildSpan(welcomeSpan, 'ok');
     } catch {
+      finishChildSpan(welcomeSpan, 'error');
       // Non-fatal
     }
+
+    funnelStage = 'complete';
+    setTag('signup.funnel_stage', funnelStage);
+    addBreadcrumb('Signup complete');
 
     this.log(chalk.green('✓ Sandbox activated!\n'));
     this.log(`  Phone:   ${data.sandboxPhone}`);
