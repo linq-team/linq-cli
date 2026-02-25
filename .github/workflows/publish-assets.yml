@@ -67,10 +67,15 @@ jobs:
             sha256 "${SHA256}"
             license "Apache-2.0"
 
-            depends_on "node"
+            livecheck do
+              url :stable
+              strategy :github_latest
+            end
+
+            depends_on "node@22"
 
             def install
-              system "npm", "ci"
+              system "npm", "install", *std_npm_args(prefix: false)
               system "npm", "run", "build"
               system "npx", "oclif", "manifest"
               system "npm", "prune", "--omit=dev"
@@ -81,6 +86,7 @@ jobs:
 
             test do
               assert_match version.to_s, shell_output("#{bin}/linq --version")
+              assert_match "chats", shell_output("#{bin}/linq help")
             end
           end
           FORMULA
