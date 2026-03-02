@@ -7,12 +7,6 @@ A command-line interface for the [Linq](https://linqapp.com) messaging API. Send
 
 ## Installation
 
-### Homebrew (macOS / Linux)
-
-```bash
-brew install linq-team/tap/linq
-```
-
 ### Quick Install (macOS / Linux)
 
 ```bash
@@ -414,7 +408,7 @@ linq messages react MESSAGE_ID --type laugh --part-index 1
 
 **Flags:**
 - `--type` (required): Reaction type (love, like, dislike, laugh, emphasize, question, custom)
-- `--operation`: Operation to perform — `add` (default) or `remove`
+- `--operation`: Operation to perform - `add` (default) or `remove`
 - `--emoji`: Custom emoji (required when type is `custom`)
 - `--part-index`: Index of the message part to react to (default: 0)
 
@@ -476,7 +470,7 @@ linq webhooks create --url https://example.com/webhook --all-events
 
 Either `--events` or `--all-events` is required.
 
-Available events: message.sent, message.received, message.read, message.delivered, message.failed, reaction.added, reaction.removed, participant.added, participant.removed, chat.created, chat.group_name_updated, chat.group_icon_updated, chat.group_name_update_failed, chat.group_icon_update_failed, chat.typing_indicator.started, chat.typing_indicator.stopped
+Available events: message.sent, message.received, message.read, message.delivered, message.failed, reaction.added, reaction.removed, participant.added, participant.removed, chat.created, chat.group_name_updated, chat.group_icon_updated, chat.group_name_update_failed, chat.group_icon_update_failed, chat.typing_indicator.started, chat.typing_indicator.stopped, phone_number.status_updated
 
 #### `linq webhooks list`
 
@@ -550,6 +544,66 @@ Events are displayed in a structured log format:
 Use `--json` for raw JSON output (useful for piping to `jq`).
 
 Press `Ctrl+C` to stop. The CLI automatically cleans up the webhook subscription.
+
+## MCP Server (AI Integration)
+
+The CLI includes a built-in [Model Context Protocol](https://modelcontextprotocol.io/) server, giving AI assistants like Claude, Cursor, and VS Code Copilot full access to iMessage through 36 tools.
+
+### Setup
+
+```bash
+# One command - detects Claude, Cursor, VS Code and registers automatically
+linq mcp install
+```
+
+That's it. No tokens or env vars needed - the MCP server reads your active profile from `~/.linq/config.json` automatically.
+
+### What AI Can Do
+
+Once installed, your AI assistant can:
+
+- **Send & receive iMessages** with effects (confetti, fireworks, balloons, etc.)
+- **Manage conversations** - list, create, read chats and group chats
+- **React to messages** - tapbacks (love, like, laugh, etc.) and custom emoji
+- **Reply in threads** and delete messages
+- **Upload attachments** - images, videos, files
+- **Manage webhooks** - subscribe to real-time events
+- **Listen for incoming messages** via a local webhook listener
+- **View profile info** - see active profile and available accounts
+
+### Profile Switching
+
+The MCP server dynamically reads your config on every tool call, so switching profiles takes effect immediately:
+
+```bash
+# Switch profile - the next AI tool call automatically uses the new token
+linq profile use work
+```
+
+No server restart needed.
+
+### How It Works
+
+`linq mcp install` writes this to your AI client's config:
+
+```json
+{
+  "mcpServers": {
+    "linq": { "command": "linq", "args": ["mcp"] }
+  }
+}
+```
+
+The AI client spawns `linq mcp` as a subprocess and communicates over stdio using the MCP protocol. The server uses a dynamic Proxy that re-reads `~/.linq/config.json` on each tool call to pick up profile switches without restarting.
+
+### Supported AI Clients
+
+| Client | Config Path |
+|--------|-------------|
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Code | `~/.claude.json` |
+| Cursor | `~/.cursor/mcp.json` |
+| VS Code | `~/.vscode/mcp.json` |
 
 ## Shell Autocomplete
 

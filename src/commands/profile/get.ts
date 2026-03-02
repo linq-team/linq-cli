@@ -6,6 +6,7 @@ import {
   getCurrentProfile,
   type Profile,
 } from '../../lib/config.js';
+import { maskToken } from '../../lib/constants.js';
 
 const VALID_KEYS: (keyof Profile)[] = ['token', 'fromPhone'];
 const GLOBAL_KEYS = ['telemetry'] as const;
@@ -65,7 +66,7 @@ export default class ProfileGet extends BaseCommand {
       if (value === undefined) {
         this.log(`${args.key} is not set`);
       } else if (typeof value === 'string') {
-        this.log(`${args.key}=${this.maskToken(value)}`);
+        this.log(`${args.key}=${maskToken(value)}`);
       } else {
         this.log(`${args.key}=${JSON.stringify(value)}`);
       }
@@ -78,7 +79,7 @@ export default class ProfileGet extends BaseCommand {
       }
 
       if (config.token) {
-        this.log(`token=${this.maskToken(config.token)}`);
+        this.log(`token=${maskToken(config.token)}`);
       }
       if (config.fromPhone) {
         this.log(`fromPhone=${config.fromPhone}`);
@@ -86,10 +87,4 @@ export default class ProfileGet extends BaseCommand {
     }
   }
 
-  private maskToken(token: string): string {
-    if (token.length <= 8) {
-      return '****';
-    }
-    return token.slice(0, 4) + '****' + token.slice(-4);
-  }
 }

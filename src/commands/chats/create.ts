@@ -3,27 +3,12 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatChatCreated } from '../../lib/format.js';
-import type Linq from '@linqapp/sdk';
-
-type MessagePart = Linq.Chats.ChatCreateParams['message']['parts'][number];
-type MessageEffect = Linq.Chats.ChatCreateParams['message']['effect'];
-
-const SCREEN_EFFECTS = [
-  'confetti',
-  'fireworks',
-  'lasers',
-  'sparkles',
-  'celebration',
-  'hearts',
-  'love',
-  'balloons',
-  'happy_birthday',
-  'echo',
-  'spotlight',
-];
-
-const BUBBLE_EFFECTS = ['slam', 'loud', 'gentle', 'invisible'];
-const ALL_EFFECTS = [...SCREEN_EFFECTS, ...BUBBLE_EFFECTS];
+import {
+  SCREEN_EFFECTS,
+  BUBBLE_EFFECTS,
+  ALL_EFFECTS,
+  buildMessageBody,
+} from '../../lib/constants.js';
 
 export default class ChatsCreate extends BaseCommand {
   static override description = 'Create a new chat and send an initial message';
@@ -76,19 +61,16 @@ export default class ChatsCreate extends BaseCommand {
     const fromPhone = requireFromPhone(flags.from, config);
     const client = createApiClient(token);
 
-    // Build message parts
-    const textPart: MessagePart = {
-      type: 'text',
-      value: flags.message,
-    };
-
-    // Build effect if specified
-    let effect: MessageEffect | undefined;
+    // Validate effect if specified
+    let effectType: string | undefined;
+    let effectName: string | undefined;
     if (flags.effect) {
-      if (SCREEN_EFFECTS.includes(flags.effect)) {
-        effect = { type: 'screen', name: flags.effect };
-      } else if (BUBBLE_EFFECTS.includes(flags.effect)) {
-        effect = { type: 'bubble', name: flags.effect };
+      if (SCREEN_EFFECTS.includes(flags.effect as typeof SCREEN_EFFECTS[number])) {
+        effectType = 'screen';
+        effectName = flags.effect;
+      } else if (BUBBLE_EFFECTS.includes(flags.effect as typeof BUBBLE_EFFECTS[number])) {
+        effectType = 'bubble';
+        effectName = flags.effect;
       } else {
         this.error(`Invalid effect: ${flags.effect}. Valid effects: ${ALL_EFFECTS.join(', ')}`);
       }
@@ -98,10 +80,7 @@ export default class ChatsCreate extends BaseCommand {
       const data = await client.chats.create({
         from: fromPhone,
         to: flags.to,
-        message: {
-          parts: [textPart],
-          effect,
-        },
+        message: buildMessageBody(flags.message, { effectType, effectName }),
       });
 
       if (flags.json) {

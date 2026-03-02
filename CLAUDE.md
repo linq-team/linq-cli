@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Linq CLI — open source command-line interface for the [Linq](https://linqapp.com) messaging API (iMessage, SMS). Built with [oclif](https://oclif.io/) framework, TypeScript, ESM (`"type": "module"`).
+Linq CLI - open source command-line interface for the [Linq](https://linqapp.com) messaging API (iMessage, SMS). Built with [oclif](https://oclif.io/) framework, TypeScript, ESM (`"type": "module"`).
 
 ## Commands
 
@@ -34,12 +34,14 @@ npm run format         # Prettier
 
 **Error handling**: SDK throws errors on failure. Commands catch errors in try/catch and use `e.message` for display.
 
-**Commands use oclif topic separator as space** (not colon) — e.g., `linq chats create`, not `linq chats:create`. File paths determine command hierarchy: `src/commands/chats/create.ts` → `linq chats create`.
+**Shared constants** (`src/lib/constants.ts`): Centralizes values shared between CLI commands and MCP tools - `WEBHOOK_EVENT_TYPES`, `SCREEN_EFFECTS`/`BUBBLE_EFFECTS`/`ALL_EFFECTS`, `buildMessageBody()` (constructs message parts/effect/reply_to), `maskToken()`, and `WebhookEventType`/`MessageBody` types. Both CLI commands and MCP tools import from this module to avoid duplication.
+
+**Commands use oclif topic separator as space** (not colon) - e.g., `linq chats create`, not `linq chats:create`. File paths determine command hierarchy: `src/commands/chats/create.ts` → `linq chats create`.
 
 ## Testing
 
 - **Framework**: vitest with globals enabled
-- **HTTP mocking**: `vi.stubGlobal('fetch', mockFetch)` — mock the global fetch. SDK validates responses with Zod, so mocks must include all required fields
+- **HTTP mocking**: `vi.stubGlobal('fetch', mockFetch)` - mock the global fetch. SDK validates responses with Zod, so mocks must include all required fields
 - **Config isolation**: Create a temp dir via `fs.mkdtemp()`, set `process.env.HOME` to it, write a test config file, restore in `afterEach`
 - **Command instantiation**: `new Cmd(argv, await Config.load({ root: process.cwd() }))`
 - **Module mocking** (e.g., `@inquirer/prompts`): Use `vi.mock()` then dynamic `await import()`
@@ -50,9 +52,19 @@ npm run format         # Prettier
 - **No AI attribution** in commits, PRs, or code comments
 - Pre-commit hooks also run lint and typecheck in parallel
 
+## MCP Server
+
+**Entry point**: `src/commands/mcp/index.ts` - the `linq mcp` command starts a stdio-based MCP server.
+
+**Dynamic client** (`src/lib/api-client.ts`): `createDynamicClient()` returns a JS Proxy over the `Linq` SDK client. On every property access (e.g., `client.chats`, `client.messages`), the Proxy re-reads `~/.linq/config.json` to get the active profile's token. If the token changed, it creates a new `Linq` client. This allows profile switching mid-session without restarting the server.
+
+**MCP tools** (`src/lib/mcp/tools/`): 36 tools across 8 modules - chats, messages, webhooks, webhook-listener, attachments, phone-numbers, profiles, doctor. All tool files receive a `Linq` client instance and use it normally; the Proxy is transparent. Tools import shared constants (effect lists, webhook event types, `buildMessageBody()`, `maskToken()`) from `src/lib/constants.ts`.
+
+**Installation** (`src/commands/mcp/install.ts`): `linq mcp install` detects AI clients (Claude Desktop, Claude Code, Cursor, VS Code) and writes `{ "command": "linq", "args": ["mcp"] }` to their MCP config files.
+
 ## Key Constraints
 
 - Node.js >=22, npm >=10
-- This is a **public open source project** — never include secrets, PII, or proprietary information of any kind
+- This is a **public open source project** - never include secrets, PII, or proprietary information of any kind
 - Keep README.md in sync with code changes
-- API types come from `@linqapp/sdk` — check SDK types (e.g., `Linq.Chats`, `Linq.Messages`) for request/response shapes
+- API types come from `@linqapp/sdk` - check SDK types (e.g., `Linq.Chats`, `Linq.Messages`) for request/response shapes

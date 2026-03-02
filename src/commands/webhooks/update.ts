@@ -3,29 +3,7 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatWebhookDetail } from '../../lib/format.js';
-import type Linq from '@linqapp/sdk';
-
-type WebhookEventType = Linq.Webhooks.SubscriptionCreateParams['subscribed_events'][number];
-
-const WEBHOOK_EVENTS: WebhookEventType[] = [
-  'message.sent',
-  'message.received',
-  'message.read',
-  'message.delivered',
-  'message.failed',
-  'reaction.added',
-  'reaction.removed',
-  'participant.added',
-  'participant.removed',
-  'chat.created',
-  'chat.group_name_updated',
-  'chat.group_icon_updated',
-  'chat.group_name_update_failed',
-  'chat.group_icon_update_failed',
-  'chat.typing_indicator.started',
-  'chat.typing_indicator.stopped',
-  'phone_number.status_updated',
-];
+import { WEBHOOK_EVENT_TYPES, type WebhookEventType } from '../../lib/constants.js';
 
 export default class WebhooksUpdate extends BaseCommand {
   static override description = 'Update a webhook subscription';
@@ -84,8 +62,8 @@ export default class WebhooksUpdate extends BaseCommand {
     if (flags.events) {
       const eventList = flags.events.split(',').map((e) => e.trim());
       for (const event of eventList) {
-        if (!WEBHOOK_EVENTS.includes(event as WebhookEventType)) {
-          this.error(`Invalid event: ${event}. Valid events: ${WEBHOOK_EVENTS.join(', ')}`);
+        if (!WEBHOOK_EVENT_TYPES.includes(event as WebhookEventType)) {
+          this.error(`Invalid event: ${event}. Valid events: ${WEBHOOK_EVENT_TYPES.join(', ')}`);
         }
       }
       subscribedEvents = eventList as WebhookEventType[];
