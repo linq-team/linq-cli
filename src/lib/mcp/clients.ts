@@ -38,51 +38,52 @@ function mcpServersAccessor(): Pick<AiClient, 'getServerEntry' | 'setServerEntry
   };
 }
 
-function rootLevelAccessor(): Pick<AiClient, 'getServerEntry' | 'setServerEntry' | 'removeServerEntry'> {
-  return {
-    getServerEntry(config) {
-      const servers = (config.servers ?? {}) as Record<string, McpServerEntry>;
-      return servers.linq;
-    },
-    setServerEntry(config, entry) {
-      if (!config.servers) config.servers = {};
-      (config.servers as Record<string, McpServerEntry>).linq = entry;
-    },
-    removeServerEntry(config) {
-      const servers = config.servers as Record<string, McpServerEntry> | undefined;
-      if (servers?.linq) {
-        delete servers.linq;
-        return true;
-      }
-      return false;
-    },
-  };
+export function configPath(
+  paths: { darwin: string; win32: string; linux: string },
+  platform: NodeJS.Platform = process.platform,
+): string {
+  if (platform === 'win32') return paths.win32;
+  if (platform === 'darwin') return paths.darwin;
+  return paths.linux;
 }
 
-const home = homedir();
+function appData(home: string): string {
+  return process.env.APPDATA ?? resolve(home, 'AppData/Roaming');
+}
 
-export const AI_CLIENTS: AiClient[] = [
-  {
-    name: 'Claude Desktop',
-    configPath: resolve(home, 'Library/Application Support/Claude/claude_desktop_config.json'),
-    ...mcpServersAccessor(),
-  },
-  {
-    name: 'Claude Code',
-    configPath: resolve(home, '.claude.json'),
-    ...mcpServersAccessor(),
-  },
-  {
-    name: 'Cursor',
-    configPath: resolve(home, '.cursor/mcp.json'),
-    ...rootLevelAccessor(),
-  },
-  {
-    name: 'VS Code',
-    configPath: resolve(home, '.vscode/mcp.json'),
-    ...rootLevelAccessor(),
-  },
-];
+function xdgConfig(home: string): string {
+  return process.env.XDG_CONFIG_HOME ?? resolve(home, '.config');
+}
+
+export function buildAiClients(
+  platform: NodeJS.Platform = process.platform,
+  home: string = homedir(),
+): AiClient[] {
+  const ad = appData(home);
+  const xdg = xdgConfig(home);
+
+  return [
+    {
+      name: 'Claude Desktop',
+      configPath: configPath(
+        {
+          darwin: resolve(home, 'Library/Application Support/Claude/claude_desktop_config.json'),
+          win32: resolve(ad, 'Claude/claude_desktop_config.json'),
+          linux: resolve(xdg, 'Claude/claude_desktop_config.json'),
+        },
+        platform,
+      ),
+      ...mcpServersAccessor(),
+    },
+    {
+      name: 'Claude Code',
+      configPath: resolve(home, '.claude.json'),
+      ...mcpServersAccessor(),
+    },
+  ];
+}
+
+export const AI_CLIENTS: AiClient[] = buildAiClients();
 
 export function detectInstalledClients(): AiClient[] {
   return AI_CLIENTS.filter((client) => {
@@ -106,9 +107,10 @@ export function writeConfig(client: AiClient, config: Record<string, unknown>): 
   writeFileSync(client.configPath, JSON.stringify(config, null, 2) + '\n');
 }
 
-export function resolveLinqCommand(): McpServerEntry {
+export function resolveLinqCommand(platform: NodeJS.Platform = process.platform): McpServerEntry {
+  const cmd = platform === 'win32' ? 'where linq' : 'which linq';
   try {
-    const linqPath = execSync('which linq', { encoding: 'utf-8' }).trim();
+    const linqPath = execSync(cmd, { encoding: 'utf-8' }).trim();
     if (linqPath) {
       return { command: 'linq', args: ['mcp'] };
     }

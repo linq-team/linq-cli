@@ -604,12 +604,10 @@ The AI client spawns `linq mcp` as a subprocess and communicates over stdio usin
 
 ### Supported AI Clients
 
-| Client | Config Path |
-|--------|-------------|
-| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Claude Code | `~/.claude.json` |
-| Cursor | `~/.cursor/mcp.json` |
-| VS Code | `~/.vscode/mcp.json` |
+| Client | macOS | Windows | Linux |
+|--------|-------|---------|-------|
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` | `%APPDATA%/Claude/claude_desktop_config.json` | `~/.config/Claude/claude_desktop_config.json` |
+| Claude Code | `~/.claude.json` | `~/.claude.json` | `~/.claude.json` |
 
 ## Shell Autocomplete
 
