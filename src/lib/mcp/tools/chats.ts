@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type Linq from "@linqapp/sdk";
 import { z } from "zod";
-import { buildMessageBody } from "../../constants.js";
+import { buildMessageBody, normalizePhoneNumber } from "../../constants.js";
 
 export function registerChatTools(server: McpServer, client: Linq): void {
   server.registerTool(
@@ -30,7 +30,7 @@ export function registerChatTools(server: McpServer, client: Linq): void {
     },
     async ({ from, limit, cursor }) => {
       try {
-        const result = await client.chats.list({ from, limit, cursor });
+        const result = await client.chats.list({ from: normalizePhoneNumber(from), limit, cursor });
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };
@@ -113,8 +113,8 @@ export function registerChatTools(server: McpServer, client: Linq): void {
         });
 
         const result = await client.chats.create({
-          from,
-          to,
+          from: normalizePhoneNumber(from),
+          to: to.map(normalizePhoneNumber),
           message: msgBody,
         } as Parameters<typeof client.chats.create>[0]);
         return {
@@ -297,7 +297,7 @@ export function registerChatTools(server: McpServer, client: Linq): void {
       try {
         const result = await client.chats.sendVoicememo(chat_id, {
           voice_memo_url,
-          from,
+          from: normalizePhoneNumber(from),
         });
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
@@ -365,7 +365,8 @@ export function registerChatTools(server: McpServer, client: Linq): void {
     },
     async ({ chat_id, handle }) => {
       try {
-        const result = await client.chats.participants.add(chat_id, { handle });
+        const normalized = handle.includes('@') ? handle : normalizePhoneNumber(handle);
+        const result = await client.chats.participants.add(chat_id, { handle: normalized });
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };
@@ -400,7 +401,8 @@ export function registerChatTools(server: McpServer, client: Linq): void {
     },
     async ({ chat_id, handle }) => {
       try {
-        const result = await client.chats.participants.remove(chat_id, { handle });
+        const normalized = handle.includes('@') ? handle : normalizePhoneNumber(handle);
+        const result = await client.chats.participants.remove(chat_id, { handle: normalized });
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };

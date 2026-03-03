@@ -33,7 +33,7 @@ export function createDynamicClient(): Linq {
 
       if (!token) {
         throw new Error(
-          `No token for active profile "${profileName}". Run 'linq login' or set LINQ_TOKEN.`
+          `No token for active profile "${profileName}". Run \`linq init\` in your terminal to set up your account.`
         );
       }
 

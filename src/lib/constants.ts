@@ -76,6 +76,14 @@ export function buildMessageBody(
   return body;
 }
 
+export function normalizePhoneNumber(phone: string): string {
+  if (phone.startsWith('+')) return phone;
+  const digits = phone.replace(/[\s()\-.]/g, '');
+  if (/^\d{10}$/.test(digits)) return `+1${digits}`;
+  if (/^1\d{10}$/.test(digits)) return `+${digits}`;
+  return phone;
+}
+
 export function maskToken(token: string): string {
   if (token.length <= 8) {
     return '****';

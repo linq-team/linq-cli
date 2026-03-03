@@ -9,7 +9,7 @@ import {
   saveProfile,
   deleteProfile,
 } from "../../config.js";
-import { maskToken } from "../../constants.js";
+import { maskToken, normalizePhoneNumber } from "../../constants.js";
 
 export function registerProfileTools(server: McpServer): void {
   server.registerTool(
@@ -26,19 +26,28 @@ export function registerProfileTools(server: McpServer): void {
         const profileName = process.env.LINQ_PROFILE || configFile.profile;
         const profile = configFile.profiles[profileName];
 
+        const setupHints: string[] = [];
+        if (!profile?.token) {
+          setupHints.push("No API token configured. Run 'linq init' in your terminal to set up your account.");
+        }
+        if (!profile?.fromPhone) {
+          setupHints.push("No default phone number configured. Run 'linq init' in your terminal to complete setup.");
+        }
+
+        const response: Record<string, unknown> = {
+          activeProfile: profileName,
+          fromPhone: profile?.fromPhone ?? null,
+          availableProfiles: Object.keys(configFile.profiles),
+        };
+        if (setupHints.length > 0) {
+          response.setup_hints = setupHints;
+        }
+
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify(
-                {
-                  activeProfile: profileName,
-                  fromPhone: profile?.fromPhone ?? null,
-                  availableProfiles: Object.keys(configFile.profiles),
-                },
-                null,
-                2
-              ),
+              text: JSON.stringify(response, null, 2),
             },
           ],
         };
@@ -159,7 +168,7 @@ export function registerProfileTools(server: McpServer): void {
 
         const profile: Record<string, string> = {};
         if (token) profile.token = token;
-        if (from_phone) profile.fromPhone = from_phone;
+        if (from_phone) profile.fromPhone = normalizePhoneNumber(from_phone);
         await saveProfile(name, profile);
         return {
           content: [
@@ -301,10 +310,11 @@ export function registerProfileTools(server: McpServer): void {
           throw new Error(`Invalid key "${key}". Allowed keys: token, fromPhone`);
         }
         const name = profileName || (await getCurrentProfile());
-        await saveProfile(name, { [key]: value });
+        const finalValue = key === 'fromPhone' ? normalizePhoneNumber(value) : value;
+        await saveProfile(name, { [key]: finalValue });
         const displayValue = key === "token"
-          ? maskToken(value)
-          : value;
+          ? maskToken(finalValue)
+          : finalValue;
         return {
           content: [
             {
