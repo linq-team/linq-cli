@@ -47,27 +47,20 @@ export function configPath(
   return paths.linux;
 }
 
-function appData(home: string): string {
-  return process.env.APPDATA ?? resolve(home, 'AppData/Roaming');
-}
-
-function xdgConfig(home: string): string {
-  return process.env.XDG_CONFIG_HOME ?? resolve(home, '.config');
-}
-
 export function buildAiClients(
   platform: NodeJS.Platform = process.platform,
-  home: string = homedir(),
+  home?: string,
 ): AiClient[] {
-  const ad = appData(home);
-  const xdg = xdgConfig(home);
+  const h = home ?? homedir();
+  const ad = home ? resolve(h, 'AppData/Roaming') : (process.env.APPDATA ?? resolve(h, 'AppData/Roaming'));
+  const xdg = home ? resolve(h, '.config') : (process.env.XDG_CONFIG_HOME ?? resolve(h, '.config'));
 
   return [
     {
       name: 'Claude Desktop',
       configPath: configPath(
         {
-          darwin: resolve(home, 'Library/Application Support/Claude/claude_desktop_config.json'),
+          darwin: resolve(h, 'Library/Application Support/Claude/claude_desktop_config.json'),
           win32: resolve(ad, 'Claude/claude_desktop_config.json'),
           linux: resolve(xdg, 'Claude/claude_desktop_config.json'),
         },
@@ -77,7 +70,7 @@ export function buildAiClients(
     },
     {
       name: 'Claude Code',
-      configPath: resolve(home, '.claude.json'),
+      configPath: resolve(h, '.claude.json'),
       ...mcpServersAccessor(),
     },
   ];
