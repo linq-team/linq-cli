@@ -1,6 +1,9 @@
 import type Linq from '@linqapp/sdk';
 
-export const WEBHOOK_EVENT_TYPES = [
+export type WebhookEventType =
+  Linq.Webhooks.SubscriptionCreateParams['subscribed_events'][number];
+
+const _WEBHOOK_EVENT_TYPES = [
   'message.sent',
   'message.received',
   'message.read',
@@ -18,10 +21,9 @@ export const WEBHOOK_EVENT_TYPES = [
   'chat.typing_indicator.started',
   'chat.typing_indicator.stopped',
   'phone_number.status_updated',
-] as const;
+] as const satisfies readonly WebhookEventType[];
 
-export type WebhookEventType =
-  Linq.Webhooks.SubscriptionCreateParams['subscribed_events'][number];
+export const WEBHOOK_EVENT_TYPES = _WEBHOOK_EVENT_TYPES;
 
 export const SCREEN_EFFECTS = [
   'confetti',
