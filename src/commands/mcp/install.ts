@@ -1,9 +1,13 @@
+import { Flags } from '@oclif/core';
+import { resolve } from 'node:path';
 import { BaseCommand } from '../../lib/base-command.js';
 import {
+  type AiClient,
   detectInstalledClients,
   readConfig,
   writeConfig,
   resolveLinqCommand,
+  makeCustomClient,
 } from '../../lib/mcp/clients.js';
 
 export default class McpInstall extends BaseCommand {
@@ -11,14 +15,28 @@ export default class McpInstall extends BaseCommand {
 
   static override examples = [
     '<%= config.bin %> mcp install',
+    '<%= config.bin %> mcp install --path ~/.windsurf/mcp_config.json',
   ];
 
-  async run(): Promise<void> {
-    const clients = detectInstalledClients();
+  static override flags = {
+    path: Flags.string({
+      description: 'Path to an MCP config file (for any AI client)',
+    }),
+  };
 
-    if (clients.length === 0) {
-      this.log('No supported AI clients detected.');
-      return;
+  async run(): Promise<void> {
+    const { flags } = await this.parse(McpInstall);
+
+    let clients: AiClient[];
+
+    if (flags.path) {
+      clients = [makeCustomClient(resolve(flags.path))];
+    } else {
+      clients = detectInstalledClients();
+      if (clients.length === 0) {
+        this.log('No supported AI clients detected. Use --path to specify a config file.');
+        return;
+      }
     }
 
     const entry = resolveLinqCommand();

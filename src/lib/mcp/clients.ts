@@ -78,6 +78,14 @@ export function buildAiClients(
 
 export const AI_CLIENTS: AiClient[] = buildAiClients();
 
+export function makeCustomClient(configPath: string): AiClient {
+  return {
+    name: 'Custom',
+    configPath,
+    ...mcpServersAccessor(),
+  };
+}
+
 export function detectInstalledClients(): AiClient[] {
   return AI_CLIENTS.filter((client) => {
     const dir = dirname(client.configPath);

@@ -609,6 +609,12 @@ The AI client spawns `linq mcp` as a subprocess and communicates over stdio usin
 | Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` | `%APPDATA%/Claude/claude_desktop_config.json` | `~/.config/Claude/claude_desktop_config.json` |
 | Claude Code | `~/.claude.json` | `~/.claude.json` | `~/.claude.json` |
 
+For any other AI client, use `--path` to specify the config file directly:
+
+```bash
+linq mcp install --path ~/.windsurf/mcp_config.json
+```
+
 ## Shell Autocomplete
 
 Enable tab completion for all commands and flags:

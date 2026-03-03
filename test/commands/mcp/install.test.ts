@@ -37,6 +37,7 @@ describe('mcp install', () => {
 
   it('has no --profile or --token flags', () => {
     // Verify the dynamic client approach removed these flags
-    expect(McpInstall.flags).toBeUndefined();
+    expect(McpInstall.flags?.profile).toBeUndefined();
+    expect(McpInstall.flags?.token).toBeUndefined();
   });
 });
