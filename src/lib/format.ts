@@ -14,9 +14,6 @@ function yn(val: boolean | undefined | null): string {
   return val ? chalk.green('✓') : chalk.dim('–');
 }
 
-function shortId(id: string): string {
-  return id.length > 12 ? id.slice(0, 8) + '…' : id;
-}
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return '–';
@@ -95,7 +92,7 @@ export function formatChatCreated(data: CreateChatResult): string {
     .filter((h) => !h.is_me)
     .map((h) => h.handle)
     .join(', ');
-  return chalk.green('✓') + ` Message sent${recipients ? ` to ${recipients}` : ''} (chat ${shortId(data.chat.id)})`;
+  return chalk.green('✓') + ` Message sent${recipients ? ` to ${recipients}` : ''} (chat ${data.chat.id})`;
 }
 
 export function formatChatDetail(data: Chat): string {
@@ -126,7 +123,7 @@ interface SendMessageResponse {
 }
 
 export function formatMessageSent(data: SendMessageResponse): string {
-  return chalk.green('✓') + ` Message sent (${shortId(data.message.id)}) to chat ${shortId(data.chat_id)}`;
+  return chalk.green('✓') + ` Message sent (${data.message.id}) to chat ${data.chat_id}`;
 }
 
 interface Message {
@@ -194,7 +191,7 @@ export function formatDeleted(type: string, id: string): string {
 
 export function formatReaction(operation: string, type: string, messageId: string): string {
   const verb = operation === 'add' ? 'Added' : 'Removed';
-  return chalk.green('✓') + ` ${verb} ${type} reaction ${operation === 'add' ? 'to' : 'from'} ${shortId(messageId)}`;
+  return chalk.green('✓') + ` ${verb} ${type} reaction ${operation === 'add' ? 'to' : 'from'} ${messageId}`;
 }
 
 // ── webhooks ─────────────────────────────────────────────────────────
@@ -213,10 +210,10 @@ export function formatWebhooksList(data: { subscriptions: WebhookSubscription[] 
   const subs = data.subscriptions;
   if (subs.length === 0) return 'No webhook subscriptions found.';
 
-  const header = `${pad('ID', 10)} ${pad('URL', 40)} ${pad('EVENTS', 8)} ACTIVE`;
+  const header = `${pad('ID', 40)} ${pad('URL', 40)} ${pad('EVENTS', 8)} ACTIVE`;
   const rows = subs.map(
     (s) =>
-      `${pad(shortId(s.id), 10)} ${pad(truncate(s.target_url, 38), 40)} ${pad(String(s.subscribed_events.length), 8)} ${s.is_active ? chalk.green('✓') : chalk.red('✗')}`
+      `${pad(s.id, 40)} ${pad(truncate(s.target_url, 38), 40)} ${pad(String(s.subscribed_events.length), 8)} ${s.is_active ? chalk.green('✓') : chalk.red('✗')}`
   );
   return [chalk.dim(header), ...rows].join('\n');
 }

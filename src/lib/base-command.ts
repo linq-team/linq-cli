@@ -1,4 +1,5 @@
-import { Command } from '@oclif/core';
+import { Command, Errors } from '@oclif/core';
+import chalk from 'chalk';
 import { captureError, finishCommandSpan, shutdown } from './telemetry.js';
 
 export abstract class BaseCommand extends Command {
@@ -6,6 +7,25 @@ export abstract class BaseCommand extends Command {
     finishCommandSpan('error');
     captureError(err);
     await shutdown();
+
+    if (err instanceof Errors.CLIError && err.constructor.name === 'FailedFlagValidationError') {
+      const missing = [...err.message.matchAll(/Missing required flag (\w[\w-]*)/g)].map((m) => m[1]);
+      if (missing.length > 0) {
+        const ctor = this.constructor as typeof BaseCommand & {
+          flags?: Record<string, { char?: string; description?: string }>;
+        };
+        const flagDefs = ctor.flags ?? {};
+        const lines = missing.map((name) => {
+          const def = flagDefs[name];
+          const flag = def?.char ? `--${name}, -${def.char}` : `--${name}`;
+          const desc = def?.description ? `  ${def.description}` : '';
+          return `  ${chalk.bold(flag)}${desc}`;
+        });
+        const label = missing.length === 1 ? 'Missing required flag' : 'Missing required flags';
+        err.message = `${label}:\n${lines.join('\n')}\n\nSee more help with --help`;
+      }
+    }
+
     throw err;
   }
 }
