@@ -160,4 +160,19 @@ describe('chats create', () => {
 
     await expect(cmd.run()).rejects.toThrow('No sender phone found');
   });
+
+  it('shows descriptive error when required flags are missing', async () => {
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new ChatsCreate(['--to', '+19876543210'], config);
+
+    // Use _run() so oclif's catch handler (our BaseCommand override) is invoked
+    await expect((cmd as any)._run()).rejects.toThrow(/Missing required flag.*--message, -m/s);
+  });
+
+  it('shows descriptive error when multiple required flags are missing', async () => {
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new ChatsCreate([], config);
+
+    await expect((cmd as any)._run()).rejects.toThrow(/Missing required flags.*--message, -m.*--to/s);
+  });
 });
