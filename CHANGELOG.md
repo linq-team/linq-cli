@@ -1,3 +1,10 @@
+## [1.1.4](https://github.com/linq-team/linq-cli/compare/v1.1.3...v1.1.4) (2026-04-03)
+
+
+### Bug Fixes
+
+* show full IDs and descriptive missing-flag errors ([#25](https://github.com/linq-team/linq-cli/issues/25)) ([1d105c0](https://github.com/linq-team/linq-cli/commit/1d105c0dfdf78db0d2aa1591e5d687bac418cb31))
+
 ## [1.1.3](https://github.com/linq-team/linq-cli/compare/v1.1.2...v1.1.3) (2026-02-24)
 
 
