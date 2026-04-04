@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/linq-team/linq-cli/compare/v1.1.4...v1.2.0) (2026-04-04)
+
+
+### Features
+
+* upgrade @linqapp/sdk to 0.15.1 ([095900b](https://github.com/linq-team/linq-cli/commit/095900b8fba35948083da4d0ccaa04b9ab956c91))
+
 ## [1.1.4](https://github.com/linq-team/linq-cli/compare/v1.1.3...v1.1.4) (2026-04-03)
 
 
