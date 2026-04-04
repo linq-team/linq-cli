@@ -52,7 +52,7 @@ export default class MessagesThread extends BaseCommand {
     const client = createApiClient(token);
 
     try {
-      const data = await client.messages.retrieveThread(args.messageId, {
+      const data = await client.messages.listMessagesThread(args.messageId, {
         limit: flags.limit,
         cursor: flags.cursor,
         order: flags.order as 'asc' | 'desc' | undefined,

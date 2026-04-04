@@ -26,7 +26,7 @@ import {
 } from '../lib/telemetry.js';
 import type Linq from '@linqapp/sdk';
 
-type WebhookEventType = Linq.Webhooks.SubscriptionCreateParams['subscribed_events'][number];
+type WebhookEventType = Linq.WebhookSubscriptions.WebhookSubscriptionCreateParams['subscribed_events'][number];
 
 const GITHUB_CLIENT_ID = 'Ov23lifn0bcZx3W7pmqr';
 const WEBHOOK_BASE_URL =
@@ -407,7 +407,7 @@ export default class Signup extends BaseCommand {
       });
 
       // Create ephemeral webhook subscription
-      const whData = await client.webhooks.subscriptions.create({
+      const whData = await client.webhookSubscriptions.create({
         target_url: `${RELAY_URL}/relay/${connectionId}`,
         subscribed_events: ['message.received'] as WebhookEventType[],
       });
@@ -446,7 +446,7 @@ export default class Signup extends BaseCommand {
       }
       if (webhookId) {
         try {
-          await client.webhooks.subscriptions.delete(webhookId);
+          await client.webhookSubscriptions.delete(webhookId);
         } catch { /* ignore cleanup errors */ }
       }
     }

@@ -62,7 +62,7 @@ describe('phonenumbers', () => {
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url] = mockFetch.mock.calls[0];
     expect(url).toBe(
-      'https://api.linqapp.com/api/partner/v3/phonenumbers'
+      'https://api.linqapp.com/api/partner/v3/phone_numbers'
     );
   });
 

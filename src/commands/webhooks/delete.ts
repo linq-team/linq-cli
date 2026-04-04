@@ -39,7 +39,7 @@ export default class WebhooksDelete extends BaseCommand {
     const client = createApiClient(token);
 
     try {
-      await client.webhooks.subscriptions.delete(args.subscriptionId);
+      await client.webhookSubscriptions.delete(args.subscriptionId);
 
       if (flags.json) {
         this.log(JSON.stringify({ deleted: true, subscriptionId: args.subscriptionId }));

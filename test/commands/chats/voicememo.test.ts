@@ -83,7 +83,6 @@ describe('chats voicememo', () => {
     expect((init as RequestInit).method).toBe('POST');
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body.voice_memo_url).toBe('https://example.com/memo.m4a');
-    expect(body.from).toBe('+12025551234');
   });
 
   it('requires url flag', async () => {

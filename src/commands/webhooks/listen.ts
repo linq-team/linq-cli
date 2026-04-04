@@ -5,7 +5,7 @@ import { createApiClient } from '../../lib/api-client.js';
 import { formatLogLine } from '../../lib/webhook-format.js';
 import type Linq from '@linqapp/sdk';
 
-type WebhookEventType = Linq.Webhooks.SubscriptionCreateParams['subscribed_events'][number];
+type WebhookEventType = Linq.WebhookSubscriptions.WebhookSubscriptionCreateParams['subscribed_events'][number];
 
 interface WebhookEvent {
   event_type?: string;
@@ -261,7 +261,7 @@ export default class WebhooksListen extends BaseCommand {
     subscribedEvents: WebhookEventType[]
   ): Promise<void> {
     try {
-      const data = await this.client!.webhooks.subscriptions.create({
+      const data = await this.client!.webhookSubscriptions.create({
         target_url: webhookUrl,
         subscribed_events: subscribedEvents,
       });
@@ -279,7 +279,7 @@ export default class WebhooksListen extends BaseCommand {
     if (!this.webhookId || !this.client) return;
 
     try {
-      await this.client.webhooks.subscriptions.update(this.webhookId, {
+      await this.client.webhookSubscriptions.update(this.webhookId, {
         target_url: webhookUrl,
       });
     } catch (e) {
@@ -302,7 +302,7 @@ export default class WebhooksListen extends BaseCommand {
     // Delete webhook subscription
     if (this.webhookId && this.client) {
       try {
-        await this.client.webhooks.subscriptions.delete(this.webhookId);
+        await this.client.webhookSubscriptions.delete(this.webhookId);
         this.log(`Webhook ${this.webhookId} deleted`);
       } catch {
         // Ignore cleanup errors

@@ -32,7 +32,7 @@ export default class WebhooksList extends BaseCommand {
     const client = createApiClient(token);
 
     try {
-      const data = await client.webhooks.subscriptions.list();
+      const data = await client.webhookSubscriptions.list();
 
       if (flags.json) {
         this.log(JSON.stringify(data, null, 2));

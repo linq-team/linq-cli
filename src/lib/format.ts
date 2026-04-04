@@ -10,9 +10,6 @@ function truncate(str: string, max: number): string {
   return str.length <= max ? str : str.slice(0, max - 1) + '…';
 }
 
-function yn(val: boolean | undefined | null): string {
-  return val ? chalk.green('✓') : chalk.dim('–');
-}
 
 
 function fmtDate(iso: string | null | undefined): string {
@@ -28,19 +25,17 @@ function kvLine(key: string, value: string | undefined | null): string {
 // ── phone numbers ────────────────────────────────────────────────────
 
 interface PhoneNumberInfo {
+  id: string;
   phone_number: string;
-  type: string;
-  capabilities: { sms: boolean; mms: boolean; voice: boolean };
 }
 
 export function formatPhoneNumbers(data: { phone_numbers: PhoneNumberInfo[] }): string {
   const phones = data.phone_numbers;
   if (phones.length === 0) return 'No phone numbers found.';
 
-  const header = `${pad('PHONE NUMBER', 18)} ${pad('TYPE', 12)} ${pad('SMS', 5)} ${pad('MMS', 5)} VOICE`;
+  const header = `${pad('ID', 38)} PHONE NUMBER`;
   const rows = phones.map(
-    (p) =>
-      `${pad(p.phone_number, 18)} ${pad(p.type, 12)} ${pad(yn(p.capabilities.sms), 5)} ${pad(yn(p.capabilities.mms), 5)} ${yn(p.capabilities.voice)}`
+    (p) => `${pad(p.id, 38)} ${p.phone_number}`
   );
   return [chalk.dim(header), ...rows].join('\n');
 }

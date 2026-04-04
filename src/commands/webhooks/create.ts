@@ -5,7 +5,7 @@ import { createApiClient } from '../../lib/api-client.js';
 import { formatWebhookDetail } from '../../lib/format.js';
 import type Linq from '@linqapp/sdk';
 
-type WebhookEventType = Linq.Webhooks.SubscriptionCreateParams['subscribed_events'][number];
+type WebhookEventType = Linq.WebhookSubscriptions.WebhookSubscriptionCreateParams['subscribed_events'][number];
 
 const WEBHOOK_EVENTS: WebhookEventType[] = [
   'message.sent',
@@ -85,7 +85,7 @@ export default class WebhooksCreate extends BaseCommand {
     const client = createApiClient(token);
 
     try {
-      const data = await client.webhooks.subscriptions.create({
+      const data = await client.webhookSubscriptions.create({
         target_url: flags.url,
         subscribed_events: subscribedEvents,
       });

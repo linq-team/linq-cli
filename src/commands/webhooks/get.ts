@@ -39,7 +39,7 @@ export default class WebhooksGet extends BaseCommand {
     const client = createApiClient(token);
 
     try {
-      const data = await client.webhooks.subscriptions.retrieve(args.subscriptionId);
+      const data = await client.webhookSubscriptions.retrieve(args.subscriptionId);
 
       if (flags.json) {
         this.log(JSON.stringify(data, null, 2));

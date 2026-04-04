@@ -22,7 +22,8 @@ export abstract class BaseCommand extends Command {
           return `  ${chalk.bold(flag)}${desc}`;
         });
         const label = missing.length === 1 ? 'Missing required flag' : 'Missing required flags';
-        err.message = `${label}:\n${lines.join('\n')}\n\nSee more help with --help`;
+        this.logToStderr(`\n${label}:\n${lines.join('\n')}\n\nRun with --help for usage.\n`);
+        this.exit(2);
       }
     }
 

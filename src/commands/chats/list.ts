@@ -48,7 +48,7 @@ export default class ChatsList extends BaseCommand {
     const client = createApiClient(token);
 
     try {
-      const data = await client.chats.list({
+      const data = await client.chats.listChats({
         from: fromPhone,
         limit: flags.limit,
         cursor: flags.cursor,
