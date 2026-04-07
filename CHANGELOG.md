@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/linq-team/linq-cli/compare/v1.2.0...v1.3.0) (2026-04-07)
+
+
+### Features
+
+* show message IDs in messages list output ([66cb534](https://github.com/linq-team/linq-cli/commit/66cb5347b32cf7f391f956a15e7e8290afcf4b37))
+
 # [1.2.0](https://github.com/linq-team/linq-cli/compare/v1.1.4...v1.2.0) (2026-04-04)
 
 
