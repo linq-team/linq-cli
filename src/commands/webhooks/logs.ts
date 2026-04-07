@@ -198,6 +198,7 @@ export default class WebhooksLogs extends BaseCommand {
     event?: string,
   ): Promise<WebhookLogsResponse> {
     const params = new URLSearchParams();
+    params.set('partner_id', orgId);
     params.set('org_id', orgId);
     params.set('subscription_id', subscriptionId);
     params.set('per_page', String(Math.min(limit, 50)));
