@@ -73,6 +73,6 @@ describe('phonenumbers', () => {
     const config = await Config.load({ root: process.cwd() });
     const cmd = new PhoneNumbers([], config);
 
-    await expect(cmd.run()).rejects.toThrow('No token found');
+    await expect(cmd.run()).rejects.toThrow('Not logged in');
   });
 });
