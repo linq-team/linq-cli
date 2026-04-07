@@ -45,28 +45,18 @@ describe('messages delete', () => {
     mockFetch.mockResolvedValue(createMockResponse(204, {}));
 
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new MessagesDelete(['msg-123', '--chat', 'chat-456'], config);
+    const cmd = new MessagesDelete(['msg-123'], config);
     await cmd.run();
 
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url, init] = mockFetch.mock.calls[0];
     expect(url).toBe('https://api.linqapp.com/api/partner/v3/messages/msg-123');
     expect((init as RequestInit).method).toBe('DELETE');
-
-    const body = JSON.parse((init as RequestInit).body as string);
-    expect(body.chat_id).toBe('chat-456');
-  });
-
-  it('requires chat flag', async () => {
-    const config = await Config.load({ root: process.cwd() });
-    const cmd = new MessagesDelete(['msg-123'], config);
-
-    await expect(cmd.run()).rejects.toThrow('Missing required flag chat');
   });
 
   it('requires message ID argument', async () => {
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new MessagesDelete(['--chat', 'chat-456'], config);
+    const cmd = new MessagesDelete([], config);
 
     await expect(cmd.run()).rejects.toThrow('Missing 1 required arg');
   });

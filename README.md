@@ -298,7 +298,6 @@ linq chats voicememo CHAT_ID --url https://example.com/memo.m4a
 
 **Flags:**
 - `--url` (required): URL of the voice memo audio file
-- `--from`: Sender phone number. Uses config `fromPhone` if not specified.
 
 #### `linq chats share-contact`
 
@@ -388,11 +387,8 @@ linq messages get MESSAGE_ID
 Delete a message.
 
 ```bash
-linq messages delete MESSAGE_ID --chat CHAT_ID
+linq messages delete MESSAGE_ID
 ```
-
-**Flags:**
-- `--chat` (required): Chat ID the message belongs to
 
 #### `linq messages react`
 

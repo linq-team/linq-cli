@@ -1,7 +1,7 @@
 import { Args, Flags } from '@oclif/core';
 import chalk from 'chalk';
 import { BaseCommand } from '../../lib/base-command.js';
-import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
+import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 
 export default class ChatsVoicememo extends BaseCommand {
@@ -45,12 +45,10 @@ export default class ChatsVoicememo extends BaseCommand {
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
-    const fromPhone = requireFromPhone(flags.from, config);
     const client = createApiClient(token);
 
     try {
       const data = await client.chats.sendVoicememo(args.chatId, {
-        from: fromPhone,
         voice_memo_url: flags.url,
       });
 

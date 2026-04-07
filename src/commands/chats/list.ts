@@ -11,6 +11,7 @@ export default class ChatsList extends BaseCommand {
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --from +12025551234',
     '<%= config.bin %> <%= command.id %> --limit 50',
+    '<%= config.bin %> <%= command.id %> --profile work',
   ];
 
   static override flags = {
@@ -47,7 +48,7 @@ export default class ChatsList extends BaseCommand {
     const client = createApiClient(token);
 
     try {
-      const data = await client.chats.list({
+      const data = await client.chats.listChats({
         from: fromPhone,
         limit: flags.limit,
         cursor: flags.cursor,

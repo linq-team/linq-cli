@@ -88,7 +88,7 @@ export default class Doctor extends BaseCommand {
 
         // Check 6: Webhooks
         try {
-          const webhooks = await client.webhooks.subscriptions.list();
+          const webhooks = await client.webhookSubscriptions.list();
           const subs = (webhooks as any).subscriptions || [];
           const active = subs.filter((s: any) => s.is_active).length;
           if (subs.length > 0) {

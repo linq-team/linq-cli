@@ -61,7 +61,8 @@ export default class ChatsUpdate extends BaseCommand {
       if (flags.json) {
         this.log(JSON.stringify(data, null, 2));
       } else {
-        this.log(formatChatDetail(data));
+        const chat = await client.chats.retrieve(args.chatId);
+        this.log(formatChatDetail(chat));
       }
     } catch (e) {
       this.error(`Failed to update chat: ${e instanceof Error ? e.message : String(e)}`);

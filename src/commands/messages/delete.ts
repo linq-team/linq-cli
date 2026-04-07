@@ -8,7 +8,7 @@ export default class MessagesDelete extends BaseCommand {
   static override description = 'Delete a message from API records';
 
   static override examples = [
-    '<%= config.bin %> <%= command.id %> MESSAGE_ID --chat CHAT_ID',
+    '<%= config.bin %> <%= command.id %> MESSAGE_ID',
   ];
 
   static override args = {
@@ -19,10 +19,6 @@ export default class MessagesDelete extends BaseCommand {
   };
 
   static override flags = {
-    chat: Flags.string({
-      description: 'Chat ID the message belongs to (UUID)',
-      required: true,
-    }),
     json: Flags.boolean({
       description: 'Output as JSON',
       default: false,
@@ -45,7 +41,7 @@ export default class MessagesDelete extends BaseCommand {
     const client = createApiClient(token);
 
     try {
-      await client.messages.delete(args.messageId, { chat_id: flags.chat });
+      await client.messages.delete(args.messageId);
 
       if (flags.json) {
         this.log(JSON.stringify({ deleted: true, messageId: args.messageId }));

@@ -11,6 +11,8 @@ function truncate(str: string, max: number): string {
 }
 
 
+
+
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return '–';
   const d = new Date(iso);
@@ -65,9 +67,8 @@ function kvLine(key: string, value: string | undefined | null): string {
 // ── phone numbers ────────────────────────────────────────────────────
 
 interface PhoneNumberInfo {
+  id: string;
   phone_number: string;
-  type: string;
-  capabilities: { sms: boolean; mms: boolean; voice: boolean };
 }
 
 export function formatPhoneNumbers(data: { phone_numbers: PhoneNumberInfo[] | null }): string {

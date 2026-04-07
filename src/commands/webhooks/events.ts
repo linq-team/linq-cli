@@ -32,7 +32,7 @@ export default class WebhooksEvents extends BaseCommand {
     const client = createApiClient(token);
 
     try {
-      const data = await client.webhooks.events.list();
+      const data = await client.webhookEvents.list();
 
       if (flags.json) {
         this.log(JSON.stringify(data, null, 2));
