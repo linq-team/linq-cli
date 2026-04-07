@@ -1,8 +1,10 @@
 import { Flags } from '@oclif/core';
+import chalk from 'chalk';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatLogLine } from '../../lib/webhook-format.js';
+import * as crypto from 'node:crypto';
 import type Linq from '@linqapp/sdk';
 
 type WebhookEventType = Linq.Webhooks.SubscriptionCreateParams['subscribed_events'][number];
@@ -37,26 +39,30 @@ const DEFAULT_RELAY_URL = 'https://webhook.linqapp.com';
 const MAX_RECONNECT_DELAY = 30_000;
 
 export default class WebhooksListen extends BaseCommand {
-  static override description =
-    'Listen for webhook events';
+  static override description = 'Listen for webhook events and optionally forward to a local server';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --events message.received,message.sent',
+    '<%= config.bin %> <%= command.id %> --forward-to http://localhost:3000/webhook',
+    '<%= config.bin %> <%= command.id %> --forward-to http://localhost:3000/webhook --events message.received',
     '<%= config.bin %> <%= command.id %> --json',
   ];
 
   static override flags = {
     events: Flags.string({
-      description:
-        'Comma-separated list of events to subscribe to (default: all)',
+      description: 'Comma-separated list of events to subscribe to (default: all). Run `linq webhooks events` to see available events.',
+    }),
+    'forward-to': Flags.string({
+      char: 'f',
+      description: 'Forward events to a local URL (e.g. http://localhost:3000/webhook)',
     }),
     profile: Flags.string({
-      description: 'Config profile to use',
+      description: 'Config profile to use', hidden: true,
     }),
     token: Flags.string({
       char: 't',
-      description: 'API token (overrides stored token)',
+      description: 'API token (overrides stored token)', hidden: true,
     }),
     json: Flags.boolean({
       description: 'Output raw JSON instead of structured log format',
@@ -65,9 +71,13 @@ export default class WebhooksListen extends BaseCommand {
   };
 
   private webhookId: string | null = null;
+  private signingSecret: string | null = null;
   private client: ReturnType<typeof createApiClient> | null = null;
   private ws: WebSocket | null = null;
   private shuttingDown = false;
+  private eventCount = 0;
+  private forwardCount = 0;
+  private startedAt = Date.now();
 
   async run(): Promise<void> {
     const { flags } = await this.parse(WebhooksListen);
@@ -76,16 +86,17 @@ export default class WebhooksListen extends BaseCommand {
     const token = requireToken(flags.token, config);
     this.client = createApiClient(token);
 
+    const forwardTo = flags['forward-to'];
+
     // Validate events if specified
     let subscribedEvents: WebhookEventType[];
     if (flags.events) {
       const eventList = flags.events.split(',').map((e) => e.trim());
-      for (const event of eventList) {
-        if (!WEBHOOK_EVENTS.includes(event as WebhookEventType)) {
-          this.error(
-            `Invalid event: ${event}. Valid events: ${WEBHOOK_EVENTS.join(', ')}`
-          );
-        }
+      const invalid = eventList.filter((e) => !WEBHOOK_EVENTS.includes(e as WebhookEventType));
+      if (invalid.length > 0) {
+        this.log(chalk.red(`\n  Unknown event${invalid.length > 1 ? 's' : ''}: ${invalid.join(', ')}\n`));
+        this.log(`  Run ${chalk.cyan('linq webhooks events')} to see available event types.\n`);
+        this.exit(1);
       }
       subscribedEvents = eventList as WebhookEventType[];
     } else {
@@ -93,6 +104,17 @@ export default class WebhooksListen extends BaseCommand {
     }
 
     const eventFilter = flags.events?.split(',').map((e) => e.trim()) || null;
+
+    // Validate forward URL if specified
+    if (forwardTo) {
+      try {
+        new URL(forwardTo);
+      } catch {
+        this.log(chalk.red(`\n  Invalid forward URL: ${forwardTo}\n`));
+        this.log(`  Example: ${chalk.cyan('--forward-to http://localhost:3000/webhook')}\n`);
+        this.exit(1);
+      }
+    }
 
     const wsUrl = process.env.LINQ_RELAY_WS_URL || DEFAULT_WS_URL;
     const relayUrl = process.env.LINQ_RELAY_URL || DEFAULT_RELAY_URL;
@@ -129,11 +151,15 @@ export default class WebhooksListen extends BaseCommand {
       await this.createWebhook(webhookTarget, subscribedEvents);
 
       this.log('');
-      this.log('Listening for events... (Ctrl+C to stop)');
+      this.log(`Listening for events... ${chalk.dim('(Ctrl+C to stop)')}`);
+      this.log(`Webhook ID: ${chalk.dim(this.webhookId || '–')}`);
+      if (forwardTo) {
+        this.log(`Forwarding to: ${chalk.cyan(forwardTo)}`);
+      }
       this.log('');
 
       // Listen for events with auto-reconnect
-      await this.listenLoop(wsUrl, token, relayUrl, subscribedEvents, eventFilter, flags.json);
+      await this.listenLoop(wsUrl, token, relayUrl, subscribedEvents, eventFilter, flags.json, forwardTo);
     } catch (error) {
       if (this.shuttingDown) return;
       await this.cleanup();
@@ -188,11 +214,12 @@ export default class WebhooksListen extends BaseCommand {
     relayUrl: string,
     subscribedEvents: WebhookEventType[],
     eventFilter: string[] | null,
-    jsonOutput: boolean
+    jsonOutput: boolean,
+    forwardTo?: string,
   ): Promise<void> {
     let reconnectDelay = 1000;
 
-    this.setupMessageHandler(eventFilter, jsonOutput);
+    this.setupMessageHandler(eventFilter, jsonOutput, forwardTo);
 
     while (!this.shuttingDown) {
       // Wait for WebSocket to close
@@ -221,7 +248,7 @@ export default class WebhooksListen extends BaseCommand {
         const webhookTarget = `${relayUrl}/relay/${connectionId}`;
         await this.updateWebhookTarget(webhookTarget);
 
-        this.setupMessageHandler(eventFilter, jsonOutput);
+        this.setupMessageHandler(eventFilter, jsonOutput, forwardTo);
       } catch (error) {
         if (this.shuttingDown) return;
         this.log(`Reconnect failed: ${(error as Error).message}`);
@@ -229,7 +256,11 @@ export default class WebhooksListen extends BaseCommand {
     }
   }
 
-  private setupMessageHandler(eventFilter: string[] | null, jsonOutput: boolean): void {
+  private setupMessageHandler(
+    eventFilter: string[] | null,
+    jsonOutput: boolean,
+    forwardTo?: string,
+  ): void {
     if (!this.ws) return;
 
     this.ws.addEventListener('message', (event) => {
@@ -245,7 +276,12 @@ export default class WebhooksListen extends BaseCommand {
           return;
         }
 
-        if (jsonOutput) {
+        this.eventCount++;
+
+        // Forward to local server if configured
+        if (forwardTo) {
+          this.forwardEvent(forwardTo, raw, data, jsonOutput);
+        } else if (jsonOutput) {
           this.log(JSON.stringify(data, null, 2));
         } else {
           this.log(formatLogLine(data));
@@ -254,6 +290,68 @@ export default class WebhooksListen extends BaseCommand {
         this.logToStderr(`Warning: received unparseable message: ${String(event.data).slice(0, 200)}`);
       }
     });
+  }
+
+  private async forwardEvent(
+    forwardTo: string,
+    rawPayload: string,
+    data: WebhookEvent,
+    jsonOutput: boolean,
+  ): Promise<void> {
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const eventType = data.event_type || 'unknown';
+
+    // Compute signature if we have a signing secret
+    let signature = '';
+    if (this.signingSecret) {
+      const signedData = `${timestamp}.${rawPayload}`;
+      signature = crypto
+        .createHmac('sha256', this.signingSecret)
+        .update(signedData)
+        .digest('hex');
+    }
+
+    const start = Date.now();
+    try {
+      const res = await fetch(forwardTo, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Webhook-Event': eventType,
+          'X-Webhook-Timestamp': timestamp,
+          ...(signature && { 'X-Webhook-Signature': signature }),
+          ...(this.webhookId && { 'X-Webhook-Subscription-ID': this.webhookId }),
+        },
+        body: rawPayload,
+      });
+
+      const duration = Date.now() - start;
+      this.forwardCount++;
+
+      const statusColor = res.ok ? chalk.green : chalk.red;
+      const statusText = `${res.status} ${res.statusText || (res.ok ? 'OK' : 'Error')}`;
+
+      if (jsonOutput) {
+        this.log(JSON.stringify({ ...data, _forward: { status: res.status, duration_ms: duration } }, null, 2));
+      } else {
+        const time = chalk.dim(new Date().toLocaleTimeString());
+        this.log(
+          `${time}  ${chalk.dim(eventType.padEnd(30))} ${chalk.dim('→')} ${chalk.dim(forwardTo)}  [${statusColor(statusText)}]  ${chalk.dim(`(${duration}ms`)})`
+        );
+      }
+    } catch (error) {
+      const duration = Date.now() - start;
+      const errMsg = error instanceof Error ? error.message : String(error);
+
+      if (jsonOutput) {
+        this.log(JSON.stringify({ ...data, _forward: { error: errMsg, duration_ms: duration } }, null, 2));
+      } else {
+        const time = chalk.dim(new Date().toLocaleTimeString());
+        this.log(
+          `${time}  ${chalk.dim(eventType.padEnd(30))} ${chalk.dim('→')} ${chalk.dim(forwardTo)}  [${chalk.red('FAILED')}]  ${chalk.dim(errMsg)}`
+        );
+      }
+    }
   }
 
   private async createWebhook(
@@ -267,9 +365,12 @@ export default class WebhooksListen extends BaseCommand {
       });
 
       this.webhookId = data.id;
+      this.signingSecret = (data as any).signing_secret || null;
       this.log(`Webhook created: ${data.id}`);
-      this.log(`URL: ${data.target_url}`);
       this.log(`Events: ${data.subscribed_events.join(', ')}`);
+      if (this.signingSecret) {
+        this.log(`Signing secret: ${chalk.dim(this.signingSecret)} ${chalk.dim('(this session only)')}`);
+      }
     } catch (e) {
       this.error(`Failed to create webhook: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -298,6 +399,16 @@ export default class WebhooksListen extends BaseCommand {
     if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
       this.ws.close();
     }
+
+    // Show session stats
+    const uptime = Math.round((Date.now() - this.startedAt) / 1000);
+    const mins = Math.floor(uptime / 60);
+    const secs = uptime % 60;
+    const stats = [`${this.eventCount} events received`];
+    if (this.forwardCount > 0) {
+      stats.push(`${this.forwardCount} forwarded`);
+    }
+    this.log(`\n${chalk.dim(`Session: ${stats.join(', ')} in ${mins}m ${secs}s`)}`);
 
     // Delete webhook subscription
     if (this.webhookId && this.client) {

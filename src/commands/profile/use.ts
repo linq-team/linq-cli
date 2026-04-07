@@ -3,6 +3,7 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { setCurrentProfile, listProfiles } from '../../lib/config.js';
 
 export default class ProfileUse extends BaseCommand {
+  static override hidden = true;
   static override description = 'Switch to a different configuration profile';
 
   static override examples = [

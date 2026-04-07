@@ -2,7 +2,7 @@ import { Flags } from '@oclif/core';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
-import { formatWebhookDetail } from '../../lib/format.js';
+import { formatWebhookCreated } from '../../lib/format.js';
 import type Linq from '@linqapp/sdk';
 
 type WebhookEventType = Linq.Webhooks.SubscriptionCreateParams['subscribed_events'][number];
@@ -53,11 +53,11 @@ export default class WebhooksCreate extends BaseCommand {
     }),
     profile: Flags.string({
       char: 'p',
-      description: 'Config profile to use',
+      description: 'Config profile to use', hidden: true,
     }),
     token: Flags.string({
       char: 't',
-      description: 'API token (overrides stored token)',
+      description: 'API token (overrides stored token)', hidden: true,
     }),
   };
 
@@ -93,7 +93,7 @@ export default class WebhooksCreate extends BaseCommand {
       if (flags.json) {
         this.log(JSON.stringify(data, null, 2));
       } else {
-        this.log(formatWebhookDetail(data));
+        this.log(formatWebhookCreated(data));
       }
     } catch (e) {
       this.error(`Failed to create webhook: ${e instanceof Error ? e.message : String(e)}`);

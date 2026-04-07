@@ -12,6 +12,7 @@ const VALID_KEYS: (keyof Profile)[] = ['token', 'fromPhone'];
 const GLOBAL_KEYS = ['telemetry'] as const;
 
 export default class ProfileSet extends BaseCommand {
+  static override hidden = true;
   static override description = 'Set a profile configuration value';
 
   static override examples = [

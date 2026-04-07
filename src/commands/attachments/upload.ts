@@ -31,11 +31,11 @@ export default class AttachmentsUpload extends BaseCommand {
     }),
     profile: Flags.string({
       char: 'p',
-      description: 'Config profile to use',
+      description: 'Config profile to use', hidden: true,
     }),
     token: Flags.string({
       char: 't',
-      description: 'API token (overrides stored token)',
+      description: 'API token (overrides stored token)', hidden: true,
     }),
   };
 

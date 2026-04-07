@@ -8,6 +8,7 @@ import {
 } from '../../lib/config.js';
 
 export default class ProfileList extends BaseCommand {
+  static override hidden = true;
   static override description = 'List all configuration profiles';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
@@ -26,8 +27,9 @@ export default class ProfileList extends BaseCommand {
       const profileData = configFile.profiles[profile];
 
       if (profile === SANDBOX_PROFILE) {
-        if (profileData?.fromPhone && profileData?.expiresAt) {
-          const expires = new Date(profileData.expiresAt);
+        const sessionExpiry = profileData?.sessionExpiresAt || profileData?.expiresAt;
+        if (profileData?.fromPhone && sessionExpiry) {
+          const expires = new Date(sessionExpiry);
           if (expires > new Date()) {
             markers.push(`${profileData.fromPhone}, expires ${expires.toLocaleTimeString()}`);
           } else {

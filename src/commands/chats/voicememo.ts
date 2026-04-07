@@ -1,4 +1,5 @@
 import { Args, Flags } from '@oclif/core';
+import chalk from 'chalk';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
@@ -25,13 +26,17 @@ export default class ChatsVoicememo extends BaseCommand {
     from: Flags.string({
       description: 'Sender phone number (E.164 format). Uses config fromPhone if not specified.',
     }),
+    json: Flags.boolean({
+      description: 'Output as JSON',
+      default: false,
+    }),
     profile: Flags.string({
       char: 'p',
-      description: 'Config profile to use',
+      description: 'Config profile to use', hidden: true,
     }),
     token: Flags.string({
       char: 't',
-      description: 'API token (overrides stored token)',
+      description: 'API token (overrides stored token)', hidden: true,
     }),
   };
 
@@ -49,7 +54,11 @@ export default class ChatsVoicememo extends BaseCommand {
         voice_memo_url: flags.url,
       });
 
-      this.log(JSON.stringify(data, null, 2));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(chalk.green(`\n  \u2713 Voice memo sent to chat ${args.chatId}\n`));
+      }
     } catch (e) {
       this.error(`Failed to send voice memo: ${e instanceof Error ? e.message : String(e)}`);
     }

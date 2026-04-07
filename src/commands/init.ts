@@ -15,6 +15,7 @@ import { LOGO } from '../lib/banner.js';
 const INIT_BANNER = LOGO + '\n  Welcome to Linq CLI Setup\n';
 
 export default class Init extends BaseCommand {
+  static override hidden = true;
   static override description = 'Interactive setup wizard for Linq CLI';
 
   static override examples = [
@@ -48,14 +49,22 @@ export default class Init extends BaseCommand {
         })),
         { name: 'Create new profile', value: '__new__' },
       ];
-      const chosen = await select({
-        message: 'Which profile would you like to set up?',
-        choices,
-        default: current !== SANDBOX_PROFILE ? current : undefined,
-      });
-      profileName = chosen === '__new__'
-        ? await input({ message: 'Profile name:', validate: v => v.trim() ? true : 'Name cannot be empty' })
-        : chosen;
+      try {
+        const chosen = await select({
+          message: 'Which profile would you like to set up?',
+          choices,
+          default: current !== SANDBOX_PROFILE ? current : undefined,
+        });
+        profileName = chosen === '__new__'
+          ? await input({ message: 'Profile name:', validate: v => v.trim() ? true : 'Name cannot be empty' })
+          : chosen;
+      } catch (error) {
+        if (error instanceof Error && error.name === 'ExitPromptError') {
+          profileName = 'default';
+        } else {
+          throw error;
+        }
+      }
     }
 
     console.log(INIT_BANNER);
@@ -94,7 +103,7 @@ export default class Init extends BaseCommand {
 
     // Select default phone number
     let fromPhone: string | undefined;
-    const phones = data.phone_numbers;
+    const phones = data.phone_numbers || [];
 
     if (phones.length === 1) {
       fromPhone = phones[0].phone_number;

@@ -73,10 +73,14 @@
         "description": "Manage webhook subscriptions"
       },
       "profile": {
-        "description": "Manage CLI profiles"
+        "description": "Manage CLI profiles",
+        "hidden": true
       },
       "attachments": {
         "description": "Manage file attachments"
+      },
+      "contacts": {
+        "description": "Manage contacts on your shared line"
       }
     }
   },
@@ -88,7 +92,8 @@
     "@oclif/plugin-help": "^6.2.37",
     "@sentry/node": "^10.38.0",
     "chalk": "^5.6.2",
-    "open": "^11.0.0"
+    "open": "^11.0.0",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.1",
@@ -98,6 +103,7 @@
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@types/node": "^25.2.2",
+    "@types/ws": "^8.18.1",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "lefthook": "^2.1.0",

@@ -1,9 +1,10 @@
 import { Flags } from '@oclif/core';
+import chalk from 'chalk';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatChatCreated } from '../../lib/format.js';
-import type Linq from '@linqapp/sdk';
+import Linq from '@linqapp/sdk';
 
 type MessagePart = Linq.Chats.ChatCreateParams['message']['parts'][number];
 type MessageEffect = Linq.Chats.ChatCreateParams['message']['effect'];
@@ -33,7 +34,6 @@ export default class ChatsCreate extends BaseCommand {
     '<%= config.bin %> <%= command.id %> --to +19876543210 --from +12025551234 --message "Hello"',
     '<%= config.bin %> <%= command.id %> --to +19876543210 --message "Party!" --effect confetti',
     '<%= config.bin %> <%= command.id %> --to +1111111111 --to +2222222222 --message "Group chat"',
-    '<%= config.bin %> <%= command.id %> --to +19876543210 --message "Hello" --profile work',
   ];
 
   static override flags = {
@@ -60,11 +60,11 @@ export default class ChatsCreate extends BaseCommand {
     }),
     profile: Flags.string({
       char: 'p',
-      description: 'Config profile to use',
+      description: 'Config profile to use', hidden: true,
     }),
     token: Flags.string({
       char: 't',
-      description: 'API token (overrides stored token)',
+      description: 'API token (overrides stored token)', hidden: true,
     }),
   };
 
@@ -110,6 +110,17 @@ export default class ChatsCreate extends BaseCommand {
         this.log(formatChatCreated(data));
       }
     } catch (e) {
+      if (e instanceof Linq.PermissionDeniedError) {
+        const lineType = config.tier === 0 && config.tenantType === 'SINGLE' ? 'sandbox' : 'shared';
+        this.log(chalk.yellow(`\n  Can't message this contact yet.\n`));
+        if (lineType === 'shared') {
+          this.log(chalk.dim(`  On a shared line, you need to add the contact (${chalk.cyan('linq contacts add +1234567890')})`));
+          this.log(chalk.dim(`  and they must text you (${chalk.bold(fromPhone)}) first before you can message them.\n`));
+        } else {
+          this.log(chalk.dim(`  On a sandbox line, the contact must text you (${chalk.bold(fromPhone)}) first before you can message them.\n`));
+        }
+        this.exit(1);
+      }
       this.error(`Failed to create chat: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
