@@ -109,10 +109,12 @@ export default class PhoneNumbers extends BaseCommand {
 
   private async saveFromPhone(phone: string, profileFlag: string | undefined): Promise<void> {
     const profileName = profileFlag || await getCurrentProfile() || 'default';
+    const existing = await loadConfig(profileFlag);
+    const merged = { ...existing, fromPhone: phone };
     if (profileName === SANDBOX_PROFILE) {
-      await saveSandboxProfile({ fromPhone: phone });
+      await saveSandboxProfile(merged);
     } else {
-      await saveProfile(profileName, { fromPhone: phone });
+      await saveProfile(profileName, merged);
     }
   }
 
