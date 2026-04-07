@@ -148,7 +148,7 @@ export function formatMessagesList(data: { messages: Message[]; next_cursor?: st
       .map((p) => (p?.type === 'text' ? p.value : `[${p?.type || 'media'}]`))
       .join(' ')
       || '';
-    return `${chalk.dim(fmtDate(m.created_at))}  ${chalk.bold(sender)}  ${truncate(body, 60)}`;
+    return `${chalk.cyan(m.id)}  ${chalk.dim(fmtDate(m.created_at))}  ${chalk.bold(sender)}  ${truncate(body, 60)}`;
   });
   const lines = [...rows];
   if (data.next_cursor) {
