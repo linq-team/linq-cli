@@ -33,11 +33,11 @@ export default class MessagesList extends BaseCommand {
     }),
     profile: Flags.string({
       char: 'p',
-      description: 'Config profile to use', hidden: true,
+      description: 'Config profile to use',
     }),
     token: Flags.string({
       char: 't',
-      description: 'API token (overrides stored token)', hidden: true,
+      description: 'API token (overrides stored token)',
     }),
   };
 

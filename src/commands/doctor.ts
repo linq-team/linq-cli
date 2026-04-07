@@ -12,7 +12,7 @@ export default class Doctor extends BaseCommand {
   static override flags = {
     profile: Flags.string({
       char: 'p',
-      description: 'Config profile to use', hidden: true,
+      description: 'Config profile to use',
     }),
   };
 

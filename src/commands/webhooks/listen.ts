@@ -58,11 +58,11 @@ export default class WebhooksListen extends BaseCommand {
       description: 'Forward events to a local URL (e.g. http://localhost:3000/webhook)',
     }),
     profile: Flags.string({
-      description: 'Config profile to use', hidden: true,
+      description: 'Config profile to use',
     }),
     token: Flags.string({
       char: 't',
-      description: 'API token (overrides stored token)', hidden: true,
+      description: 'API token (overrides stored token)',
     }),
     json: Flags.boolean({
       description: 'Output raw JSON instead of structured log format',

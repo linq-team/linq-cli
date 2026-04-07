@@ -16,7 +16,6 @@ export default class Logout extends BaseCommand {
     profile: Flags.string({
       char: 'p',
       description: 'Profile to log out of (defaults to current)',
-      hidden: true,
     }),
   };
 

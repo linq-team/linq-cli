@@ -13,8 +13,8 @@ export default class Whoami extends BaseCommand {
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
   static override flags = {
-    profile: Flags.string({ char: 'p', description: 'Config profile to use', hidden: true }),
-    token: Flags.string({ char: 't', description: 'API token', hidden: true }),
+    profile: Flags.string({ char: 'p', description: 'Config profile to use' }),
+    token: Flags.string({ char: 't', description: 'API token' }),
     json: Flags.boolean({ description: 'Output as JSON', default: false }),
   };
 

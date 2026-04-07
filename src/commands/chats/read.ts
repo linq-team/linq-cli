@@ -20,11 +20,11 @@ export default class ChatsRead extends BaseCommand {
   static override flags = {
     profile: Flags.string({
       char: 'p',
-      description: 'Config profile to use', hidden: true,
+      description: 'Config profile to use',
     }),
     token: Flags.string({
       char: 't',
-      description: 'API token (overrides stored token)', hidden: true,
+      description: 'API token (overrides stored token)',
     }),
   };
 

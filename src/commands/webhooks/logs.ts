@@ -67,11 +67,11 @@ export default class WebhooksLogs extends BaseCommand {
     }),
     profile: Flags.string({
       char: 'p',
-      description: 'Config profile to use', hidden: true,
+      description: 'Config profile to use',
     }),
     token: Flags.string({
       char: 't',
-      description: 'API token', hidden: true,
+      description: 'API token',
     }),
     json: Flags.boolean({
       description: 'Output as JSON',

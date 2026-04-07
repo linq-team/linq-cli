@@ -30,12 +30,10 @@ export default class Login extends BaseCommand {
     profile: Flags.string({
       char: 'p',
       description: 'Profile to save credentials to',
-      hidden: true,
     }),
     token: Flags.string({
       char: 't',
       description: 'API token (skip email verification)',
-      hidden: true,
     }),
     email: Flags.string({
       char: 'e',
