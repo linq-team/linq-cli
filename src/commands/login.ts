@@ -13,6 +13,7 @@ import {
 } from '../lib/config.js';
 import { LOGO } from '../lib/banner.js';
 import { BACKEND_URL } from '../lib/api-client.js';
+import { addBreadcrumb } from '../lib/telemetry.js';
 
 const SESSION_DURATION_DAYS = 7;
 
@@ -193,6 +194,7 @@ export default class Login extends BaseCommand {
       }
       await setCurrentProfile(targetProfile);
 
+      addBreadcrumb('Login successful', { accountType: accountLabel || 'unknown' });
       this.log('');
       this.log(chalk.green('  \u2713 Logged in!\n'));
       if (accountLabel) this.log(`  ${chalk.dim('Account:')}  ${accountLabel}`);

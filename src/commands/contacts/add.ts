@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { BACKEND_URL } from '../../lib/api-client.js';
+import { addBreadcrumb } from '../../lib/telemetry.js';
 
 export default class ContactsAdd extends BaseCommand {
   static override description = 'Add a contact to your shared line';
@@ -60,6 +61,7 @@ export default class ContactsAdd extends BaseCommand {
       }
 
       const data = await res.json() as { contactPhone: string };
+      addBreadcrumb('Contact added');
       this.log(chalk.green(`\n  \u2713 Contact ${data.contactPhone} added.\n`));
       this.log(chalk.dim('  Note: this contact must send a message to your Linq number first before you can reply.\n'));
     } catch (error) {

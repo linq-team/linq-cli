@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { BACKEND_URL } from '../../lib/api-client.js';
+import { addBreadcrumb } from '../../lib/telemetry.js';
 
 export default class ContactsRemove extends BaseCommand {
   static override description = 'Remove a contact from your shared line';
@@ -59,6 +60,7 @@ export default class ContactsRemove extends BaseCommand {
         this.exit(1);
       }
 
+      addBreadcrumb('Contact removed');
       this.log(chalk.green(`\n  \u2713 Contact ${args.phone} removed.\n`));
     } catch (error) {
       if (error instanceof Error && 'oclif' in error) throw error;

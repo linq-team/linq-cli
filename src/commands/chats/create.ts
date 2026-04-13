@@ -4,6 +4,7 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatChatCreated } from '../../lib/format.js';
+import { addBreadcrumb } from '../../lib/telemetry.js';
 import Linq from '@linqapp/sdk';
 
 type MessagePart = Linq.Chats.ChatCreateParams['message']['parts'][number];
@@ -103,6 +104,8 @@ export default class ChatsCreate extends BaseCommand {
           effect,
         },
       });
+
+      addBreadcrumb('Message sent', { isGroup: flags.to.length > 1 });
 
       if (flags.json) {
         this.log(JSON.stringify(data, null, 2));
