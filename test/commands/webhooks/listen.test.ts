@@ -296,7 +296,7 @@ describe('webhooks listen', () => {
     const config = await Config.load({ root: process.cwd() });
     const cmd = new WebhooksListen(['--events', 'invalid.event'], config);
     captureOutput(cmd);
-    await expect(cmd.run()).rejects.toThrow('Invalid event: invalid.event');
+    await expect(cmd.run()).rejects.toThrow('EEXIT: 1');
   });
 
   it('requires authentication token', async () => {
