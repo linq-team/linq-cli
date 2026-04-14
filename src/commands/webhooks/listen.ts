@@ -1,5 +1,6 @@
 import { Flags } from '@oclif/core';
 import chalk from 'chalk';
+import WebSocket from 'ws';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
