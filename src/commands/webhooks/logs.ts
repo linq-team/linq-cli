@@ -169,18 +169,14 @@ export default class WebhooksLogs extends BaseCommand {
           if (seenIds.has(key)) continue;
           seenIds.add(key);
 
+          if (seenIds.size > 5000) {
+            seenIds.delete(seenIds.values().next().value!);
+          }
+
           if (flags.json) {
             this.log(JSON.stringify(log));
           } else {
             this.printLog(log);
-          }
-        }
-
-        // Prevent seenIds from growing unbounded
-        if (seenIds.size > 5000) {
-          const entries = [...seenIds];
-          for (let i = 0; i < 2500; i++) {
-            seenIds.delete(entries[i]);
           }
         }
       } catch {
