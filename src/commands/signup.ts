@@ -1,489 +1,354 @@
-import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
 import { Flags, ux } from '@oclif/core';
 import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
-import open from 'open';
 import { BaseCommand } from '../lib/base-command.js';
 import {
-  getSandboxProfile,
-  isSandboxExpired,
   saveSandboxProfile,
   setCurrentProfile,
+  getSandboxProfile,
+  isSessionExpired,
   SANDBOX_PROFILE,
 } from '../lib/config.js';
-import { fetchPartnerId } from '../lib/partner.js';
-import { createApiClient } from '../lib/api-client.js';
-import { formatLogLine } from '../lib/webhook-format.js';
 import { LOGO } from '../lib/banner.js';
+import { BACKEND_URL } from '../lib/api-client.js';
 import {
   addBreadcrumb,
   finishChildSpan,
-  recordDistribution,
   setTag,
   startChildSpan,
 } from '../lib/telemetry.js';
-import type Linq from '@linqapp/sdk';
 
-type WebhookEventType = Linq.WebhookSubscriptions.WebhookSubscriptionCreateParams['subscribed_events'][number];
+const SESSION_DURATION_DAYS = 7;
 
-const GITHUB_CLIENT_ID = 'Ov23lifn0bcZx3W7pmqr';
-const WEBHOOK_BASE_URL =
-  process.env.WEBHOOK_BASE_URL || 'https://webhook.linqapp.com';
-const SANDBOX_API_URL =
-  process.env.SANDBOX_API_URL || `${WEBHOOK_BASE_URL}/sandbox`;
-const WS_URL = process.env.LINQ_RELAY_WS_URL || 'wss://9r8ugjg4s0.execute-api.us-east-1.amazonaws.com/prod';
-const RELAY_URL = process.env.LINQ_RELAY_URL || 'https://webhook.linqapp.com';
-
-const SIGNUP_BANNER = LOGO + '\n  Get a sandbox phone for testing\n';
+const SIGNUP_BANNER = LOGO + '\n  Create your Linq developer account\n';
 
 export default class Signup extends BaseCommand {
-  static override description = 'Get a sandbox phone number for testing';
+  static override description = 'Create a Linq developer account and get a phone number';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> --phone +15551234567',
+    '<%= config.bin %> <%= command.id %> --email dev@example.com',
   ];
 
   static override flags = {
-    phone: Flags.string({
-      char: 'p',
-      description: 'Your phone number',
+    email: Flags.string({
+      char: 'e',
+      description: 'Your email address',
     }),
   };
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Signup);
-    const signupStart = Date.now();
     let funnelStage = 'started';
 
-    // Check for existing sandbox
+    // Check for existing active session
     const existing = await getSandboxProfile();
-    if (existing && !isSandboxExpired(existing)) {
-      const expires = new Date(existing.expiresAt!);
-      this.log(`\nYou have an active sandbox: ${existing.fromPhone}`);
-      this.log(`Expires: ${expires.toLocaleTimeString()}\n`);
+    if (existing?.fromPhone && existing?.token && !isSessionExpired(existing)) {
+      this.log(`\n  You already have an active account.`);
+      this.log(`  Phone:   ${chalk.bold(existing.fromPhone)}\n`);
       return;
     }
 
     console.log(SIGNUP_BANNER);
 
-    // Step 1: GitHub OAuth (check cache first)
-    const authSpan = startChildSpan('signup.github_auth', 'signup.stage');
-    let githubToken: string;
-    let githubCached = false;
-    const cached = await this.getCachedGitHubToken();
-    if (cached) {
-      // Validate the cached token
+    // Step 1: Collect email
+    let email = flags.email;
+    if (!email) {
       try {
-        const user = await this.getGitHubUser(cached.token);
-        if (user.login) {
-          githubToken = cached.token;
-          githubCached = true;
-          this.log(`Resuming as @${user.login}\n`);
-        } else {
-          throw new Error('invalid');
-        }
-      } catch {
-        await this.clearGitHubCache();
-        githubToken = await this.doGitHubAuth();
-      }
-    } else {
-      githubToken = await this.doGitHubAuth();
-    }
-    funnelStage = 'github_auth';
-    setTag('signup.github_cached', String(githubCached));
-    addBreadcrumb('GitHub auth complete', { cached: githubCached });
-    finishChildSpan(authSpan, 'ok');
-
-    // Step 2: Collect phone number
-    const phoneSpan = startChildSpan('signup.phone_input', 'signup.stage');
-    let phone = flags.phone;
-    if (!phone) {
-      try {
-        phone = await input({
-          message: 'Your phone number (e.g. +11234567890):',
+        email = await input({
+          message: 'Email address:',
           validate: (v) => {
-            const digits = v.replace(/\D/g, '');
-            if (digits.length === 10) {
-              return true; // US number without country code
-            }
-            if (digits.length === 11 && digits.startsWith('1')) {
-              return true; // US number with country code
-            }
-            if (digits.length >= 11 && digits.length <= 15) {
-              return true; // International number
-            }
-            return 'Enter a valid phone number with country code (e.g. +12025550199)';
+            if (!v.trim()) return 'Email is required';
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())) return 'Enter a valid email';
+            return true;
           },
         });
       } catch (error) {
-        finishChildSpan(phoneSpan, 'error');
         if (error instanceof Error && error.name === 'ExitPromptError') {
-          setTag('signup.funnel_stage', funnelStage);
-          this.log(chalk.yellow('\nNon-interactive terminal detected. Use --phone to provide your number.\n'));
-          this.log(`  Example: ${chalk.cyan('linq signup --phone +11234567890')}\n`);
           this.exit(1);
         }
         throw error;
       }
     }
-    phone = this.normalizePhone(phone);
-    funnelStage = 'phone_input';
-    addBreadcrumb('Phone number collected');
-    finishChildSpan(phoneSpan, 'ok');
+    email = email.trim().toLowerCase();
+    funnelStage = 'email_collected';
+    addBreadcrumb('Email collected');
 
-    // Step 3: Create sandbox
-    const sandboxSpan = startChildSpan('signup.sandbox_create', 'signup.stage');
-    this.log('\nSetting up your sandbox...\n');
+    // Step 2: Send OTP
+    const otpSpan = startChildSpan('signup.otp', 'signup.stage');
+    ux.action.start('Sending verification code');
 
-    const res = await fetch(`${SANDBOX_API_URL}/create`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ githubToken, phone }),
-    });
-
-    if (!res.ok) {
-      finishChildSpan(sandboxSpan, 'error');
-      setTag('signup.funnel_stage', funnelStage);
-      let message = 'Signup failed';
-      try {
-        const err = (await res.json()) as { message?: string; error?: string };
-        message = err.message || err.error || message;
-      } catch {
-        // non-JSON response
-      }
-
-      if (message.toLowerCase().includes('no sandbox phones')) {
-        message =
-          'All sandbox phones are currently in use. Please try again in 30 minutes.';
-      }
-
-      this.log(chalk.red(`\n  ${message}\n`));
-      this.exit(1);
-    }
-
-    const data = (await res.json()) as {
-      token: string;
-      partnerId?: string;
-      sandboxPhone: string;
-      userPhone: string;
-      expiresAt: string;
-      githubLogin: string;
-    };
-
-    // Save to sandbox profile
-    const partnerId = data.partnerId ?? await fetchPartnerId(data.token) ?? undefined;
-    await saveSandboxProfile({
-      token: data.token,
-      fromPhone: data.sandboxPhone,
-      partnerId,
-      expiresAt: data.expiresAt,
-      githubLogin: data.githubLogin,
-    });
-    await setCurrentProfile(SANDBOX_PROFILE);
-
-    // Wait for mac-agent to reconcile
-    ux.action.start('Preparing your sandbox phone');
-    await this.sleep(10000);
-    ux.action.stop('ready!');
-    funnelStage = 'sandbox_created';
-    addBreadcrumb('Sandbox created', { sandboxPhone: data.sandboxPhone });
-    finishChildSpan(sandboxSpan, 'ok');
-
-    this.log(`\n  Your sandbox number: ${chalk.bold(data.sandboxPhone)}\n`);
-    this.log(`  Send a text from your phone to ${chalk.bold(data.sandboxPhone)} to activate it.\n`);
-
-    // Set up an ephemeral webhook to detect the first inbound message
-    const waitSpan = startChildSpan('signup.wait_for_message', 'signup.stage');
-    const client = createApiClient(data.token);
-    const firstEvent = await this.waitForFirstMessage(client, data.token);
-    const messageReceived = firstEvent !== null;
-    setTag('signup.message_received', String(messageReceived));
-
-    if (messageReceived) {
-      funnelStage = 'message_received';
-      addBreadcrumb('First message received');
-      recordDistribution(
-        'signup.time_to_first_message',
-        Date.now() - signupStart,
-        'millisecond',
-      );
-    }
-    finishChildSpan(waitSpan, messageReceived ? 'ok' : 'error');
-
-    if (firstEvent) {
-      this.log('');
-      this.log(formatLogLine(firstEvent));
-      this.log('');
-    }
-
-    // Send welcome message (requires inbound message first)
-    const welcomeSpan = startChildSpan('signup.welcome_send', 'signup.stage');
+    let sessionId: string;
     try {
-      await client.chats.create({
-        from: data.sandboxPhone,
-        to: [data.userPhone],
-        message: {
-          parts: [
-            {
-              type: 'text',
-              value: `Hey! 👋 Your Linq sandbox is live! This number is yours for the next 3 hours. Happy hacking!`,
-            },
-          ],
-          effect: { type: 'screen', name: 'confetti' },
+      const otpRes = await fetch(`${BACKEND_URL}/cli/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!otpRes.ok) {
+        ux.action.stop('failed');
+        finishChildSpan(otpSpan, 'error');
+        const err = await this.parseError(otpRes);
+        this.log(chalk.red(`\n  ${err}\n`));
+        this.exit(1);
+      }
+
+      const data = (await otpRes.json()) as { sessionId: string };
+      sessionId = data.sessionId;
+    } catch (error) {
+      if (error instanceof Error && 'oclif' in error) throw error;
+      ux.action.stop('failed');
+      finishChildSpan(otpSpan, 'error');
+      this.log(chalk.red('\n  Could not connect to Linq. Please try again later.\n'));
+      this.exit(1);
+      return;
+    }
+    ux.action.stop('sent!');
+    this.log(`  Check ${chalk.bold(email)} for your verification code.\n`);
+
+    // Step 3: Collect + verify OTP code
+    let code: string;
+    try {
+      code = await input({
+        message: 'Verification code:',
+        validate: (v) => {
+          if (!/^\d{6}$/.test(v.trim())) return 'Enter the 6-digit code from your email';
+          return true;
         },
       });
-      finishChildSpan(welcomeSpan, 'ok');
-    } catch {
-      finishChildSpan(welcomeSpan, 'error');
-      // Non-fatal
+    } catch (error) {
+      finishChildSpan(otpSpan, 'error');
+      if (error instanceof Error && error.name === 'ExitPromptError') {
+        this.exit(1);
+      }
+      throw error;
     }
 
-    funnelStage = 'complete';
-    setTag('signup.funnel_stage', funnelStage);
-    addBreadcrumb('Signup complete');
+    ux.action.start('Verifying');
 
-    this.log(chalk.green('✓ Sandbox activated!\n'));
-    this.log(`  Phone:   ${data.sandboxPhone}`);
-    this.log(`  Expires: ${new Date(data.expiresAt).toLocaleTimeString()}\n`);
-    this.log('  Get started:\n');
-    this.log(`    ${chalk.cyan('linq webhooks listen')}`);
-    this.log(`    ${chalk.cyan(`linq chats create --to ${data.userPhone} -m "Hello from Linq CLI!"`)}\n`);
-  }
+    let verifyResult: {
+      status: 'existing' | 'new';
+      token?: string;
+      orgId?: string;
+      email: string;
+      name?: string;
+      accountInfo?: {
+        tier: number;
+        phones: { phoneNumber: string; tenantType: string }[];
+      } | null;
+    };
 
-  private async doGitHubAuth(): Promise<string> {
-    this.log('Opening browser for GitHub authentication...\n');
+    try {
+      const verifyRes = await fetch(`${BACKEND_URL}/cli/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, code: code.trim() }),
+      });
 
-    const githubToken = await this.githubAuth();
-    if (!githubToken) {
-      this.log(chalk.red('\n  GitHub authentication failed or was cancelled.\n'));
+      if (!verifyRes.ok) {
+        ux.action.stop('failed');
+        finishChildSpan(otpSpan, 'error');
+        const err = await this.parseError(verifyRes);
+        this.log(chalk.red(`\n  ${err}\n`));
+        this.exit(1);
+      }
+
+      verifyResult = await verifyRes.json() as typeof verifyResult;
+      ux.action.stop('done!');
+    } catch (error) {
+      if (error instanceof Error && 'oclif' in error) throw error;
+      ux.action.stop('failed');
+      finishChildSpan(otpSpan, 'error');
+      this.log(chalk.red('\n  Could not connect to Linq. Please try again later.\n'));
+      this.exit(1);
+      return;
+    }
+
+    // Handle verify result
+    if (verifyResult.status === 'existing') {
+      // Existing Blue customer — welcome back, no name/phone needed
+      funnelStage = 'existing_login';
+      finishChildSpan(otpSpan, 'ok');
+
+      const phones = verifyResult.accountInfo?.phones || [];
+      const tier = verifyResult.accountInfo?.tier ?? 0;
+      let phoneNumber = '';
+      let accountLabel = '';
+
+      if (phones.length === 1) {
+        phoneNumber = phones[0].phoneNumber;
+        if (tier === 0 && phones[0].tenantType === 'SINGLE') accountLabel = 'Sandbox Line';
+        else if (tier === 0 && phones[0].tenantType === 'MULTI') accountLabel = 'Shared Line';
+        else if (tier >= 1) accountLabel = 'Paid';
+      } else if (phones.length > 1) {
+        accountLabel = tier >= 1 ? 'Paid' : 'Shared Line';
+      }
+
+      const sessionExpiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+      await saveSandboxProfile({
+        token: verifyResult.token,
+        fromPhone: phoneNumber,
+        orgId: verifyResult.orgId,
+        email: verifyResult.email,
+        name: verifyResult.name,
+        tier,
+        tenantType: phones.length === 1 ? phones[0].tenantType : undefined,
+        sessionExpiresAt,
+      });
+      await setCurrentProfile(SANDBOX_PROFILE);
+
+      this.log('');
+      this.log(chalk.green('  \u2713 Welcome back!\n'));
+      if (accountLabel) this.log(`  ${chalk.dim('Account:')}  ${accountLabel}`);
+      if (phones.length > 1) {
+        this.log(`  ${chalk.dim('Phone:')}    ${chalk.yellow(`${phones.length} phones available`)}`);
+        this.log(`             Run ${chalk.cyan('linq phonenumbers set')} to pick a default.`);
+      } else {
+        this.log(`  ${chalk.dim('Phone:')}    ${chalk.bold(phoneNumber || 'none')}`);
+      }
+      this.log(`  ${chalk.dim('Email:')}    ${verifyResult.email}`);
+      this.log(`  ${chalk.dim('API Key:')}  ${verifyResult.token}`);
+      this.log(`\n  You already have an account. Your existing API key and integrations are unchanged.`);
+      this.log('');
+      return;
+    }
+
+    // New user — ask for name and phone
+    let name: string;
+    try {
+      name = await input({
+        message: 'Your name:',
+        validate: (v) => (v.trim() ? true : 'Name is required'),
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ExitPromptError') {
+        this.exit(1);
+      }
+      throw error;
+    }
+    name = name.trim();
+
+    let phone: string | undefined;
+    try {
+      phone = await input({
+        message: 'Phone number (optional, press enter to skip):',
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ExitPromptError') {
+        phone = '';
+      } else {
+        throw error;
+      }
+    }
+    phone = phone?.trim() || undefined;
+    if (phone) {
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length === 10) phone = `+1${digits}`;
+      else if (digits.length === 11 && digits.startsWith('1')) phone = `+${digits}`;
+      else if (digits.length >= 11) phone = `+${digits}`;
+    }
+
+    // Step 4: Provision new account
+    ux.action.start('Creating your account');
+
+    try {
+      const provisionRes = await fetch(`${BACKEND_URL}/cli/provision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: verifyResult.email, name, phone }),
+      });
+
+      if (!provisionRes.ok) {
+        ux.action.stop('failed');
+        finishChildSpan(otpSpan, 'error');
+        const err = await this.parseError(provisionRes);
+
+        if (err.includes('No shared lines')) {
+          this.log(chalk.yellow('\n  All phone lines are currently full. Please try again later.\n'));
+          this.exit(1);
+        }
+
+        this.log(chalk.red(`\n  ${err}\n`));
+        this.exit(1);
+      }
+
+      const data = (await provisionRes.json()) as {
+        token: string;
+        orgId: string;
+        email: string;
+        name: string;
+        accountInfo: {
+          tier: number;
+          phones: { phoneNumber: string; tenantType: string }[];
+        } | null;
+      };
+      ux.action.stop('done!');
+      funnelStage = 'account_created';
+      finishChildSpan(otpSpan, 'ok');
+
+      const phones = data.accountInfo?.phones || [];
+      const tier = data.accountInfo?.tier ?? 0;
+      let phoneNumber = '';
+      let accountLabel = '';
+
+      if (phones.length === 1) {
+        phoneNumber = phones[0].phoneNumber;
+        if (tier === 0 && phones[0].tenantType === 'SINGLE') accountLabel = 'Sandbox Line';
+        else if (tier === 0 && phones[0].tenantType === 'MULTI') accountLabel = 'Shared Line';
+        else if (tier >= 1) accountLabel = 'Paid';
+      }
+
+      addBreadcrumb('Account created', { phone: phoneNumber });
+
+      const sessionExpiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+      await saveSandboxProfile({
+        token: data.token,
+        fromPhone: phoneNumber,
+        orgId: data.orgId,
+        email: data.email,
+        name: data.name,
+        tier,
+        tenantType: phones.length === 1 ? phones[0].tenantType : undefined,
+        sessionExpiresAt,
+      });
+      await setCurrentProfile(SANDBOX_PROFILE);
+
+      this.log('');
+      this.log(chalk.green('  \u2713 Account created!\n'));
+      if (accountLabel) this.log(`  ${chalk.dim('Account:')}  ${accountLabel}`);
+      this.log(`  ${chalk.dim('Phone:')}    ${chalk.bold(phoneNumber || 'pending')}`);
+      this.log(`  ${chalk.dim('Email:')}    ${data.email}`);
+      this.log(`  ${chalk.dim('API Key:')}  ${data.token}`);
+      this.log('');
+      if (phoneNumber && accountLabel === 'Shared Line') {
+        this.log('  Your number is shared and allows a max of 100 contacts.');
+        this.log('  Start by adding a contact. Your number is inbound-first:');
+        this.log('  others text you first and then you can start the conversation.\n');
+      }
+      this.log('  Get started:\n');
+      this.log(`    ${chalk.cyan('linq contacts add +1234567890')}  ${chalk.dim('# Add a contact')}`);
+      this.log(`    ${chalk.cyan('linq webhooks listen')}            ${chalk.dim('# Watch for incoming events')}`);
+      this.log('');
+      this.log(`  ${chalk.dim('Full API docs:')} https://apidocs.linqapp.com`);
+      this.log('');
+    } catch (error) {
+      if (error instanceof Error && 'oclif' in error) throw error;
+      ux.action.stop('failed');
+      finishChildSpan(otpSpan, 'error');
+      this.log(chalk.red('\n  Could not connect to Linq. Please try again later.\n'));
       this.exit(1);
     }
 
-    const ghUser = await this.getGitHubUser(githubToken);
-    this.log(`✓ Authenticated as @${ghUser.login}\n`);
-
-    await this.cacheGitHubToken(githubToken, ghUser.login);
-
-    return githubToken;
+    setTag('signup.funnel_stage', funnelStage);
   }
 
-  private async githubAuth(): Promise<string | null> {
-    // Request device code
-    const codeRes = await fetch('https://github.com/login/device/code', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: GITHUB_CLIENT_ID,
-        scope: 'read:user user:email',
-      }),
-    });
-
-    if (!codeRes.ok) {
-      return null;
-    }
-
-    const codeData = (await codeRes.json()) as {
-      device_code: string;
-      user_code: string;
-      verification_uri: string;
-      interval?: number;
-    };
-    const { device_code, user_code, verification_uri, interval } = codeData;
-
-    this.log(`Your code: ${user_code}\n`);
-
-    await open(verification_uri);
-
-    // Poll for token
-    const timeout = 15 * 60 * 1000;
-    const startTime = Date.now();
-
-    while (Date.now() - startTime < timeout) {
-      await this.sleep((interval || 5) * 1000);
-
-      const tokenRes = await fetch(
-        'https://github.com/login/oauth/access_token',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify({
-            client_id: GITHUB_CLIENT_ID,
-            device_code,
-            grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-          }),
-        }
-      );
-
-      const tokenData = (await tokenRes.json()) as {
-        access_token?: string;
-        error?: string;
-      };
-
-      if (tokenData.access_token) {
-        return tokenData.access_token;
-      }
-
-      if (tokenData.error === 'authorization_pending') {
-        continue;
-      }
-
-      if (tokenData.error === 'slow_down') {
-        await this.sleep(5000);
-        continue;
-      }
-
-      if (
-        tokenData.error === 'expired_token' ||
-        tokenData.error === 'access_denied'
-      ) {
-        return null;
-      }
-    }
-
-    return null;
-  }
-
-  private async getGitHubUser(
-    token: string
-  ): Promise<{ login: string; id: number }> {
-    const res = await fetch('https://api.github.com/user', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.json() as Promise<{ login: string; id: number }>;
-  }
-
-  private normalizePhone(phone: string): string {
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length === 10) return `+1${digits}`;
-    if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
-    return `+${digits}`;
-  }
-
-  private async waitForFirstMessage(
-    client: ReturnType<typeof createApiClient>,
-    token: string,
-  ): Promise<Record<string, unknown> | null> {
-    let ws: WebSocket | null = null;
-    let webhookId: string | null = null;
-
+  private async parseError(res: Response): Promise<string> {
     try {
-      // Connect to WebSocket relay
-      const connectionId = await new Promise<string>((resolve, reject) => {
-        const url = `${WS_URL}?token=${encodeURIComponent(token)}`;
-        ws = new WebSocket(url);
-
-        const timeout = setTimeout(() => {
-          ws?.close();
-          reject(new Error('WebSocket connection timed out'));
-        }, 10_000);
-
-        ws.addEventListener('open', () => {
-          ws!.send(JSON.stringify({ action: 'init' }));
-        });
-
-        ws.addEventListener('message', (event) => {
-          try {
-            const msg = JSON.parse(typeof event.data === 'string' ? event.data : '');
-            if (msg.connectionId) {
-              clearTimeout(timeout);
-              resolve(msg.connectionId);
-            }
-          } catch { /* ignore malformed */ }
-        });
-
-        ws.addEventListener('error', () => {
-          clearTimeout(timeout);
-          reject(new Error('Failed to connect to relay'));
-        });
-      });
-
-      // Create ephemeral webhook subscription
-      const whData = await client.webhookSubscriptions.create({
-        target_url: `${RELAY_URL}/relay/${connectionId}`,
-        subscribed_events: ['message.received'] as WebhookEventType[],
-      });
-      webhookId = whData.id;
-
-      // Wait for the first message.received event (up to 3 minutes)
-      ux.action.start('Waiting for your text message');
-      const event = await new Promise<Record<string, unknown> | null>((resolve) => {
-        const timeout = setTimeout(() => resolve(null), 3 * 60 * 1000);
-
-        ws!.addEventListener('message', (msg) => {
-          try {
-            const payload = JSON.parse(typeof msg.data === 'string' ? msg.data : '') as Record<string, unknown>;
-            if (payload.event_type === 'message.received') {
-              clearTimeout(timeout);
-              resolve(payload);
-            }
-          } catch { /* ignore */ }
-        });
-
-        ws!.addEventListener('close', () => {
-          clearTimeout(timeout);
-          resolve(null);
-        });
-      });
-      ux.action.stop(event ? 'received!' : 'timed out');
-
-      return event;
+      const body = (await res.json()) as { message?: string; error?: string };
+      return body.message || body.error || `Request failed (${res.status})`;
     } catch {
-      ux.action.stop('skipped');
-      return null;
-    } finally {
-      // Clean up: close WebSocket and delete webhook
-      if (ws && (ws as WebSocket).readyState !== WebSocket.CLOSED) {
-        (ws as WebSocket).close();
-      }
-      if (webhookId) {
-        try {
-          await client.webhookSubscriptions.delete(webhookId);
-        } catch { /* ignore cleanup errors */ }
-      }
+      return `Request failed (${res.status})`;
     }
-  }
-
-  private getGitHubCachePath(): string {
-    return join(process.env.HOME || homedir(), '.linq', '.github-cache.json');
-  }
-
-  private async cacheGitHubToken(token: string, login: string): Promise<void> {
-    const path = this.getGitHubCachePath();
-    await mkdir(join(path, '..'), { recursive: true, mode: 0o700 });
-    await writeFile(path, JSON.stringify({ token, login }), { mode: 0o600 });
-  }
-
-  private async getCachedGitHubToken(): Promise<{ token: string; login: string } | null> {
-    try {
-      const data = await readFile(this.getGitHubCachePath(), 'utf-8');
-      const parsed = JSON.parse(data) as { token?: string; login?: string };
-      if (parsed.token && parsed.login) {
-        return { token: parsed.token, login: parsed.login };
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
-  private async clearGitHubCache(): Promise<void> {
-    try {
-      await unlink(this.getGitHubCachePath());
-    } catch {
-      // ignore if file doesn't exist
-    }
-  }
-
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
