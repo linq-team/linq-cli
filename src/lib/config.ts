@@ -274,3 +274,31 @@ export function requireFromPhone(
   }
   return fromPhone;
 }
+
+// ── Account type helpers ─────────────────────────────────────────
+
+export const isSandbox = (config: Profile): boolean =>
+  config.tier === 0 && config.tenantType === 'SINGLE';
+
+export const isSharedLine = (config: Profile): boolean =>
+  config.tier === 0 && config.tenantType === 'MULTI';
+
+export const isPaid = (config: Profile): boolean =>
+  (config.tier ?? 0) >= 1;
+
+/**
+ * Throws if the account is not a shared line.
+ * Used by contacts add/remove/list commands.
+ */
+export function requireSharedLine(config: Profile): void {
+  if (isSandbox(config)) {
+    throw new Errors.CLIError(
+      'This command is for shared line accounts only.\nYour sandbox account can text any number directly (an inbound message is needed first).'
+    );
+  }
+  if (isPaid(config)) {
+    throw new Errors.CLIError(
+      'This command is for shared line accounts only.\nYour account can text any number directly — no contacts needed.'
+    );
+  }
+}

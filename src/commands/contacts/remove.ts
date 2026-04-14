@@ -1,7 +1,7 @@
 import { Args, Flags } from '@oclif/core';
 import chalk from 'chalk';
 import { BaseCommand } from '../../lib/base-command.js';
-import { loadConfig, requireToken } from '../../lib/config.js';
+import { loadConfig, requireToken, requireSharedLine } from '../../lib/config.js';
 import { BACKEND_URL } from '../../lib/api-client.js';
 import { addBreadcrumb } from '../../lib/telemetry.js';
 
@@ -26,22 +26,9 @@ export default class ContactsRemove extends BaseCommand {
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
 
+    requireSharedLine(config);
+
     const orgId = config.orgId;
-    const tier = config.tier;
-    const tenantType = config.tenantType;
-
-    if (tier === 0 && tenantType === 'SINGLE') {
-      this.log(chalk.yellow('\n  This command is for shared line accounts only.'));
-      this.log(chalk.dim('  Your sandbox account can text any number directly (an inbound message is needed first).\n'));
-      this.exit(1);
-    }
-
-    if (tier && tier >= 1) {
-      this.log(chalk.yellow('\n  This command is for shared line accounts only.'));
-      this.log(chalk.dim('  Your account can text any number directly — no contacts needed.\n'));
-      this.exit(1);
-    }
-
     if (!orgId) {
       this.log(chalk.yellow('\n  Not logged in. Run linq signup or linq login first.\n'));
       this.exit(1);
