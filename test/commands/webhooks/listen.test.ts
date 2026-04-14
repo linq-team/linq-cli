@@ -309,6 +309,6 @@ describe('webhooks listen', () => {
     const config = await Config.load({ root: process.cwd() });
     const cmd = new WebhooksListen([], config);
     captureOutput(cmd);
-    await expect(cmd.run()).rejects.toThrow('No token found');
+    await expect(cmd.run()).rejects.toThrow('Not logged in');
   });
 });

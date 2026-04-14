@@ -8,7 +8,7 @@ import {
   saveProfile,
   deleteProfile,
   getSandboxProfile,
-  isSandboxExpired,
+  isSessionExpired,
   saveSandboxProfile,
   SANDBOX_PROFILE,
   type ConfigFile,
@@ -158,12 +158,12 @@ describe('config', () => {
       expect(config.profiles.work.token).toBe('work-token');
     });
 
-    it('merges with existing profile data', async () => {
+    it('overwrites existing profile data', async () => {
       await saveProfile('work', { token: 'tok' });
       await saveProfile('work', { fromPhone: '+11111111111' });
 
       const config = await readConfig();
-      expect(config.profiles.work.token).toBe('tok');
+      expect(config.profiles.work.token).toBeUndefined();
       expect(config.profiles.work.fromPhone).toBe('+11111111111');
     });
   });
@@ -248,15 +248,15 @@ describe('config', () => {
       expect(result).toBeUndefined();
     });
 
-    it('isSandboxExpired returns false for future date', () => {
-      expect(isSandboxExpired({
-        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    it('isSessionExpired returns false for future date', () => {
+      expect(isSessionExpired({
+        sessionExpiresAt: new Date(Date.now() + 60_000).toISOString(),
       })).toBe(false);
     });
 
-    it('isSandboxExpired returns true for past date', () => {
-      expect(isSandboxExpired({
-        expiresAt: new Date(Date.now() - 60_000).toISOString(),
+    it('isSessionExpired returns true for past date', () => {
+      expect(isSessionExpired({
+        sessionExpiresAt: new Date(Date.now() - 60_000).toISOString(),
       })).toBe(true);
     });
   });
