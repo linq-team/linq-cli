@@ -1,5 +1,4 @@
 import { Args, Flags } from '@oclif/core';
-import chalk from 'chalk';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
@@ -23,13 +22,6 @@ export default class ChatsVoicememo extends BaseCommand {
       description: 'URL of the voice memo audio file',
       required: true,
     }),
-    from: Flags.string({
-      description: 'Sender phone number (E.164 format). Uses config fromPhone if not specified.',
-    }),
-    json: Flags.boolean({
-      description: 'Output as JSON',
-      default: false,
-    }),
     profile: Flags.string({
       char: 'p',
       description: 'Config profile to use',
@@ -52,11 +44,7 @@ export default class ChatsVoicememo extends BaseCommand {
         voice_memo_url: flags.url,
       });
 
-      if (flags.json) {
-        this.log(JSON.stringify(data, null, 2));
-      } else {
-        this.log(chalk.green(`\n  \u2713 Voice memo sent to chat ${args.chatId}\n`));
-      }
+      this.log(JSON.stringify(data, null, 2));
     } catch (e) {
       this.error(`Failed to send voice memo: ${e instanceof Error ? e.message : String(e)}`);
     }
