@@ -145,10 +145,10 @@ describe('config', () => {
   });
 
   describe('saveProfile', () => {
-    it('blocks saving to sandbox profile', async () => {
-      await expect(
-        saveProfile(SANDBOX_PROFILE, { token: 'tok' })
-      ).rejects.toThrow(/reserved for/);
+    it('allows saving to sandbox profile', async () => {
+      await saveProfile(SANDBOX_PROFILE, { token: 'tok' });
+      const config = await readConfig();
+      expect(config.profiles.sandbox.token).toBe('tok');
     });
 
     it('saves to a named profile', async () => {
@@ -226,7 +226,7 @@ describe('config', () => {
       expect(config.profiles.sandbox.fromPhone).toBe('+14043848368');
       expect(config.profiles.sandbox.partnerId).toBe('p-1');
       expect(config.profiles.sandbox.expiresAt).toBe('2026-02-16T05:12:53.715Z');
-      expect(config.profiles.sandbox.githubLogin).toBe('testuser');
+      expect(config.profiles.sandbox.githubLogin).toBeUndefined();
     });
 
     it('getSandboxProfile returns profile when present', async () => {
