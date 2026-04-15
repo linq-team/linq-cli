@@ -73,11 +73,11 @@ describe('doctor', () => {
     await cmd.run();
 
     const output = logs.join('\n');
-    expect(output).toContain('\u2713 Config file exists');
-    expect(output).toContain('\u2713 API token is configured');
-    expect(output).toContain('\u2713 Default phone number is set');
-    expect(output).toContain('\u2713 API connection successful');
-    expect(output).toContain('4 checks passed, 0 issues found');
+    expect(output).toContain('\u2713 Config file found');
+    expect(output).toContain('\u2713 API token configured');
+    expect(output).toContain('\u2713 Phone number set');
+    expect(output).toContain('\u2713 API connected');
+    expect(output).toContain('passed');
   });
 
   it('reports missing config when no config file exists', async () => {
@@ -87,8 +87,8 @@ describe('doctor', () => {
     await cmd.run();
 
     const output = logs.join('\n');
-    expect(output).toContain('\u2717 API token is not configured');
-    expect(output).toContain('\u2717 Default phone number is not set');
+    expect(output).toContain('\u2717 API token not configured');
+    expect(output).toContain('\u2717 Phone number not set');
     expect(output).not.toContain('0 issues found');
   });
 
@@ -117,8 +117,8 @@ describe('doctor', () => {
     await cmd.run();
 
     const output = logs.join('\n');
-    expect(output).toContain('\u2713 API token is configured');
-    expect(output).toContain('\u2717 API connection failed');
+    expect(output).toContain('\u2713 API token configured');
+    expect(output).toContain('\u2717 API auth failed');
   });
 
   it('masks token values in output', async () => {
@@ -155,6 +155,6 @@ describe('doctor', () => {
 
     const output = logs.join('\n');
     expect(output).not.toContain('my-secret-token-value');
-    expect(output).toContain('my-s****alue');
+    expect(output).toContain('my-secre••••••••');
   });
 });

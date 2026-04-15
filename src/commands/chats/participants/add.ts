@@ -1,4 +1,5 @@
 import { Args, Flags } from '@oclif/core';
+import chalk from 'chalk';
 import { BaseCommand } from '../../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../../lib/config.js';
 import { createApiClient } from '../../../lib/api-client.js';
@@ -22,6 +23,10 @@ export default class ParticipantsAdd extends BaseCommand {
       description: 'Phone number or email of participant to add',
       required: true,
     }),
+    json: Flags.boolean({
+      description: 'Output as JSON',
+      default: false,
+    }),
     profile: Flags.string({
       char: 'p',
       description: 'Config profile to use',
@@ -44,7 +49,11 @@ export default class ParticipantsAdd extends BaseCommand {
         handle: flags.handle,
       });
 
-      this.log(JSON.stringify(data, null, 2));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+      } else {
+        this.log(chalk.green(`\n  \u2713 Added ${flags.handle} to chat.\n`));
+      }
     } catch (e) {
       this.error(`Failed to add participant: ${e instanceof Error ? e.message : String(e)}`);
     }
