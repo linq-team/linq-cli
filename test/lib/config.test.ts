@@ -226,7 +226,7 @@ describe('config', () => {
       expect(config.profiles.sandbox.fromPhone).toBe('+14043848368');
       expect(config.profiles.sandbox.partnerId).toBe('p-1');
       expect(config.profiles.sandbox.expiresAt).toBe('2026-02-16T05:12:53.715Z');
-      expect(config.profiles.sandbox.githubLogin).toBeUndefined();
+      expect(config.profiles.sandbox.githubLogin).toBe('testuser');
     });
 
     it('getSandboxProfile returns profile when present', async () => {
@@ -240,7 +240,7 @@ describe('config', () => {
       const result = await getSandboxProfile();
       expect(result?.fromPhone).toBe('+14043848368');
       expect(result?.expiresAt).toBe('2026-02-16T05:12:53.715Z');
-      expect((result as any)?.githubLogin).toBeUndefined();
+      expect(result?.githubLogin).toBe('testuser');
     });
 
     it('getSandboxProfile returns undefined when no sandbox', async () => {
