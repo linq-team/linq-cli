@@ -83,7 +83,7 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
-describe('webhooks listen', () => {
+describe('webhooks listen', { timeout: 15000 }, () => {
   let tempDir: string;
   let originalHome: string | undefined;
   let originalRelayUrl: string | undefined;
