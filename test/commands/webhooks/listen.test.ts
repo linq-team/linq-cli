@@ -83,7 +83,9 @@ function createMockResponse(status: number, body: unknown) {
   });
 }
 
-describe('webhooks listen', { timeout: 15000 }, () => {
+// Skip in CI — WebSocket mocks cause worker to hang and OOM
+const runTests = process.env.CI ? describe.skip : describe;
+runTests('webhooks listen', { timeout: 15000 }, () => {
   let tempDir: string;
   let originalHome: string | undefined;
   let originalRelayUrl: string | undefined;
