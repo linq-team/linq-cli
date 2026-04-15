@@ -54,7 +54,7 @@ describe('messages send', () => {
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new MessagesSend(
-      ['chat-123', '--from', '+12025551234', '--message', 'Hello!'],
+      ['chat-123', '--message', 'Hello!'],
       config
     );
     await cmd.run();
@@ -84,7 +84,7 @@ describe('messages send', () => {
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new MessagesSend(
-      ['chat-123', '--from', '+12025551234', '--message', 'Wow!', '--effect', 'fireworks'],
+      ['chat-123', '--message', 'Wow!', '--effect', 'fireworks'],
       config
     );
     await cmd.run();
@@ -110,7 +110,7 @@ describe('messages send', () => {
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new MessagesSend(
-      ['chat-123', '--from', '+12025551234', '--message', 'Reply', '--reply-to', 'original-msg-id'],
+      ['chat-123', '--message', 'Reply', '--reply-to', 'original-msg-id'],
       config
     );
     await cmd.run();
@@ -122,7 +122,7 @@ describe('messages send', () => {
 
   it('requires chat ID argument', async () => {
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new MessagesSend(['--from', '+12025551234', '--message', 'Hello!'], config);
+    const cmd = new MessagesSend(['--message', 'Hello!'], config);
 
     await expect(cmd.run()).rejects.toThrow('Missing 1 required arg');
   });

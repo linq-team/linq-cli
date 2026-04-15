@@ -1,104 +1,73 @@
 import { Flags } from '@oclif/core';
-import { password, select, input } from '@inquirer/prompts';
+import { input } from '@inquirer/prompts';
+import chalk from 'chalk';
 import { BaseCommand } from '../lib/base-command.js';
-import { fetchPartnerId } from '../lib/partner.js';
-import {
-  saveProfile,
-  setCurrentProfile,
-  getCurrentProfile,
-  listProfiles,
-  SANDBOX_PROFILE,
-} from '../lib/config.js';
 import { LOGO } from '../lib/banner.js';
+import { runAuthFlow, checkExistingSession } from '../lib/auth-flow.js';
 
-const LOGIN_BANNER = LOGO + '\n  Welcome to Linq CLI\n';
+const LOGIN_BANNER = LOGO + '\n  Welcome back to Linq CLI\n';
 
 export default class Login extends BaseCommand {
   static override description = 'Authenticate with Linq';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> --token YOUR_API_TOKEN',
-    '<%= config.bin %> <%= command.id %> --profile work',
+    '<%= config.bin %> <%= command.id %> --email dev@example.com',
   ];
 
   static override flags = {
-    profile: Flags.string({
-      char: 'p',
-      description: 'Profile to save credentials to',
-    }),
-    token: Flags.string({
-      char: 't',
-      description: 'API token from Linq dashboard',
+    email: Flags.string({
+      char: 'e',
+      description: 'Email address for OTP login',
     }),
   };
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Login);
 
-    let profileName = flags.profile;
-
-    if (profileName === SANDBOX_PROFILE) {
-      this.error(`The "${SANDBOX_PROFILE}" profile is reserved for \`linq signup\`. Use --profile <name> to login to a different profile.`);
+    const existing = await checkExistingSession();
+    if (existing) {
+      this.log(chalk.yellow(`\n  You're already logged in as ${chalk.bold(existing)}.`));
+      this.log(chalk.dim(`  Run ${chalk.cyan('linq logout')} to switch accounts.\n`));
+      return;
     }
 
-    if (!profileName) {
-      const current = await getCurrentProfile() || 'default';
-      const profiles = (await listProfiles()).filter(p => p !== SANDBOX_PROFILE);
-      const choices = [
-        ...profiles.map(p => ({
-          name: p === current ? `${p} (active)` : p,
-          value: p,
-        })),
-        { name: 'Create new profile', value: '__new__' },
-      ];
-      const chosen = await select({
-        message: 'Which profile would you like to log in to?',
-        choices,
-        default: current !== SANDBOX_PROFILE ? current : undefined,
-      });
-      profileName = chosen === '__new__'
-        ? await input({ message: 'Profile name:', validate: v => v.trim() ? true : 'Name cannot be empty' })
-        : chosen;
+    console.log(LOGIN_BANNER);
+
+    let email = flags.email;
+    if (!email) {
+      try {
+        email = await input({
+          message: 'Email address:',
+          validate: (v) => {
+            if (!v.trim()) return 'Email is required';
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())) return 'Enter a valid email';
+            return true;
+          },
+        });
+      } catch (error) {
+        if (error instanceof Error && error.name === 'ExitPromptError') {
+          this.exit(1);
+        }
+        throw error;
+      }
     }
+    email = email.trim().toLowerCase();
 
-    let token = flags.token;
+    await runAuthFlow({
+      email,
+      log: (msg) => this.log(msg),
+      exit: (code) => this.exit(code),
+      parseError: (res) => this.parseError(res),
+    });
+  }
 
-    if (!token) {
-      console.log(LOGIN_BANNER);
-      this.log(
-        'Get your API token from "Integration Details" in the Linq dashboard:'
-      );
-      this.log('https://zero.linqapp.com/api-tooling/\n');
-
-      token = await password({
-        message: 'Enter your API token:',
-        mask: '*',
-        validate: (value) => {
-          if (!value || value.trim() === '') {
-            return 'Token cannot be empty';
-          }
-          return true;
-        },
-      });
+  private async parseError(res: Response): Promise<string> {
+    try {
+      const body = (await res.json()) as { message?: string; error?: string };
+      return body.message || body.error || `Request failed (${res.status})`;
+    } catch {
+      return `Request failed (${res.status})`;
     }
-
-    token = token.trim();
-
-    if (!token) {
-      this.error('Token cannot be empty');
-    }
-
-    const profile: { token: string; partnerId?: string } = { token };
-
-    const partnerId = await fetchPartnerId(token);
-    if (partnerId) {
-      profile.partnerId = partnerId;
-    }
-
-    await saveProfile(profileName, profile);
-    await setCurrentProfile(profileName);
-
-    this.log(`Token saved to profile "${profileName}"`);
   }
 }

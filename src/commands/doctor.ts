@@ -1,4 +1,5 @@
 import { Flags } from '@oclif/core';
+import chalk from 'chalk';
 import { BaseCommand } from '../lib/base-command.js';
 import { loadConfig, loadConfigFile } from '../lib/config.js';
 import { createApiClient } from '../lib/api-client.js';
@@ -20,85 +21,106 @@ export default class Doctor extends BaseCommand {
 
     let passed = 0;
     let failed = 0;
+    let warnings = 0;
 
-    // Check 1: Config file exists
+    const ok = (msg: string) => { this.log(chalk.green('  ✓ ') + msg); passed++; };
+    const fail = (msg: string) => { this.log(chalk.red('  ✗ ') + msg); failed++; };
+    const warn = (msg: string) => { this.log(chalk.yellow('  ! ') + msg); warnings++; };
+
+    this.log('\n  Linq CLI Health Check\n');
+
+    // Check 1: Config file
     const configFile = await loadConfigFile();
-    const hasProfiles = Object.keys(configFile.profiles).length > 0;
-    if (hasProfiles && configFile.profiles.default?.token) {
-      this.log('\u2713 Config file exists at ~/.linq/config.json');
-      passed++;
-    } else if (hasProfiles) {
-      this.log('\u2713 Config file exists at ~/.linq/config.json');
-      passed++;
+    const profileCount = Object.keys(configFile.profiles).length;
+    if (profileCount > 0) {
+      ok('Config file found');
     } else {
-      this.log('\u2717 Config file not found at ~/.linq/config.json');
-      failed++;
+      fail('Config file not found — run `linq signup` or `linq login`');
     }
 
-    // Load the profile config
+    // Load profile
     let config;
     try {
       config = await loadConfig(flags.profile);
     } catch {
-      this.log('\u2717 Failed to load config profile');
-      failed++;
-      this.log(`\n${passed} check${passed !== 1 ? 's' : ''} passed, ${failed} issue${failed !== 1 ? 's' : ''} found`);
+      fail('Failed to load config profile');
+      this.printSummary(passed, failed, warnings);
       return;
     }
 
-    // Check 2: API token configured
+    // Check 2: API token
     if (config.token) {
-      const masked = config.token.slice(0, 4) + '****' + config.token.slice(-4);
-      this.log(`\u2713 API token is configured (${masked})`);
-      passed++;
+      const masked = config.token.substring(0, 8) + '•'.repeat(8);
+      ok(`API token configured (${masked})`);
     } else {
-      this.log('\u2717 API token is not configured — run `linq login` or `linq init`');
-      failed++;
+      fail('API token not configured — run `linq login` or `linq signup`');
     }
 
-    // Check 3: Default phone number
+    // Check 3: Phone number
     if (config.fromPhone) {
-      this.log(`\u2713 Default phone number is set (${config.fromPhone})`);
-      passed++;
+      ok(`Phone number set (${config.fromPhone})`);
     } else {
-      this.log('\u2717 Default phone number is not set — run `linq profile set fromPhone +1234567890`');
-      failed++;
+      fail('Phone number not set — run `linq phonenumbers set` to pick a default');
     }
 
-    // Check 4: API connectivity
+    // Check 4: Session expiry (for the active profile)
+    const sessionExpiry = config.sessionExpiresAt || config.expiresAt;
+    if (sessionExpiry) {
+      const expires = new Date(sessionExpiry);
+      if (expires > new Date()) {
+        const daysLeft = Math.ceil((expires.getTime() - Date.now()) / 86_400_000);
+        ok(`Session active (${daysLeft} day${daysLeft > 1 ? 's' : ''} remaining)`);
+      } else {
+        fail(`Session expired — run \`linq login\` to re-authenticate`);
+      }
+    }
+
+    // Check 5: API connectivity
     if (config.token) {
       const client = createApiClient(config.token);
       const start = Date.now();
       try {
-        await client.phoneNumbers.list();
+        const phones = await client.phoneNumbers.list();
         const latency = Date.now() - start;
-        this.log(`\u2713 API connection successful (${latency}ms)`);
-        passed++;
-      } catch {
+        const phoneCount = (phones as any).phone_numbers?.length || 0;
+        const phoneLabel = phoneCount > 0 ? `, ${phoneCount} phone${phoneCount !== 1 ? 's' : ''}` : '';
+        ok(`API connected (${latency}ms${phoneLabel})`);
+
+        // Check 6: Webhooks
+        try {
+          const webhooks = await client.webhookSubscriptions.list();
+          const subs = (webhooks as any).subscriptions || [];
+          const active = subs.filter((s: any) => s.is_active).length;
+          if (subs.length > 0) {
+            ok(`Webhooks: ${active} active, ${subs.length - active} inactive`);
+          } else {
+            warn('No webhook subscriptions — run `linq webhooks create` or `linq webhooks listen`');
+          }
+        } catch {
+          warn('Could not check webhooks');
+        }
+      } catch (error) {
         const latency = Date.now() - start;
-        this.log(`\u2717 API connection failed (${latency}ms) — check your token or network`);
-        failed++;
+        const msg = error instanceof Error ? error.message : String(error);
+        if (msg.includes('401') || msg.includes('Unauthorized')) {
+          fail(`API auth failed (${latency}ms) — token may be invalid or expired`);
+        } else {
+          fail(`API unreachable (${latency}ms) — check your network`);
+        }
       }
     } else {
-      this.log('\u2717 API connectivity — skipped (no token)');
-      failed++;
+      fail('API connectivity — skipped (no token)');
     }
 
-    // Check 5: Sandbox status
-    const sandboxProfile = configFile.profiles.sandbox;
-    if (sandboxProfile?.fromPhone && sandboxProfile?.expiresAt) {
-      const expires = new Date(sandboxProfile.expiresAt);
-      if (expires > new Date()) {
-        this.log(`\u2713 Sandbox active (${sandboxProfile.fromPhone}, expires ${expires.toLocaleTimeString()})`);
-        passed++;
-      } else {
-        this.log(`\u2717 Sandbox expired (${sandboxProfile.fromPhone}, expired ${expires.toLocaleTimeString()})`);
-        failed++;
-      }
-    }
+    this.printSummary(passed, failed, warnings);
+  }
 
-    this.log(
-      `\n${passed} check${passed !== 1 ? 's' : ''} passed, ${failed} issue${failed !== 1 ? 's' : ''} found`
-    );
+  private printSummary(passed: number, failed: number, warnings: number): void {
+    this.log('');
+    const parts: string[] = [];
+    parts.push(chalk.green(`${passed} passed`));
+    if (warnings > 0) parts.push(chalk.yellow(`${warnings} warning${warnings > 1 ? 's' : ''}`));
+    if (failed > 0) parts.push(chalk.red(`${failed} failed`));
+    this.log(`  ${parts.join(', ')}\n`);
   }
 }

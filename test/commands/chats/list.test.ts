@@ -104,6 +104,6 @@ describe('chats list', () => {
     const config = await Config.load({ root: process.cwd() });
     const cmd = new ChatsList([], config);
 
-    await expect(cmd.run()).rejects.toThrow('No sender phone found');
+    await expect(cmd.run()).rejects.toThrow('No sender phone set');
   });
 });
