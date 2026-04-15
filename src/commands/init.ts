@@ -15,7 +15,6 @@ import { LOGO } from '../lib/banner.js';
 const INIT_BANNER = LOGO + '\n  Welcome to Linq CLI Setup\n';
 
 export default class Init extends BaseCommand {
-  static override hidden = true;
   static override description = 'Interactive setup wizard for Linq CLI';
 
   static override examples = [

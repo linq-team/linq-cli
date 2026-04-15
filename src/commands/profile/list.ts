@@ -8,7 +8,6 @@ import {
 } from '../../lib/config.js';
 
 export default class ProfileList extends BaseCommand {
-  static override hidden = true;
   static override description = 'List all configuration profiles';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];

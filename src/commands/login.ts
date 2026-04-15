@@ -1,8 +1,9 @@
 import { Flags } from '@oclif/core';
 import { input } from '@inquirer/prompts';
+import chalk from 'chalk';
 import { BaseCommand } from '../lib/base-command.js';
 import { LOGO } from '../lib/banner.js';
-import { runAuthFlow } from '../lib/auth-flow.js';
+import { runAuthFlow, checkExistingSession } from '../lib/auth-flow.js';
 
 const LOGIN_BANNER = LOGO + '\n  Welcome back to Linq CLI\n';
 
@@ -23,6 +24,13 @@ export default class Login extends BaseCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Login);
+
+    const existing = await checkExistingSession();
+    if (existing) {
+      this.log(chalk.yellow(`\n  You're already logged in as ${chalk.bold(existing)}.`));
+      this.log(chalk.dim(`  Run ${chalk.cyan('linq logout')} to switch accounts.\n`));
+      return;
+    }
 
     console.log(LOGIN_BANNER);
 

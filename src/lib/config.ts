@@ -199,10 +199,6 @@ export async function saveProfile(
   profileName: string,
   profile: Profile
 ): Promise<void> {
-  if (profileName === SANDBOX_PROFILE) {
-    throw new Error(`The "${SANDBOX_PROFILE}" profile is reserved for \`linq signup\``);
-  }
-
   const configFile = await loadConfigFile();
 
   const existing = configFile.profiles[profileName] || {};

@@ -8,7 +8,6 @@ import {
 } from '../../lib/config.js';
 
 export default class ProfileDelete extends BaseCommand {
-  static override hidden = true;
   static override description = 'Delete a named profile';
 
   static override examples = [

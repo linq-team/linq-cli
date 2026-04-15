@@ -7,7 +7,6 @@ import {
 } from '../../lib/config.js';
 
 export default class ProfileCreate extends BaseCommand {
-  static override hidden = true;
   static override description = 'Create a new named profile';
 
   static override examples = [

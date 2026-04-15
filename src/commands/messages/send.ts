@@ -47,6 +47,9 @@ export default class MessagesSend extends BaseCommand {
       description: 'Message text to send',
       required: true,
     }),
+    'attachment-url': Flags.string({
+      description: 'URL of an uploaded attachment (from linq attachments upload)',
+    }),
     effect: Flags.string({
       description: `iMessage effect (${ALL_EFFECTS.join(', ')})`,
     }),
@@ -75,10 +78,13 @@ export default class MessagesSend extends BaseCommand {
     const client = createApiClient(token);
 
     // Build message parts
-    const textPart: MessagePart = {
-      type: 'text',
-      value: flags.message,
-    };
+    const parts: MessagePart[] = [
+      { type: 'text', value: flags.message },
+    ];
+
+    if (flags['attachment-url']) {
+      parts.push({ type: 'media', url: flags['attachment-url'] } as MessagePart);
+    }
 
     // Build effect if specified
     let effect: MessageEffect | undefined;
@@ -95,7 +101,7 @@ export default class MessagesSend extends BaseCommand {
     try {
       const data = await client.chats.messages.send(args.chatId, {
         message: {
-          parts: [textPart],
+          parts,
           effect,
           reply_to: flags['reply-to']
             ? { message_id: flags['reply-to'], part_index: 0 }

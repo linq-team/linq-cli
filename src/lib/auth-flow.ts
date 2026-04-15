@@ -2,9 +2,10 @@ import { ux } from '@oclif/core';
 import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
 import {
-  saveSandboxProfile,
+  saveProfile,
   setCurrentProfile,
-  SANDBOX_PROFILE,
+  loadConfig,
+  isSessionExpired,
 } from './config.js';
 import { BACKEND_URL } from './api-client.js';
 import { addBreadcrumb } from './telemetry.js';
@@ -19,11 +20,26 @@ interface AuthFlowOptions {
 }
 
 /**
+ * Check if there's an active session. Returns identity string if logged in, null if not.
+ */
+export async function checkExistingSession(): Promise<string | null> {
+  try {
+    const current = await loadConfig();
+    if (current.token && !isSessionExpired(current)) {
+      return current.email || current.fromPhone || 'another account';
+    }
+  } catch {
+    // No config
+  }
+  return null;
+}
+
+/**
  * Shared auth flow for both signup and login.
  * 1. Send OTP
  * 2. Verify code
  * 3. If existing → save profile, show account
- * 4. If new → ask name/phone, provision, show account
+ * 4. If new → ask name, provision, show account
  */
 export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
   const { email, log, exit, parseError } = opts;
@@ -130,7 +146,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     }
 
     const sessionExpiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString();
-    await saveSandboxProfile({
+    await saveProfile('default', {
       token: verifyResult.token,
       fromPhone: phoneNumber,
       orgId: verifyResult.orgId,
@@ -140,7 +156,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
       tenantType: phones.length === 1 ? phones[0].tenantType : undefined,
       sessionExpiresAt,
     });
-    await setCurrentProfile(SANDBOX_PROFILE);
+    await setCurrentProfile('default');
 
     addBreadcrumb('Login successful', { accountType: accountLabel || 'unknown' });
     log('');
@@ -158,7 +174,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     return;
   }
 
-  // New user → ask name/phone, provision
+  // New user → ask name, provision
   let name: string;
   try {
     name = await input({
@@ -173,33 +189,13 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
   }
   name = name.trim();
 
-  let phone: string | undefined;
-  try {
-    phone = await input({
-      message: 'Phone number (optional, press enter to skip):',
-    });
-  } catch (error) {
-    if (error instanceof Error && error.name === 'ExitPromptError') {
-      phone = '';
-    } else {
-      throw error;
-    }
-  }
-  phone = phone?.trim() || undefined;
-  if (phone) {
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length === 10) phone = `+1${digits}`;
-    else if (digits.length === 11 && digits.startsWith('1')) phone = `+${digits}`;
-    else if (digits.length >= 11) phone = `+${digits}`;
-  }
-
   ux.action.start('Creating your account');
 
   try {
     const provisionRes = await fetch(`${BACKEND_URL}/cli/provision`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: verifyResult.email, name, phone }),
+      body: JSON.stringify({ email: verifyResult.email, name }),
     });
 
     if (!provisionRes.ok) {
@@ -242,7 +238,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     addBreadcrumb('Account created', { phone: phoneNumber });
 
     const sessionExpiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString();
-    await saveSandboxProfile({
+    await saveProfile('default', {
       token: data.token,
       fromPhone: phoneNumber,
       orgId: data.orgId,
@@ -252,7 +248,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
       tenantType: phones.length === 1 ? phones[0].tenantType : undefined,
       sessionExpiresAt,
     });
-    await setCurrentProfile(SANDBOX_PROFILE);
+    await setCurrentProfile('default');
 
     log('');
     log(chalk.green('  \u2713 Account created!\n'));
