@@ -31,42 +31,46 @@ export default class Whoami extends BaseCommand {
       return;
     }
 
-    // Check session expiry
-    const expired = isSessionExpired(config);
-    if (expired) {
+    // Check session expiry (only for signup/login users who have sessionExpiresAt)
+    if (config.sessionExpiresAt && isSessionExpired(config)) {
       this.log(chalk.yellow(`\n  Your session has expired. Run ${chalk.cyan('linq login')} to re-authenticate.\n`));
       return;
     }
 
-    const info: Record<string, string | undefined> = {
-      email: config.email,
-      name: config.name,
-      phone: config.fromPhone,
-      apiKey: token,
-    };
-
     if (flags.json) {
-      this.log(JSON.stringify(info, null, 2));
+      this.log(JSON.stringify({
+        email: config.email,
+        name: config.name,
+        phone: config.fromPhone,
+        apiKey: token,
+        tier: config.tier,
+        tenantType: config.tenantType,
+      }, null, 2));
       return;
     }
 
-    // Derive account label
-    let accountLabel = '';
-    const tier = config.tier;
-    const tenantType = config.tenantType;
-    if (tier === 0 && tenantType === 'SINGLE') accountLabel = 'Sandbox Line';
-    else if (tier === 0 && tenantType === 'MULTI') accountLabel = 'Shared Line';
-    else if (tier !== undefined && tier >= 1) accountLabel = 'Paid';
-
     this.log('');
-    if (accountLabel) this.log(`  ${chalk.dim('Account:')}    ${accountLabel}`);
-    if (info.name) this.log(`  ${chalk.dim('Name:')}       ${info.name}`);
-    if (info.email) this.log(`  ${chalk.dim('Email:')}      ${info.email}`);
-    this.log(`  ${chalk.dim('Phone:')}      ${info.phone || chalk.dim('not set')}`);
-    this.log(`  ${chalk.dim('API Key:')}    ${info.apiKey}`);
-    if (!info.phone) {
-      this.log(`\n  ${chalk.dim('You have multiple phone numbers. Run')} ${chalk.cyan('linq phonenumbers set')} ${chalk.dim('to pick a default.')}`);
+
+    // Signup/login users have tier set
+    if (config.tier !== undefined) {
+      let accountLabel = '';
+      if (config.tier === 0 && config.tenantType === 'SINGLE') accountLabel = 'Sandbox Line';
+      else if (config.tier === 0 && config.tenantType === 'MULTI') accountLabel = 'Shared Line';
+      else if (config.tier >= 1) accountLabel = 'Paid';
+
+      if (accountLabel) this.log(`  ${chalk.dim('Account:')}    ${accountLabel}`);
+      if (config.name) this.log(`  ${chalk.dim('Name:')}       ${config.name}`);
+      if (config.email) this.log(`  ${chalk.dim('Email:')}      ${config.email}`);
+      if (config.fromPhone) this.log(`  ${chalk.dim('Phone:')}      ${config.fromPhone}`);
+      this.log(`  ${chalk.dim('API Key:')}    ${token}`);
+    } else {
+      // Token-only users (init / paid customers)
+      if (config.name) this.log(`  ${chalk.dim('Name:')}       ${config.name}`);
+      if (config.email) this.log(`  ${chalk.dim('Email:')}      ${config.email}`);
+      if (config.fromPhone) this.log(`  ${chalk.dim('Phone:')}      ${config.fromPhone}`);
+      this.log(`  ${chalk.dim('API Key:')}    ${token}`);
     }
+
     this.log('');
   }
 }
