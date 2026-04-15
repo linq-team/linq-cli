@@ -205,7 +205,10 @@ export async function saveProfile(
 
   const configFile = await loadConfigFile();
 
-  configFile.profiles[profileName] = profile;
+  const existing = configFile.profiles[profileName] || {};
+  const merged = { ...existing, ...profile };
+  delete (merged as Record<string, unknown>).githubLogin;
+  configFile.profiles[profileName] = merged;
 
   await saveConfigFile(configFile);
 }
@@ -246,7 +249,10 @@ export function isSessionExpired(profile: Profile): boolean {
 export async function saveSandboxProfile(profile: Profile): Promise<void> {
   const configFile = await loadConfigFile();
 
-  configFile.profiles[SANDBOX_PROFILE] = profile;
+  const existing = configFile.profiles[SANDBOX_PROFILE] || {};
+  const merged = { ...existing, ...profile };
+  delete (merged as Record<string, unknown>).githubLogin;
+  configFile.profiles[SANDBOX_PROFILE] = merged;
 
   await saveConfigFile(configFile);
 }

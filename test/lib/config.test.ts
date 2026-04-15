@@ -158,12 +158,12 @@ describe('config', () => {
       expect(config.profiles.work.token).toBe('work-token');
     });
 
-    it('overwrites existing profile data', async () => {
+    it('merges with existing profile data', async () => {
       await saveProfile('work', { token: 'tok' });
       await saveProfile('work', { fromPhone: '+11111111111' });
 
       const config = await readConfig();
-      expect(config.profiles.work.token).toBeUndefined();
+      expect(config.profiles.work.token).toBe('tok');
       expect(config.profiles.work.fromPhone).toBe('+11111111111');
     });
   });
