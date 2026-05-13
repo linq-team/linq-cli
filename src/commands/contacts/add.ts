@@ -43,7 +43,12 @@ export default class ContactsAdd extends BaseCommand {
 
       if (!res.ok) {
         const err = await res.json() as { message?: string };
-        this.log(chalk.red(`\n  ${err.message || 'Failed to add contact'}\n`));
+        const reason = err.message || 'Unknown error';
+        this.log(chalk.red(`\n  Failed to add contact: ${reason}\n`));
+        if (/another partner/i.test(reason)) {
+          this.log(chalk.dim('  Upgrade to a dedicated line to message without limits —'));
+          this.log(chalk.dim('  email support@linqapp.com to get started.\n'));
+        }
         this.exit(1);
       }
 

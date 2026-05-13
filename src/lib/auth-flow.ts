@@ -58,7 +58,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     if (!otpRes.ok) {
       ux.action.stop('failed');
       const err = await parseError(otpRes);
-      log(chalk.red(`\n  ${err}\n`));
+      log(chalk.yellow(`\n  ${err}\n`));
       exit(1);
     }
 

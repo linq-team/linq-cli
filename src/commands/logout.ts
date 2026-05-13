@@ -33,6 +33,15 @@ export default class Logout extends BaseCommand {
     const profile = configFile.profiles[profileName];
     const email = profile?.email || '';
 
+    // If the profile has no token, the user is already logged out.
+    if (!profile?.token) {
+      this.log('');
+      this.log(chalk.yellow('  You\'re already logged out.\n'));
+      this.log(chalk.dim('  Use `linq login` to sign in or `linq signup` to create an account.'));
+      this.log('');
+      return;
+    }
+
     // Clear everything
     configFile.profiles[profileName] = {};
     await saveConfigFile(configFile);
