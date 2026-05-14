@@ -10,12 +10,10 @@ vi.mock('@inquirer/prompts', () => ({
   input: (...args: unknown[]) => mockInput(...args),
 }));
 
-vi.mock('open', () => ({ default: vi.fn() }));
-
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
-function createMockResponse(status: number, body: unknown) {
+function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'Content-Type': 'application/json' },
@@ -24,8 +22,7 @@ function createMockResponse(status: number, body: unknown) {
 
 const { default: Signup } = await import('../../src/commands/signup.js');
 
-
-describe('signup', () => {
+describe('signup (email OTP flow)', () => {
   let tempDir: string;
   let originalHome: string | undefined;
 
@@ -42,64 +39,97 @@ describe('signup', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  function cachePath() {
-    return path.join(tempDir, '.linq', '.github-cache.json');
+  function configPath() {
+    return path.join(tempDir, '.linq', 'config.json');
   }
 
-  it('exits gracefully when input() throws ExitPromptError (non-TTY)', async () => {
-    const exitError = new Error('User force closed the prompt');
-    exitError.name = 'ExitPromptError';
-    mockInput.mockRejectedValueOnce(exitError);
+  it('happy path: new user → send-otp → verify-code → signup → profile saved', async () => {
+    // Inputs: OTP code, then name (in that order — verify-code prompts code first, name only if new)
+    mockInput
+      .mockResolvedValueOnce('123456') // OTP code
+      .mockResolvedValueOnce('Test User'); // name
 
-    // Mock GitHub device flow: code request -> token poll -> user info
-    // signup.ts calls fetch directly for GitHub APIs (not via SDK),
-    // so these still use the Request object pattern
     mockFetch
+      // send-otp
+      .mockResolvedValueOnce(jsonResponse(200, { sessionId: 'sess-1' }))
+      // verify-code → new user, returns signupToken
       .mockResolvedValueOnce(
-        createMockResponse(200, {
-          device_code: 'dc-123',
-          user_code: 'ABCD-1234',
-          verification_uri: 'https://github.com/login/device',
-          interval: 0,
+        jsonResponse(200, {
+          needsSignup: true,
+          signupToken: 'sgn-tok-1',
+          email: 'new@example.com',
         })
       )
+      // signup → provisioned, returns auth token + accountInfo
       .mockResolvedValueOnce(
-        createMockResponse(200, { access_token: 'gh-token-123' })
-      )
-      .mockResolvedValueOnce(
-        createMockResponse(200, { login: 'testuser', id: 1 })
+        jsonResponse(201, {
+          token: 'api-token-xyz',
+          orgId: '1234',
+          email: 'new@example.com',
+          name: 'Test User',
+          accountInfo: {
+            tier: 0,
+            phones: [{ phoneNumber: '+12025551234', tenantType: 'MULTI' }],
+          },
+        })
       );
 
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new Signup([], config);
+    const cmd = new Signup(['--email', 'new@example.com'], config);
+    await cmd.run();
 
+    // Verify the right endpoints were hit
+    const calls = mockFetch.mock.calls.map((c) => c[0]);
+    expect(calls.some((u: string) => u.endsWith('/cli/send-otp'))).toBe(true);
+    expect(calls.some((u: string) => u.endsWith('/cli/verify-code'))).toBe(true);
+    expect(calls.some((u: string) => u.endsWith('/cli/signup'))).toBe(true);
+
+    // Verify profile saved with the auth token
+    const saved = JSON.parse(await fs.readFile(configPath(), 'utf-8'));
+    expect(saved.profiles.default.token).toBe('api-token-xyz');
+    expect(saved.profiles.default.email).toBe('new@example.com');
+    expect(saved.profiles.default.fromPhone).toBe('+12025551234');
+    expect(saved.profiles.default.tier).toBe(0);
+    expect(saved.profiles.default.tenantType).toBe('MULTI');
+  });
+
+  it('refuses to run if already logged in', async () => {
+    // Pre-seed an active session
+    const configDir = path.join(tempDir, '.linq');
+    await fs.mkdir(configDir, { recursive: true });
+    const future = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    await fs.writeFile(
+      path.join(configDir, 'config.json'),
+      JSON.stringify({
+        profile: 'default',
+        profiles: {
+          default: {
+            token: 'existing-token',
+            email: 'me@example.com',
+            sessionExpiresAt: future,
+          },
+        },
+      })
+    );
+
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new Signup(['--email', 'other@example.com'], config);
+    await cmd.run();
+
+    // No network calls — bailed early
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('exits when send-otp is rate-limited', async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse(400, { message: 'Too many verification codes requested. Please try again later.' })
+    );
+
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new Signup(['--email', 'new@example.com'], config);
     await expect(cmd.run()).rejects.toThrow(/EEXIT: 1/);
+
+    // Should never have prompted for a code
+    expect(mockInput).not.toHaveBeenCalled();
   });
-
-  it('re-throws non-ExitPromptError errors from input()', async () => {
-    const randomError = new Error('Something else broke');
-    mockInput.mockRejectedValueOnce(randomError);
-
-    mockFetch
-      .mockResolvedValueOnce(
-        createMockResponse(200, {
-          device_code: 'dc-123',
-          user_code: 'ABCD-1234',
-          verification_uri: 'https://github.com/login/device',
-          interval: 0,
-        })
-      )
-      .mockResolvedValueOnce(
-        createMockResponse(200, { access_token: 'gh-token-123' })
-      )
-      .mockResolvedValueOnce(
-        createMockResponse(200, { login: 'testuser', id: 1 })
-      );
-
-    const config = await Config.load({ root: process.cwd() });
-    const cmd = new Signup([], config);
-
-    await expect(cmd.run()).rejects.toThrow('Something else broke');
-  });
-
 });
