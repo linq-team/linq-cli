@@ -24,7 +24,7 @@ export default class ProfileCreate extends BaseCommand {
   static override flags = {
     token: Flags.string({
       char: 't',
-      description: 'API token',
+      description: 'API token', hidden: true,
     }),
     'from-phone': Flags.string({
       char: 'f',

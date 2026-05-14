@@ -4,18 +4,25 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-const mockSelect = vi.fn();
 const mockInput = vi.fn();
 
 vi.mock('@inquirer/prompts', () => ({
-  password: vi.fn(),
-  select: (...args: unknown[]) => mockSelect(...args),
   input: (...args: unknown[]) => mockInput(...args),
 }));
 
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
+
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 const { default: Login } = await import('../../src/commands/login.js');
 
-describe('login', () => {
+describe('login (email OTP flow)', () => {
   let tempDir: string;
   let originalHome: string | undefined;
 
@@ -23,7 +30,7 @@ describe('login', () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'linq-test-'));
     originalHome = process.env.HOME;
     process.env.HOME = tempDir;
-    mockSelect.mockReset();
+    mockFetch.mockReset();
     mockInput.mockReset();
   });
 
@@ -36,44 +43,98 @@ describe('login', () => {
     return path.join(tempDir, '.linq', 'config.json');
   }
 
-  it('saves token when provided via flag', async () => {
-    mockSelect.mockResolvedValueOnce('default');
+  it('happy path: existing user → send-otp → verify-code returns token → profile saved', async () => {
+    mockInput.mockResolvedValueOnce('123456'); // OTP code
+
+    mockFetch
+      .mockResolvedValueOnce(jsonResponse(200, { sessionId: 'sess-1' }))
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          needsSignup: false,
+          token: 'returning-user-token',
+          orgId: '999',
+          email: 'me@example.com',
+          name: 'Me',
+          accountInfo: {
+            tier: 0,
+            phones: [{ phoneNumber: '+18005551234', tenantType: 'MULTI' }],
+          },
+        })
+      );
 
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new Login(['--token', 'test-token-123'], config);
+    const cmd = new Login(['--email', 'me@example.com'], config);
     await cmd.run();
 
-    const savedConfig = JSON.parse(await fs.readFile(configPath(), 'utf-8'));
-    expect(savedConfig.profiles.default.token).toBe('test-token-123');
+    // Should NOT have called /cli/signup — user already exists
+    const calls = mockFetch.mock.calls.map((c) => c[0]);
+    expect(calls.some((u: string) => u.endsWith('/cli/signup'))).toBe(false);
+
+    const saved = JSON.parse(await fs.readFile(configPath(), 'utf-8'));
+    expect(saved.profiles.default.token).toBe('returning-user-token');
+    expect(saved.profiles.default.email).toBe('me@example.com');
   });
 
-  it('creates config directory with correct permissions', async () => {
-    mockSelect.mockResolvedValueOnce('default');
+  it('reprompts on invalid OTP, then succeeds on second attempt', async () => {
+    mockInput
+      .mockResolvedValueOnce('000000') // wrong code
+      .mockResolvedValueOnce('123456'); // right code
+
+    mockFetch
+      // send-otp
+      .mockResolvedValueOnce(jsonResponse(200, { sessionId: 'sess-1' }))
+      // first verify-code: bad OTP
+      .mockResolvedValueOnce(
+        jsonResponse(400, { message: 'Invalid verification code.' })
+      )
+      // second verify-code: success
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          needsSignup: false,
+          token: 'after-retry-token',
+          orgId: '1',
+          email: 'me@example.com',
+          name: 'Me',
+          accountInfo: {
+            tier: 0,
+            phones: [{ phoneNumber: '+18005551234', tenantType: 'MULTI' }],
+          },
+        })
+      );
 
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new Login(['--token', 'test-token'], config);
+    const cmd = new Login(['--email', 'me@example.com'], config);
     await cmd.run();
 
+    // Both OTPs were consumed
+    expect(mockInput).toHaveBeenCalledTimes(2);
+
+    const saved = JSON.parse(await fs.readFile(configPath(), 'utf-8'));
+    expect(saved.profiles.default.token).toBe('after-retry-token');
+  });
+
+  it('refuses to run if already logged in', async () => {
     const configDir = path.join(tempDir, '.linq');
-    const stats = await fs.stat(configDir);
-    // 0o700 = rwx------
-    expect(stats.mode & 0o777).toBe(0o700);
-  });
+    await fs.mkdir(configDir, { recursive: true });
+    const future = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    await fs.writeFile(
+      path.join(configDir, 'config.json'),
+      JSON.stringify({
+        profile: 'default',
+        profiles: {
+          default: {
+            token: 'existing-token',
+            email: 'me@example.com',
+            sessionExpiresAt: future,
+          },
+        },
+      })
+    );
 
-  it('saves to a specific profile with --profile flag', async () => {
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new Login(['--token', 'work-token', '--profile', 'work'], config);
+    const cmd = new Login(['--email', 'other@example.com'], config);
     await cmd.run();
 
-    const savedConfig = JSON.parse(await fs.readFile(configPath(), 'utf-8'));
-    expect(savedConfig.profiles.work.token).toBe('work-token');
-    expect(savedConfig.profile).toBe('work');
-  });
-
-  it('blocks --profile sandbox', async () => {
-    const config = await Config.load({ root: process.cwd() });
-    const cmd = new Login(['--token', 'tok', '--profile', 'sandbox'], config);
-
-    await expect(cmd.run()).rejects.toThrow(/reserved for/);
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
+import { Errors } from '@oclif/core';
 
 const CONFIG_DIR = '.linq';
 const CONFIG_FILE = 'config.json';
@@ -11,7 +12,14 @@ export interface Profile {
   token?: string;
   partnerId?: string;
   fromPhone?: string;
-  // Sandbox-only fields (set by `linq signup`)
+  orgId?: string;
+  email?: string;
+  name?: string;
+  tier?: number;
+  tenantType?: string; // SINGLE or MULTI
+  // Session expiry (local only — NOT token expiry)
+  sessionExpiresAt?: string;
+  // Legacy fields (migration)
   expiresAt?: string;
   githubLogin?: string;
 }
@@ -191,10 +199,6 @@ export async function saveProfile(
   profileName: string,
   profile: Profile
 ): Promise<void> {
-  if (profileName === SANDBOX_PROFILE) {
-    throw new Error(`The "${SANDBOX_PROFILE}" profile is reserved for \`linq signup\``);
-  }
-
   const configFile = await loadConfigFile();
 
   configFile.profiles[profileName] = {
@@ -228,12 +232,14 @@ export async function deleteProfile(profileName: string): Promise<void> {
 export async function getSandboxProfile(): Promise<Profile | undefined> {
   const configFile = await loadConfigFile();
   const sandbox = configFile.profiles[SANDBOX_PROFILE];
-  if (sandbox?.fromPhone && sandbox?.expiresAt) return sandbox;
+  if (sandbox?.fromPhone && (sandbox?.sessionExpiresAt || sandbox?.expiresAt)) return sandbox;
   return undefined;
 }
 
-export function isSandboxExpired(profile: Profile): boolean {
-  return !profile.expiresAt || new Date(profile.expiresAt) <= new Date();
+export function isSessionExpired(profile: Profile): boolean {
+  const expiry = profile.sessionExpiresAt || profile.expiresAt;
+  if (!expiry) return false;
+  return new Date(expiry) <= new Date();
 }
 
 export async function saveSandboxProfile(profile: Profile): Promise<void> {
@@ -253,7 +259,7 @@ export function requireToken(
 ): string {
   const token = flagToken || config.token;
   if (!token) {
-    throw new Error("No token found. Run 'linq login' or set LINQ_TOKEN");
+    throw new Errors.CLIError("Not logged in. Run linq signup or linq login first.");
   }
   return token;
 }
@@ -264,9 +270,37 @@ export function requireFromPhone(
 ): string {
   const fromPhone = flagFrom || config.fromPhone;
   if (!fromPhone) {
-    throw new Error(
-      "No sender phone found. Use --from or run 'linq profile set fromPhone +1234567890'"
+    throw new Errors.CLIError(
+      "No sender phone set. Use --from +1234567890 or run linq phonenumbers set to pick a default."
     );
   }
   return fromPhone;
+}
+
+// ── Account type helpers ─────────────────────────────────────────
+
+export const isSandbox = (config: Profile): boolean =>
+  config.tier === 0 && config.tenantType === 'SINGLE';
+
+export const isSharedLine = (config: Profile): boolean =>
+  config.tier === 0 && config.tenantType === 'MULTI';
+
+export const isPaid = (config: Profile): boolean =>
+  (config.tier ?? 0) >= 1;
+
+/**
+ * Throws if the account is not a shared line.
+ * Used by contacts add/remove/list commands.
+ */
+export function requireSharedLine(config: Profile): void {
+  if (isSandbox(config)) {
+    throw new Errors.CLIError(
+      'This command is for shared line accounts only.\nYour sandbox account can text any number directly (an inbound message is needed first).'
+    );
+  }
+  if (isPaid(config)) {
+    throw new Errors.CLIError(
+      'This command is for shared line accounts only.\nYour account can text any number directly — no contacts needed.'
+    );
+  }
 }

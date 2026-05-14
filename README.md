@@ -38,42 +38,73 @@ After installation, the `linq` command will be available in your terminal.
 
 ## Quick Start
 
-1. **Run the setup wizard**:
+1. **Create your account**:
 
    ```bash
-   linq init
+   linq signup
    ```
 
-2. **List your phone numbers**:
+   Enter your email, paste the 6-digit code we send you, then your name. You get a shared phone line you can use right away.
+
+2. **Add a contact** so they can text you:
 
    ```bash
-   linq phonenumbers
+   linq contacts add +19876543210
    ```
 
-3. **Create a chat and send a message**:
+3. **Listen for incoming messages**:
 
    ```bash
-   linq chats create --to +19876543210 --from +12025551234 --message "Hello from Linq!"
+   linq webhooks listen
    ```
+
+   Have the contact text your shared line — events stream into your terminal.
+
+4. **Reply back**:
+
+   ```bash
+   linq chats create --to +19876543210 --message "Hi from the CLI!"
+   ```
+
+> **Heads up:** shared lines are inbound-first. Someone on your contact list has to text you before you can text them. Upgrade to a dedicated line to message anyone without that restriction.
 
 ## Commands
 
 ### Setup
 
-#### `linq init`
-
-Interactive setup wizard. Validates your API token and selects a default phone number.
-
-```bash
-linq init
-```
-
 #### `linq signup`
 
-Get a sandbox phone number for testing. Authenticates via GitHub and provisions a temporary sandbox number (valid for 3 hours). Credentials are saved to the `sandbox` profile.
+Create a Linq developer account and get a shared phone line. Authenticates via email OTP — no API token needed.
 
 ```bash
 linq signup
+```
+
+The flow: enter email → check inbox for the 6-digit code → enter the code → enter your name. You're in.
+
+#### `linq login`
+
+Log in to an existing account using email OTP.
+
+```bash
+linq login
+```
+
+#### `linq logout`
+
+Clear local credentials. Does **not** revoke your API key on the server — just removes the stored token from this machine.
+
+```bash
+linq logout
+```
+
+#### `linq whoami`
+
+Show your current identity and account info.
+
+```bash
+linq whoami
+linq whoami --json
 ```
 
 #### `linq doctor`
@@ -84,24 +115,15 @@ Check your CLI configuration and API connectivity. Runs diagnostic checks and re
 linq doctor
 ```
 
-### Authentication
+#### `linq init`
 
-#### `linq login`
-
-Authenticate with Linq and save your API token. Get your token from [Integration Details](https://zero.linqapp.com/api-tooling/) in the Linq dashboard.
+Interactive setup wizard. Useful if you already have an API token (e.g. from the dashboard) and want to wire it up to the CLI without going through the OTP flow.
 
 ```bash
-# Interactive prompt
-linq login
-
-# Or provide token directly
-linq login --token YOUR_API_TOKEN
-
-# Save to a specific profile
-linq login --profile work
+linq init
 ```
 
-Your token is saved to the active profile in `~/.linq/config.json`.
+### Profile
 
 #### `linq profile get|set`
 
@@ -111,7 +133,7 @@ Manage profile configuration values.
 # View current profile config
 linq profile get
 
-# Set your API token
+# Set your API token manually
 linq profile set token YOUR_API_TOKEN
 
 # Set default sender phone (must be one from `linq phonenumbers`)
@@ -129,7 +151,6 @@ linq profile list
 #   default (active)
 #   personal
 #   work
-#   sandbox (sandbox +14043848368, expires 8:12:53 PM)
 ```
 
 #### `linq profile use`
@@ -159,20 +180,13 @@ linq profile delete staging
 
 ### Profiles
 
-Profiles work like AWS CLI profiles - switch between different accounts or phone numbers easily.
-
-The `sandbox` profile is reserved and managed by `linq signup`. It stores credentials for your temporary sandbox phone number.
+Profiles work like AWS CLI profiles — switch between different accounts or phone numbers easily. `linq signup` and `linq login` save credentials to the `default` profile.
 
 ```bash
 # Create a work profile
 linq profile create work
 linq profile set token WORK_TOKEN --profile work
 linq profile set fromPhone +18005551234 --profile work
-
-# Create a personal profile
-linq profile create personal
-linq profile set token PERSONAL_TOKEN --profile personal
-linq profile set fromPhone +12025551234 --profile personal
 
 # Switch default profile
 linq profile use work
@@ -182,8 +196,8 @@ linq chats create --to +19876543210 --message "Hello" --profile personal
 ```
 
 Environment variables:
-- `LINQ_PROFILE` - Override the active profile
-- `LINQ_FROM_PHONE` - Override the sender phone number
+- `LINQ_PROFILE` — Override the active profile
+- `LINQ_FROM_PHONE` — Override the sender phone number
 
 ### Phone Numbers
 
@@ -193,6 +207,42 @@ List your available phone numbers.
 
 ```bash
 linq phonenumbers
+```
+
+#### `linq phonenumbers set`
+
+Set the default sender phone for the active profile.
+
+```bash
+linq phonenumbers set +12025551234
+```
+
+### Contacts (shared line)
+
+Shared lines are inbound-first: a contact must text you before you can text them. Use `linq contacts` to manage the allowed contact list (max 100 per shared line).
+
+#### `linq contacts add`
+
+Allow a phone number to message your shared line.
+
+```bash
+linq contacts add +19876543210
+```
+
+#### `linq contacts list`
+
+List all contacts on your shared line.
+
+```bash
+linq contacts list
+```
+
+#### `linq contacts remove`
+
+Remove a contact.
+
+```bash
+linq contacts remove +19876543210
 ```
 
 ### Chats
@@ -524,26 +574,34 @@ linq webhooks events
 
 #### `linq webhooks listen`
 
-Listen for webhook events in real time. Creates a temporary webhook subscription that's automatically deleted when you stop.
+Listen for webhook events in real time, optionally forwarding them to a local server. Creates a temporary webhook subscription that's automatically deleted when you stop.
 
 ```bash
-# Listen for all events
+# Listen for all events (structured log output)
 linq webhooks listen
 
-# Listen for specific events only
+# Forward to a local server (great for local dev)
+linq webhooks listen --forward-to http://localhost:3000/webhook
+
+# Filter to specific events
 linq webhooks listen --events message.received,message.sent
 
 # Output raw JSON instead of structured logs
 linq webhooks listen --json
 ```
 
+**Flags:**
+- `--forward-to`, `-f`: Forward each event to a local URL via HTTP POST
+- `--events`: Comma-separated list of events to subscribe to (default: all)
+- `--token`, `-t`: API token (overrides stored token)
+- `--profile`: Config profile to use
+- `--json`: Output raw JSON instead of structured log format
+
 Events are displayed in a structured log format:
 
 ```
 2024-01-15T10:30:45.123Z [message.received] message.id=msg_123 message.body="Hello world" message.chat_id=chat_456
 ```
-
-Use `--json` for raw JSON output (useful for piping to `jq`).
 
 Press `Ctrl+C` to stop. The CLI automatically cleans up the webhook subscription.
 
@@ -585,8 +643,6 @@ export LINQ_TELEMETRY=0
 - `LINQ_TOKEN`: API token (overrides config file)
 - `LINQ_FROM_PHONE`: Default sender phone number (overrides config file)
 - `LINQ_PROFILE`: Profile to use (overrides config file)
-- `LINQ_RELAY_URL`: Custom relay URL for `webhooks listen`
-- `LINQ_RELAY_WS_URL`: Custom WebSocket relay URL for `webhooks listen`
 - `LINQ_TELEMETRY`: Set to `0` to disable telemetry
 
 ## Contributing
