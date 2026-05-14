@@ -30,7 +30,7 @@ export default class ContactsRemove extends BaseCommand {
 
     const orgId = config.orgId;
     if (!orgId) {
-      this.log(chalk.yellow('\n  Not logged in. Run linq signup or linq login first.\n'));
+      this.log(chalk.yellow(`\n  Not logged in. Run ${chalk.cyan('linq signup')} or ${chalk.cyan('linq login')}.\n`));
       this.exit(1);
     }
 

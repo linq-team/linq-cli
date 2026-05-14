@@ -605,15 +605,6 @@ Events are displayed in a structured log format:
 
 Press `Ctrl+C` to stop. The CLI automatically cleans up the webhook subscription.
 
-#### `linq webhooks logs`
-
-View delivery logs for a webhook subscription.
-
-```bash
-linq webhooks logs SUBSCRIPTION_ID
-linq webhooks logs SUBSCRIPTION_ID --limit 50
-```
-
 ## Shell Autocomplete
 
 Enable tab completion for all commands and flags:
