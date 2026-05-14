@@ -3,7 +3,7 @@ import Linq from '@linqapp/sdk';
 const API_BASE_URL =
   process.env.LINQ_API_URL || 'https://api.linqapp.com/api/partner';
 
-/** Backend URL for zero-service (OTP, contacts, etc.) */
+/** Linq API endpoint. */
 export const BACKEND_URL =
   process.env.LINQ_BACKEND_URL || 'https://prod.zero-service.linqapp.com';
 
