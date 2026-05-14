@@ -63,7 +63,7 @@ After installation, the `linq` command will be available in your terminal.
 4. **Reply back**:
 
    ```bash
-   linq messages send CHAT_ID --message "Hi from the CLI!"
+   linq chats create --to +19876543210 --message "Hi from the CLI!"
    ```
 
 > **Heads up:** shared lines are inbound-first. Someone on your contact list has to text you before you can text them. Upgrade to a dedicated line to message anyone without that restriction.
@@ -78,11 +78,9 @@ Create a Linq developer account and get a shared phone line. Authenticates via e
 
 ```bash
 linq signup
-# or
-linq signup --email dev@example.com
 ```
 
-The flow: enter email → check inbox for the 6-digit code → enter the code → enter your name. Credentials are saved to the `default` profile.
+The flow: enter email → check inbox for the 6-digit code → enter the code → enter your name. You're in.
 
 #### `linq login`
 
@@ -90,8 +88,6 @@ Log in to an existing account using email OTP.
 
 ```bash
 linq login
-# or
-linq login --email dev@example.com
 ```
 
 #### `linq logout`
@@ -100,9 +96,6 @@ Clear local credentials. Does **not** revoke your API key on the server — just
 
 ```bash
 linq logout
-
-# Log out of a specific profile
-linq logout --profile work
 ```
 
 #### `linq whoami`
@@ -659,10 +652,6 @@ export LINQ_TELEMETRY=0
 - `LINQ_TOKEN`: API token (overrides config file)
 - `LINQ_FROM_PHONE`: Default sender phone number (overrides config file)
 - `LINQ_PROFILE`: Profile to use (overrides config file)
-- `LINQ_API_URL`: Override the partner API base URL (advanced / local dev)
-- `LINQ_BACKEND_URL`: Override the zero-service base URL (advanced / local dev)
-- `LINQ_RELAY_URL`: Custom relay URL for `webhooks listen`
-- `LINQ_RELAY_WS_URL`: Custom WebSocket relay URL for `webhooks listen`
 - `LINQ_TELEMETRY`: Set to `0` to disable telemetry
 
 ## Contributing
