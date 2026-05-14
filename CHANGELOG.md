@@ -1,3 +1,13 @@
+# [2.0.0](https://github.com/linq-team/linq-cli/compare/v1.3.0...v2.0.0) (2026-05-14)
+
+
+* feat!: redesigned CLI experience ([b128ecc](https://github.com/linq-team/linq-cli/commit/b128ecc1d1943f6ba7086cd82db91209f4d42f89))
+
+
+### BREAKING CHANGES
+
+* linq signup and linq login now use email verification. Old CLI installs cannot sign up new users.
+
 # [1.3.0](https://github.com/linq-team/linq-cli/compare/v1.2.0...v1.3.0) (2026-04-07)
 
 
