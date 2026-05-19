@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/linq-team/linq-cli/compare/v2.0.0...v2.0.1) (2026-05-19)
+
+
+### Bug Fixes
+
+* lower shared line contact limit copy to 20 ([b7fe66e](https://github.com/linq-team/linq-cli/commit/b7fe66e33e0a7ae1024b673827cf806cd381715a))
+
 # [2.0.0](https://github.com/linq-team/linq-cli/compare/v1.3.0...v2.0.0) (2026-05-14)
 
 
