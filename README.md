@@ -219,7 +219,7 @@ linq phonenumbers set +12025551234
 
 ### Contacts (shared line)
 
-Shared lines are inbound-first: a contact must text you before you can text them. Use `linq contacts` to manage the allowed contact list (max 100 per shared line).
+Shared lines are inbound-first: a contact must text you before you can text them. Use `linq contacts` to manage the allowed contact list (max 20 per shared line).
 
 #### `linq contacts add`
 

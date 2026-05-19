@@ -228,7 +228,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     log(`  ${chalk.dim('API Key:')}  ${verifyResult.token}`);
     log('');
     if (phoneNumber && accountLabel === 'Shared Line') {
-      log('  Your number is shared and allows a max of 100 contacts.');
+      log('  Your number is shared and allows a max of 20 contacts.');
       log('  Start by adding a contact. Your number is inbound-first:');
       log('  others text you first and then you can start the conversation.\n');
     }
