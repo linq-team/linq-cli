@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/linq-team/linq-cli/compare/v2.0.1...v2.0.2) (2026-05-20)
+
+
+### Bug Fixes
+
+* restore message + phone IDs in list output, clarify direction ([#31](https://github.com/linq-team/linq-cli/issues/31)) ([9566e64](https://github.com/linq-team/linq-cli/commit/9566e64ae94ab6217237a9b6b19a047eb7c4b001))
+
 ## [2.0.1](https://github.com/linq-team/linq-cli/compare/v2.0.0...v2.0.1) (2026-05-19)
 
 
