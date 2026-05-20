@@ -49,15 +49,20 @@ export default class MessagesList extends BaseCommand {
     const client = createApiClient(token);
 
     try {
-      const data = await client.chats.messages.list(args.chatId, {
-        limit: flags.limit,
-        cursor: flags.cursor,
-      });
+      // Fetch the chat alongside the messages so we can render
+      // "you → counterparty" / "counterparty → you" in the list.
+      const [data, chat] = await Promise.all([
+        client.chats.messages.list(args.chatId, {
+          limit: flags.limit,
+          cursor: flags.cursor,
+        }),
+        client.chats.retrieve(args.chatId).catch(() => undefined),
+      ]);
 
       if (flags.json) {
-        this.log(JSON.stringify(data, null, 2));
+        this.log(JSON.stringify({ messages: data.messages, next_cursor: data.next_cursor }, null, 2));
       } else {
-        this.log(formatMessagesList(data));
+        this.log(formatMessagesList(data, chat));
       }
     } catch (e) {
       this.error(`Failed to list messages: ${e instanceof Error ? e.message : String(e)}`);

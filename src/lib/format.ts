@@ -33,6 +33,20 @@ function fmtDateAbsolute(iso: string | null | undefined): string {
   return new Date(iso).toLocaleString();
 }
 
+function fmtDateShort(iso: string | null | undefined): string {
+  if (!iso) return '–';
+  const d = new Date(iso);
+  const now = new Date();
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 function fmtPhone(phone: string): string {
   // Format US numbers as +1 (XXX) XXX-XXXX
   const match = phone.match(/^\+1(\d{3})(\d{3})(\d{4})$/);
@@ -77,7 +91,7 @@ export function formatPhoneNumbers(data: { phone_numbers: PhoneNumberInfo[] | nu
 
   const lines = ['\n  ' + chalk.bold('Your phone numbers') + '\n'];
   for (const p of phones) {
-    lines.push(`  ${fmtPhone(p.phone_number)}`);
+    lines.push(`  ${chalk.cyan(p.id)}  ${fmtPhone(p.phone_number)}`);
   }
   lines.push('');
   return lines.join('\n');
@@ -190,22 +204,41 @@ interface Message {
   delivery_status?: string | null;
 }
 
-export function formatMessagesList(data: { messages: Message[]; next_cursor?: string | null }): string {
+export function formatMessagesList(
+  data: { messages: Message[]; next_cursor?: string | null },
+  chat?: Chat,
+): string {
   const msgs = data.messages;
   if (msgs.length === 0) return 'No messages found.';
 
-  const rows = msgs.map((m) => {
+  // Counterparty = everyone in the chat who isn't me. Used when I sent the
+  // message ("you → them"). If we don't have the chat, fall back to "you →".
+  const counterparty = (chat?.handles || [])
+    .filter((h) => !h.is_me)
+    .map((h) => fmtPhone(h.handle))
+    .join(', ');
+
+  const direction = (m: Message): string => {
+    if (m.is_from_me) {
+      const right = counterparty ? ` ${chalk.bold(counterparty)}` : '';
+      return `${chalk.dim('you')} ${chalk.dim('→')}${right}`;
+    }
     const sender = m.from_handle?.handle
       ? fmtPhone(m.from_handle.handle)
-      : m.from ? fmtPhone(m.from) : (m.is_from_me ? chalk.dim('you') : '?');
+      : m.from ? fmtPhone(m.from) : '?';
+    return `${chalk.bold(sender)} ${chalk.dim('→')} ${chalk.dim('you')}`;
+  };
+
+  const rows = msgs.map((m) => {
+    const id = chalk.cyan(m.id);
+    const when = chalk.dim(fmtDateShort(m.created_at));
     const body = (m.parts || [])
       .map((p) => (p?.type === 'text' ? p.value : `[${p?.type || 'media'}]`))
       .join(' ')
       || '';
-    const status = m.delivery_status || (m.is_read ? 'read' : m.is_delivered ? 'delivered' : 'sent');
-    const direction = m.is_from_me ? chalk.dim('→') : chalk.green('←');
-    return `${chalk.dim(fmtDate(m.created_at))}  ${direction} ${chalk.bold(sender)}  ${truncate(body, 50)}  ${statusColor(status)}`;
+    return `${id}  ${when}  ${direction(m)}  ${truncate(body, 60)}`;
   });
+
   const lines = [...rows];
   if (data.next_cursor) {
     lines.push(chalk.dim(`\nMore results available. Use --cursor ${data.next_cursor}`));
