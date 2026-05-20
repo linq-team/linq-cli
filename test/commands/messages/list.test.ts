@@ -74,9 +74,11 @@ describe('messages list', () => {
     const cmd = new MessagesList(['chat-123'], config);
     await cmd.run();
 
-    expect(mockFetch).toHaveBeenCalledOnce();
-    const [url] = mockFetch.mock.calls[0];
-    expect(url).toContain('/v3/chats/chat-123/messages');
+    // messages list now also fetches the chat (to render "you → counterparty")
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    const urls = mockFetch.mock.calls.map(([u]) => u.toString());
+    expect(urls.some((u) => u.includes('/v3/chats/chat-123/messages'))).toBe(true);
+    expect(urls.some((u) => u.includes('/v3/chats/chat-123') && !u.includes('/messages'))).toBe(true);
   });
 
   it('handles pagination parameters', async () => {

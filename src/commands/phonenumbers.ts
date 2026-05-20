@@ -44,7 +44,7 @@ export default class PhoneNumbers extends BaseCommand {
     const token = requireToken(flags.token, config);
     const client = createApiClient(token);
 
-    let phones: { phone_number: string }[];
+    let phones: { id: string; phone_number: string }[];
     try {
       const data = await client.phoneNumbers.list();
       phones = (data as any).phone_numbers || [];
@@ -70,7 +70,7 @@ export default class PhoneNumbers extends BaseCommand {
     this.log(`\n  ${chalk.bold('Your phone numbers')}\n`);
     for (const p of phones) {
       const isDefault = p.phone_number === config.fromPhone;
-      this.log(`  ${this.formatPhone(p.phone_number)}${isDefault ? chalk.green(' ← default') : ''}`);
+      this.log(`  ${chalk.cyan(p.id)}  ${this.formatPhone(p.phone_number)}${isDefault ? chalk.green(' ← default') : ''}`);
     }
     if (!config.fromPhone && phones.length > 1) {
       this.log(`\n  ${chalk.dim('Tip: run')} ${chalk.cyan('linq phonenumbers set')} ${chalk.dim('to pick a default.')}`);
