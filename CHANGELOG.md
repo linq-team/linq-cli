@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/linq-team/linq-cli/compare/v2.1.0...v2.2.0) (2026-05-21)
+
+
+### Features
+
+* add animated CLI banner with static logo fallback ([#33](https://github.com/linq-team/linq-cli/issues/33)) ([7c3984e](https://github.com/linq-team/linq-cli/commit/7c3984e14311670f37046f6180e238808979d899))
+
 # [2.1.0](https://github.com/linq-team/linq-cli/compare/v2.0.2...v2.1.0) (2026-05-21)
 
 
