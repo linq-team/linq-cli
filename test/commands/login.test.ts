@@ -51,9 +51,8 @@ describe('login (token paste)', () => {
 
   it('--token: validates, fetches account-info, saves full profile', async () => {
     // Call order in login.ts:
-    //   1. client.phoneNumbers.list()           — synapse
-    //   2. fetch /cli/account-info              — zero-service
-    //   3. fetchPartnerId(token)                — webhook svc
+    //   1. client.phoneNumbers.list()  — synapse
+    //   2. fetch /cli/account-info     — zero-service (returns partnerId too)
     mockFetch
       .mockResolvedValueOnce(jsonResponse(200, {
         phone_numbers: [{ id: 'pn-1', phone_number: '+18005551234' }],
@@ -66,8 +65,7 @@ describe('login (token paste)', () => {
           tier: 0,
           phones: [{ phoneNumber: '+18005551234', tenantType: 'MULTI' }],
         },
-      }))
-      .mockResolvedValueOnce(jsonResponse(200, { partnerId: 'partner-1' }));
+      }));
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new Login(['--token', 'linq_test_token', '--profile', 'default'], config);
@@ -111,8 +109,7 @@ describe('login (token paste)', () => {
             { phoneNumber: '+18005552222', tenantType: 'MULTI' },
           ],
         },
-      }))
-      .mockResolvedValueOnce(jsonResponse(200, { partnerId: 'partner-1' }));
+      }));
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new Login(['--token', 'linq_test', '--profile', 'default'], config);
@@ -142,8 +139,7 @@ describe('login (token paste)', () => {
             { phoneNumber: '+18005552222', tenantType: 'SINGLE' },
           ],
         },
-      }))
-      .mockResolvedValueOnce(jsonResponse(200, { partnerId: 'partner-1' }));
+      }));
 
     mockSelect.mockResolvedValueOnce('+18005552222');
 

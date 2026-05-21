@@ -80,6 +80,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     signupToken?: string;
     token?: string;
     orgId?: string;
+    partnerId?: string | null;
     email: string;
     name?: string;
     accountInfo?: {
@@ -188,6 +189,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
       const data = (await signupRes.json()) as {
         token: string;
         orgId: string;
+        partnerId: string | null;
         email: string;
         name: string;
         accountInfo: VerifyResult['accountInfo'];
@@ -221,6 +223,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
   await saveProfile('default', {
     token: verifyResult.token,
     fromPhone: phoneNumber,
+    ...(verifyResult.partnerId && { partnerId: verifyResult.partnerId }),
     orgId: verifyResult.orgId,
     email: verifyResult.email,
     name: verifyResult.name,

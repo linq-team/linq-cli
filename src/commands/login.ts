@@ -9,7 +9,6 @@ import {
   listProfiles,
   SANDBOX_PROFILE,
 } from '../lib/config.js';
-import { fetchPartnerId } from '../lib/partner.js';
 import { createApiClient, BACKEND_URL } from '../lib/api-client.js';
 import { LOGO } from '../lib/banner.js';
 
@@ -106,6 +105,7 @@ export default class Login extends BaseCommand {
     let tier: number | undefined;
     let tenantType: string | undefined;
     let name: string | undefined;
+    let partnerId: string | undefined;
     let accountPhones: { phoneNumber: string; tenantType: string }[] = [];
     try {
       const res = await fetch(`${BACKEND_URL}/cli/account-info`, {
@@ -113,10 +113,12 @@ export default class Login extends BaseCommand {
       });
       if (res.ok) {
         const acc = await res.json() as {
+          partnerId?: string;
           orgId?: string;
           name?: string | null;
           accountInfo?: { tier: number; phones: { phoneNumber: string; tenantType: string }[] } | null;
         };
+        partnerId = acc.partnerId;
         orgId = acc.orgId;
         name = acc.name ?? undefined;
         tier = acc.accountInfo?.tier;
@@ -154,8 +156,6 @@ export default class Login extends BaseCommand {
       tenantType = (fromPhone && accountPhones.find(p => p.phoneNumber === fromPhone)?.tenantType)
         ?? accountPhones[0].tenantType;
     }
-
-    const partnerId = await fetchPartnerId(token);
 
     await saveProfile(profileName, {
       token,
