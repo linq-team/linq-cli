@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/linq-team/linq-cli/compare/v2.0.2...v2.1.0) (2026-05-21)
+
+
+### Features
+
+* token management commands + login UX cleanup ([#32](https://github.com/linq-team/linq-cli/issues/32)) ([4760f65](https://github.com/linq-team/linq-cli/commit/4760f6503c1dad21822eb8dd7d548847aaf7f0ac))
+
 ## [2.0.2](https://github.com/linq-team/linq-cli/compare/v2.0.1...v2.0.2) (2026-05-20)
 
 
