@@ -31,7 +31,9 @@ export default class TokensDelete extends BaseCommand {
 
     // Hard refuse for non-interactive / automated environments.
     if (isAutomatedEnv()) {
-      this.error('linq tokens delete is interactive-only.');
+      this.error(
+        'linq tokens delete is an interactive-only command.\n  Detected running in a script, CI, or by an AI assistant.',
+      );
     }
 
     const config = await loadConfig(flags.profile);

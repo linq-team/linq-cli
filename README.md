@@ -84,15 +84,13 @@ The flow: enter email → check inbox for the 6-digit code → enter the code �
 
 #### `linq login`
 
-Authenticate with an existing API token. Run bare to paste your token interactively, or use `--token` to pass it directly. Get a token from the [API Tooling dashboard](https://dashboard.linqapp.com/api-tooling/).
+Authenticate with an API token. Run bare to paste your token interactively, or use `--token` to pass it directly.
 
 ```bash
 linq login
 linq login --token linq_xxxxxxxxxxxx
 linq login --profile work
 ```
-
-Saves the token to `~/.linq/config.json` and populates the rest of your profile (org, default phone, account tier) by calling the API.
 
 #### `linq logout`
 
@@ -172,7 +170,7 @@ linq tokens regenerate <id> --expires-in 30d
 
 #### `linq tokens delete`
 
-Permanently delete a token. **Interactive only** — refuses to run in CI / scripted / AI-agent environments, and hard-refuses deleting the token you're currently logged in with (you'd lock yourself out).
+Permanently delete a token. **Interactive only** — refuses to run when invoked from a script, CI pipeline, or AI assistant. Also hard-refuses deleting the token you're currently logged in with (you'd lock yourself out).
 
 ```bash
 linq tokens delete <id>
