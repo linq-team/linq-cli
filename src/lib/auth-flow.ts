@@ -80,6 +80,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     signupToken?: string;
     token?: string;
     orgId?: string;
+    partnerId?: string | null;
     email: string;
     name?: string;
     accountInfo?: {
@@ -136,7 +137,19 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     }
   }
 
-  // Step 3: If new user, ask for name and finalize via /cli/signup
+  // If the email already has an account, bounce them to `linq login`.
+  // Signup is for brand-new users only.
+  if (!verifyResult.needsSignup) {
+    log('');
+    log(chalk.yellow(`  You already have a Linq account for ${chalk.bold(email)}.`));
+    log('');
+    log(`  Use ${chalk.cyan('linq login --token <your-token>')} to sign in.`);
+    log(`  If you've lost your token, generate a new one at ${chalk.cyan('https://dashboard.linqapp.com/api-tooling/')}`);
+    log('');
+    exit(0);
+  }
+
+  // Step 3: New user — ask for name and finalize via /cli/signup
   let isNewUser = false;
   if (verifyResult.needsSignup) {
     isNewUser = true;
@@ -176,6 +189,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
       const data = (await signupRes.json()) as {
         token: string;
         orgId: string;
+        partnerId: string | null;
         email: string;
         name: string;
         accountInfo: VerifyResult['accountInfo'];
@@ -209,6 +223,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
   await saveProfile('default', {
     token: verifyResult.token,
     fromPhone: phoneNumber,
+    ...(verifyResult.partnerId && { partnerId: verifyResult.partnerId }),
     orgId: verifyResult.orgId,
     email: verifyResult.email,
     name: verifyResult.name,
@@ -225,7 +240,9 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     if (accountLabel) log(`  ${chalk.dim('Account:')}  ${accountLabel}`);
     log(`  ${chalk.dim('Phone:')}    ${chalk.bold(phoneNumber || 'pending')}`);
     log(`  ${chalk.dim('Email:')}    ${verifyResult.email}`);
-    log(`  ${chalk.dim('API Key:')}  ${verifyResult.token}`);
+    log(`  ${chalk.dim('API Key:')}  ${chalk.bold(verifyResult.token)}`);
+    log('');
+    log(chalk.yellow('  ⚠  Save this token securely — it will not be shown again.'));
     log('');
     if (phoneNumber && accountLabel === 'Shared Line') {
       log('  Your number is shared and allows a max of 20 contacts.');

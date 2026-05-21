@@ -37,12 +37,14 @@ export default class Whoami extends BaseCommand {
       return;
     }
 
+    const maskedToken = token.length > 12 ? `${token.slice(0, 12)}...` : token;
+
     if (flags.json) {
       this.log(JSON.stringify({
         email: config.email,
         name: config.name,
         phone: config.fromPhone,
-        apiKey: token,
+        apiKey: maskedToken,
         tier: config.tier,
         tenantType: config.tenantType,
       }, null, 2));
@@ -62,13 +64,13 @@ export default class Whoami extends BaseCommand {
       if (config.name) this.log(`  ${chalk.dim('Name:')}       ${config.name}`);
       if (config.email) this.log(`  ${chalk.dim('Email:')}      ${config.email}`);
       if (config.fromPhone) this.log(`  ${chalk.dim('Phone:')}      ${config.fromPhone}`);
-      this.log(`  ${chalk.dim('API Key:')}    ${token}`);
+      this.log(`  ${chalk.dim('API Key:')}    ${maskedToken}`);
     } else {
       // Token-only users (init / paid customers)
       if (config.name) this.log(`  ${chalk.dim('Name:')}       ${config.name}`);
       if (config.email) this.log(`  ${chalk.dim('Email:')}      ${config.email}`);
       if (config.fromPhone) this.log(`  ${chalk.dim('Phone:')}      ${config.fromPhone}`);
-      this.log(`  ${chalk.dim('API Key:')}    ${token}`);
+      this.log(`  ${chalk.dim('API Key:')}    ${maskedToken}`);
     }
 
     this.log('');

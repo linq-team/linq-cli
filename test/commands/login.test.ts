@@ -4,9 +4,13 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
+const mockPassword = vi.fn();
+const mockSelect = vi.fn();
 const mockInput = vi.fn();
 
 vi.mock('@inquirer/prompts', () => ({
+  password: (...args: unknown[]) => mockPassword(...args),
+  select: (...args: unknown[]) => mockSelect(...args),
   input: (...args: unknown[]) => mockInput(...args),
 }));
 
@@ -22,7 +26,7 @@ function jsonResponse(status: number, body: unknown): Response {
 
 const { default: Login } = await import('../../src/commands/login.js');
 
-describe('login (email OTP flow)', () => {
+describe('login (token paste)', () => {
   let tempDir: string;
   let originalHome: string | undefined;
 
@@ -31,6 +35,8 @@ describe('login (email OTP flow)', () => {
     originalHome = process.env.HOME;
     process.env.HOME = tempDir;
     mockFetch.mockReset();
+    mockPassword.mockReset();
+    mockSelect.mockReset();
     mockInput.mockReset();
   });
 
@@ -43,98 +49,107 @@ describe('login (email OTP flow)', () => {
     return path.join(tempDir, '.linq', 'config.json');
   }
 
-  it('happy path: existing user → send-otp → verify-code returns token → profile saved', async () => {
-    mockInput.mockResolvedValueOnce('123456'); // OTP code
-
+  it('--token: validates, fetches account-info, saves full profile', async () => {
+    // Call order in login.ts:
+    //   1. client.phoneNumbers.list()  — synapse
+    //   2. fetch /cli/account-info     — zero-service (returns partnerId too)
     mockFetch
-      .mockResolvedValueOnce(jsonResponse(200, { sessionId: 'sess-1' }))
-      .mockResolvedValueOnce(
-        jsonResponse(200, {
-          needsSignup: false,
-          token: 'returning-user-token',
-          orgId: '999',
-          email: 'me@example.com',
-          name: 'Me',
-          accountInfo: {
-            tier: 0,
-            phones: [{ phoneNumber: '+18005551234', tenantType: 'MULTI' }],
-          },
-        })
-      );
-
-    const config = await Config.load({ root: process.cwd() });
-    const cmd = new Login(['--email', 'me@example.com'], config);
-    await cmd.run();
-
-    // Should NOT have called /cli/signup — user already exists
-    const calls = mockFetch.mock.calls.map((c) => c[0]);
-    expect(calls.some((u: string) => u.endsWith('/cli/signup'))).toBe(false);
-
-    const saved = JSON.parse(await fs.readFile(configPath(), 'utf-8'));
-    expect(saved.profiles.default.token).toBe('returning-user-token');
-    expect(saved.profiles.default.email).toBe('me@example.com');
-  });
-
-  it('reprompts on invalid OTP, then succeeds on second attempt', async () => {
-    mockInput
-      .mockResolvedValueOnce('000000') // wrong code
-      .mockResolvedValueOnce('123456'); // right code
-
-    mockFetch
-      // send-otp
-      .mockResolvedValueOnce(jsonResponse(200, { sessionId: 'sess-1' }))
-      // first verify-code: bad OTP
-      .mockResolvedValueOnce(
-        jsonResponse(400, { message: 'Invalid verification code.' })
-      )
-      // second verify-code: success
-      .mockResolvedValueOnce(
-        jsonResponse(200, {
-          needsSignup: false,
-          token: 'after-retry-token',
-          orgId: '1',
-          email: 'me@example.com',
-          name: 'Me',
-          accountInfo: {
-            tier: 0,
-            phones: [{ phoneNumber: '+18005551234', tenantType: 'MULTI' }],
-          },
-        })
-      );
-
-    const config = await Config.load({ root: process.cwd() });
-    const cmd = new Login(['--email', 'me@example.com'], config);
-    await cmd.run();
-
-    // Both OTPs were consumed
-    expect(mockInput).toHaveBeenCalledTimes(2);
-
-    const saved = JSON.parse(await fs.readFile(configPath(), 'utf-8'));
-    expect(saved.profiles.default.token).toBe('after-retry-token');
-  });
-
-  it('refuses to run if already logged in', async () => {
-    const configDir = path.join(tempDir, '.linq');
-    await fs.mkdir(configDir, { recursive: true });
-    const future = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    await fs.writeFile(
-      path.join(configDir, 'config.json'),
-      JSON.stringify({
-        profile: 'default',
-        profiles: {
-          default: {
-            token: 'existing-token',
-            email: 'me@example.com',
-            sessionExpiresAt: future,
-          },
+      .mockResolvedValueOnce(jsonResponse(200, {
+        phone_numbers: [{ id: 'pn-1', phone_number: '+18005551234' }],
+      }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        partnerId: 'partner-1',
+        orgId: '999',
+        name: 'Acme',
+        accountInfo: {
+          tier: 0,
+          phones: [{ phoneNumber: '+18005551234', tenantType: 'MULTI' }],
         },
-      })
-    );
+      }));
 
     const config = await Config.load({ root: process.cwd() });
-    const cmd = new Login(['--email', 'other@example.com'], config);
+    const cmd = new Login(['--token', 'linq_test_token', '--profile', 'default'], config);
     await cmd.run();
 
-    expect(mockFetch).not.toHaveBeenCalled();
+    const saved = JSON.parse(await fs.readFile(configPath(), 'utf-8'));
+    expect(saved.profiles.default.token).toBe('linq_test_token');
+    expect(saved.profiles.default.fromPhone).toBe('+18005551234');
+    expect(saved.profiles.default.orgId).toBe('999');
+    expect(saved.profiles.default.tier).toBe(0);
+    expect(saved.profiles.default.tenantType).toBe('MULTI');
+    expect(saved.profiles.default.name).toBe('Acme');
+    expect(saved.profile).toBe('default');
+  });
+
+  it('--token: invalid token errors out', async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse(401, { message: 'Unauthorized' }));
+
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new Login(['--token', 'bad-token', '--profile', 'default'], config);
+
+    await expect(cmd.run()).rejects.toThrow(/Invalid token|API error/);
+  });
+
+  it('shared-line user with multiple phones auto-picks first (no prompt)', async () => {
+    mockFetch
+      .mockResolvedValueOnce(jsonResponse(200, {
+        phone_numbers: [
+          { id: 'pn-1', phone_number: '+18005551111' },
+          { id: 'pn-2', phone_number: '+18005552222' },
+        ],
+      }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        partnerId: 'partner-1',
+        orgId: '999',
+        name: 'Acme',
+        accountInfo: {
+          tier: 0,
+          phones: [
+            { phoneNumber: '+18005551111', tenantType: 'MULTI' },
+            { phoneNumber: '+18005552222', tenantType: 'MULTI' },
+          ],
+        },
+      }));
+
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new Login(['--token', 'linq_test', '--profile', 'default'], config);
+    await cmd.run();
+
+    expect(mockSelect).not.toHaveBeenCalled();
+    const saved = JSON.parse(await fs.readFile(configPath(), 'utf-8'));
+    expect(saved.profiles.default.fromPhone).toBe('+18005551111');
+  });
+
+  it('paid user with multiple phones is prompted', async () => {
+    mockFetch
+      .mockResolvedValueOnce(jsonResponse(200, {
+        phone_numbers: [
+          { id: 'pn-1', phone_number: '+18005551111' },
+          { id: 'pn-2', phone_number: '+18005552222' },
+        ],
+      }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        partnerId: 'partner-1',
+        orgId: '999',
+        name: 'Acme',
+        accountInfo: {
+          tier: 1,
+          phones: [
+            { phoneNumber: '+18005551111', tenantType: 'SINGLE' },
+            { phoneNumber: '+18005552222', tenantType: 'SINGLE' },
+          ],
+        },
+      }));
+
+    mockSelect.mockResolvedValueOnce('+18005552222');
+
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new Login(['--token', 'linq_test', '--profile', 'default'], config);
+    await cmd.run();
+
+    expect(mockSelect).toHaveBeenCalledTimes(1);
+    const saved = JSON.parse(await fs.readFile(configPath(), 'utf-8'));
+    expect(saved.profiles.default.fromPhone).toBe('+18005552222');
+    expect(saved.profiles.default.tier).toBe(1);
   });
 });

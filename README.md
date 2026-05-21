@@ -84,10 +84,12 @@ The flow: enter email → check inbox for the 6-digit code → enter the code �
 
 #### `linq login`
 
-Log in to an existing account using email OTP.
+Authenticate with an API token. Run bare to paste your token interactively, or use `--token` to pass it directly.
 
 ```bash
 linq login
+linq login --token linq_xxxxxxxxxxxx
+linq login --profile work
 ```
 
 #### `linq logout`
@@ -117,10 +119,61 @@ linq doctor
 
 #### `linq init`
 
-Interactive setup wizard. Useful if you already have an API token (e.g. from the dashboard) and want to wire it up to the CLI without going through the OTP flow.
+Interactive setup wizard. Same behavior as `linq login` — included for backwards compatibility.
 
 ```bash
 linq init
+```
+
+### Tokens
+
+Manage API tokens directly from the CLI. Mirrors the [web dashboard's API Tooling page](https://dashboard.linqapp.com/api-tooling/).
+
+#### `linq tokens list`
+
+List your API tokens. The token currently saved in your profile is marked `← active`.
+
+```bash
+linq tokens list
+linq tokens list --json
+```
+
+#### `linq tokens create`
+
+Create a new API token. Run bare for an interactive wizard (name + expiration preset/custom/never). With flags, runs non-interactively and defaults to no expiry.
+
+```bash
+linq tokens create
+linq tokens create --name "My CLI Token"
+linq tokens create --name "Worker" --expires-in 30d
+linq tokens create --name "Test"    --expires-in 2026-12-01
+```
+
+Expiration accepts `7d`, `30d`, `60d`, `90d`, `none`, or a `YYYY-MM-DD` date. **The full token is shown only once** — save it somewhere safe.
+
+#### `linq tokens rename`
+
+Rename a token.
+
+```bash
+linq tokens rename <id> --name "New Name"
+```
+
+#### `linq tokens regenerate`
+
+Mint a new secret for an existing token. The old secret is immediately expired. If you regenerate the token currently saved in your profile, the new secret is automatically written to your local config so you stay logged in.
+
+```bash
+linq tokens regenerate <id>
+linq tokens regenerate <id> --expires-in 30d
+```
+
+#### `linq tokens delete`
+
+Permanently delete a token. **Interactive only** — refuses to run when invoked from a script, CI pipeline, or AI assistant. Also hard-refuses deleting the token you're currently logged in with (you'd lock yourself out).
+
+```bash
+linq tokens delete <id>
 ```
 
 ### Profile
