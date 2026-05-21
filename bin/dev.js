@@ -1,5 +1,17 @@
 #!/usr/bin/env node
 
+const __originalEmit = process.emit;
+process.emit = function (name, data) {
+  if (
+    name === 'warning' &&
+    data?.name === 'ExperimentalWarning' &&
+    /JSON modules/i.test(data?.message ?? '')
+  ) {
+    return false;
+  }
+  return __originalEmit.apply(process, arguments);
+};
+
 import { initTelemetry, captureError, shutdown } from '../dist/lib/telemetry.js';
 import { execute } from '@oclif/core';
 

@@ -1,5 +1,20 @@
 #!/usr/bin/env node
 
+// Suppress Node's "Importing JSON modules is an experimental feature" warning
+// emitted by one of ink's transitive deps. Targeted by name + message so we
+// don't accidentally swallow anything else.
+const __originalEmit = process.emit;
+process.emit = function (name, data) {
+  if (
+    name === 'warning' &&
+    data?.name === 'ExperimentalWarning' &&
+    /JSON modules/i.test(data?.message ?? '')
+  ) {
+    return false;
+  }
+  return __originalEmit.apply(process, arguments);
+};
+
 import { initTelemetry, captureError, shutdown } from '../dist/lib/telemetry.js';
 import { execute } from '@oclif/core';
 
