@@ -10,9 +10,7 @@ import {
   SANDBOX_PROFILE,
 } from '../lib/config.js';
 import { createApiClient, BACKEND_URL } from '../lib/api-client.js';
-import { LOGO } from '../lib/banner.js';
-
-const LOGIN_BANNER = LOGO + '\n  Welcome back to Linq CLI\n';
+import { renderBanner } from '../lib/banner.js';
 
 export default class Login extends BaseCommand {
   static override description = 'Authenticate with Linq using an API token';
@@ -73,7 +71,8 @@ export default class Login extends BaseCommand {
 
     let token = flags.token;
     if (!token) {
-      console.log(LOGIN_BANNER);
+      await renderBanner();
+      console.log('\n  Welcome back to Linq CLI\n');
       try {
         token = await password({
           message: 'Enter your API token:',

@@ -9,9 +9,7 @@ import {
   SANDBOX_PROFILE,
 } from '../lib/config.js';
 import { createApiClient, BACKEND_URL } from '../lib/api-client.js';
-import { LOGO } from '../lib/banner.js';
-
-const INIT_BANNER = LOGO + '\n  Welcome to Linq CLI Setup\n';
+import { renderBanner } from '../lib/banner.js';
 
 export default class Init extends BaseCommand {
   static override description = 'Interactive setup wizard for Linq CLI';
@@ -65,7 +63,8 @@ export default class Init extends BaseCommand {
       }
     }
 
-    console.log(INIT_BANNER);
+    await renderBanner();
+    console.log('\n  Welcome to Linq CLI Setup\n');
 
     // Prompt for API token
     const token = await password({

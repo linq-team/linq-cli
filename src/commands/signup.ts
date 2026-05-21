@@ -2,10 +2,8 @@ import { Flags } from '@oclif/core';
 import { input } from '@inquirer/prompts';
 import chalk from 'chalk';
 import { BaseCommand } from '../lib/base-command.js';
-import { LOGO } from '../lib/banner.js';
+import { renderBanner } from '../lib/banner.js';
 import { runAuthFlow, checkExistingSession } from '../lib/auth-flow.js';
-
-const SIGNUP_BANNER = LOGO + '\n  Create your Linq developer account\n';
 
 export default class Signup extends BaseCommand {
   static override description = 'Create a Linq developer account and get a shared phone line';
@@ -32,7 +30,8 @@ export default class Signup extends BaseCommand {
       return;
     }
 
-    console.log(SIGNUP_BANNER);
+    await renderBanner();
+    console.log('\n  Create your Linq developer account\n');
 
     let email = flags.email;
     if (!email) {
