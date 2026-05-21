@@ -9,7 +9,7 @@ import {
   SANDBOX_PROFILE,
 } from '../lib/config.js';
 import { fetchPartnerId } from '../lib/partner.js';
-import { createApiClient } from '../lib/api-client.js';
+import { createApiClient, BACKEND_URL } from '../lib/api-client.js';
 import { LOGO } from '../lib/banner.js';
 
 const INIT_BANNER = LOGO + '\n  Welcome to Linq CLI Setup\n';
@@ -68,11 +68,6 @@ export default class Init extends BaseCommand {
 
     console.log(INIT_BANNER);
 
-    this.log(
-      'Get your API token from "Integration Details" in the Linq dashboard:'
-    );
-    this.log('https://zero.linqapp.com/api-tooling/\n');
-
     // Prompt for API token
     const token = await password({
       message: 'Enter your API token:',
@@ -100,25 +95,57 @@ export default class Init extends BaseCommand {
 
     this.log('\u2713 Token is valid!\n');
 
-    // Select default phone number
-    let fromPhone: string | undefined;
-    const phones = data.phone_numbers || [];
-
-    if (phones.length === 1) {
-      fromPhone = phones[0].phone_number;
-      this.log(`Default phone number set to ${fromPhone} (only number on account)\n`);
-    } else if (phones.length > 1) {
-      fromPhone = await select({
-        message: 'Select a default phone number:',
-        choices: phones.map((p) => ({
-          name: p.phone_number,
-          value: p.phone_number,
-        })),
+    let orgId: string | undefined;
+    let tier: number | undefined;
+    let tenantType: string | undefined;
+    let name: string | undefined;
+    let accountPhones: { phoneNumber: string; tenantType: string }[] = [];
+    try {
+      const res = await fetch(`${BACKEND_URL}/cli/account-info`, {
+        headers: { 'Authorization': `Bearer ${token.trim()}` },
       });
-      this.log('');
+      if (res.ok) {
+        const acc = await res.json() as {
+          orgId?: string;
+          name?: string | null;
+          accountInfo?: { tier: number; phones: { phoneNumber: string; tenantType: string }[] } | null;
+        };
+        orgId = acc.orgId;
+        name = acc.name ?? undefined;
+        tier = acc.accountInfo?.tier;
+        accountPhones = acc.accountInfo?.phones ?? [];
+      }
+    } catch {
+      // pass
     }
 
-    // Fetch partner ID
+    let fromPhone: string | undefined;
+    const synapsePhones = (data.phone_numbers || []).map(p => ({ phoneNumber: p.phone_number }));
+    const phones = accountPhones.length > 0 ? accountPhones : synapsePhones;
+
+    if (phones.length === 1) {
+      fromPhone = phones[0].phoneNumber;
+      this.log(`Default phone number set to ${fromPhone} (only number on account)\n`);
+    } else if (phones.length > 1) {
+      if ((tier ?? 0) >= 1) {
+        fromPhone = await select({
+          message: 'Select a default phone number:',
+          choices: phones.map((p) => ({
+            name: p.phoneNumber,
+            value: p.phoneNumber,
+          })),
+        });
+        this.log('');
+      } else {
+        fromPhone = phones[0].phoneNumber;
+      }
+    }
+
+    if (accountPhones.length > 0) {
+      tenantType = (fromPhone && accountPhones.find(p => p.phoneNumber === fromPhone)?.tenantType)
+        ?? accountPhones[0].tenantType;
+    }
+
     const partnerId = await fetchPartnerId(token.trim());
 
     // Save to profile
@@ -126,6 +153,10 @@ export default class Init extends BaseCommand {
       token: token.trim(),
       ...(fromPhone && { fromPhone }),
       ...(partnerId && { partnerId }),
+      ...(orgId && { orgId }),
+      ...(tier !== undefined && { tier }),
+      ...(tenantType && { tenantType }),
+      ...(name && { name }),
     });
     await setCurrentProfile(profileName);
 

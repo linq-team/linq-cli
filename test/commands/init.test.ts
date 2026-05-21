@@ -67,19 +67,31 @@ describe('init', () => {
     expect(savedConfig.profiles.default.fromPhone).toBe('+12025551234');
   });
 
-  it('prompts for phone selection with multiple numbers', async () => {
+  it('prompts for phone selection with multiple numbers (paid tier)', async () => {
     mockSelect.mockResolvedValueOnce('default'); // profile selection
     mockPassword.mockResolvedValueOnce('test-token-123');
     mockSelect.mockResolvedValueOnce('+18005551234'); // phone selection
 
-    mockFetch.mockResolvedValue(
-      createMockResponse(200, {
+    mockFetch
+      .mockResolvedValueOnce(createMockResponse(200, {
         phone_numbers: [
           { phone_number: '+12025551234' },
           { phone_number: '+18005551234' },
         ],
-      })
-    );
+      }))
+      .mockResolvedValueOnce(createMockResponse(200, {
+        partnerId: 'p1',
+        orgId: '1',
+        name: 'Acme',
+        accountInfo: {
+          tier: 1,
+          phones: [
+            { phoneNumber: '+12025551234', tenantType: 'SINGLE' },
+            { phoneNumber: '+18005551234', tenantType: 'SINGLE' },
+          ],
+        },
+      }))
+      .mockResolvedValue(createMockResponse(200, { partnerId: 'p1' }));
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new Init([], config);
