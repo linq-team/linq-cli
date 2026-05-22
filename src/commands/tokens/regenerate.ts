@@ -15,6 +15,7 @@ import {
   formatExpiresAt,
   findActiveTokenId,
 } from '../../lib/tokens-helpers.js';
+import { bail, throwHttpError } from '../../lib/errors.js';
 
 export default class TokensRegenerate extends BaseCommand {
   static override description =
@@ -48,7 +49,7 @@ export default class TokensRegenerate extends BaseCommand {
     try {
       expiresAt = parseExpiresIn(flags['expires-in']);
     } catch (e) {
-      this.error(e instanceof Error ? e.message : String(e));
+      bail(this, flags.json, e);
     }
 
     // Detect whether the target is the active token (so we can auto-update
@@ -83,14 +84,10 @@ export default class TokensRegenerate extends BaseCommand {
           body: JSON.stringify(body),
         }
       );
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { message?: string };
-        this.error(err.message || `Failed to regenerate token (${res.status})`);
-      }
+      if (!res.ok) await throwHttpError(res);
       created = (await res.json()) as TokenSummaryWithSecret;
     } catch (e) {
-      if (e instanceof Error && 'oclif' in e) throw e;
-      this.error('Could not connect to Linq. Please try again later.');
+      bail(this, flags.json, e);
     }
 
     let profileUpdated = false;

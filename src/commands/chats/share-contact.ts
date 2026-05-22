@@ -1,4 +1,5 @@
 import { Args, Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
@@ -26,6 +27,7 @@ export default class ChatsShareContact extends BaseCommand {
       char: 't',
       description: 'API token (overrides stored token)',
     }),
+    json: Flags.boolean({ description: 'Output as JSON', default: false }),
   };
 
   async run(): Promise<void> {
@@ -37,9 +39,13 @@ export default class ChatsShareContact extends BaseCommand {
 
     try {
       await client.chats.shareContactCard(args.chatId);
+      if (flags.json) {
+        this.log(JSON.stringify({ success: true, chatId: args.chatId, action: 'share_contact' }, null, 2));
+        return;
+      }
       this.log('Contact card shared successfully.');
     } catch (e) {
-      this.error(`Failed to share contact: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }

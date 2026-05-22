@@ -1,4 +1,5 @@
 import { Args, Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
@@ -69,14 +70,12 @@ export default class MessagesReact extends BaseCommand {
 
     // Validate reaction type
     if (!REACTION_TYPES.includes(flags.type as ReactionType)) {
-      this.error(
-        `Invalid reaction type: ${flags.type}. Valid types: ${REACTION_TYPES.join(', ')}`
-      );
+      bail(this, flags.json, `Invalid reaction type: ${flags.type}. Valid types: ${REACTION_TYPES.join(', ')}`);
     }
 
     // Validate custom emoji is provided when type is custom
     if (flags.type === 'custom' && !flags.emoji) {
-      this.error('--emoji is required when using --type custom');
+      bail(this, flags.json, '--emoji is required when using --type custom');
     }
 
     const config = await loadConfig(flags.profile);
@@ -97,7 +96,7 @@ export default class MessagesReact extends BaseCommand {
         this.log(formatReaction(flags.operation!, flags.type, args.messageId));
       }
     } catch (e) {
-      this.error(`Failed to ${flags.operation} reaction: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }

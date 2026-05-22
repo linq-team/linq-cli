@@ -1,4 +1,5 @@
 import { Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
@@ -72,12 +73,12 @@ export default class WebhooksCreate extends BaseCommand {
       const eventList = flags.events.split(',').map((e) => e.trim());
       for (const event of eventList) {
         if (!WEBHOOK_EVENTS.includes(event as WebhookEventType)) {
-          this.error(`Invalid event: ${event}. Valid events: ${WEBHOOK_EVENTS.join(', ')}`);
+          bail(this, flags.json, `Invalid event: ${event}. Valid events: ${WEBHOOK_EVENTS.join(', ')}`);
         }
       }
       subscribedEvents = eventList as WebhookEventType[];
     } else {
-      this.error('Either --events or --all-events is required');
+      bail(this, flags.json, 'Either --events or --all-events is required');
     }
 
     const config = await loadConfig(flags.profile);
@@ -96,7 +97,7 @@ export default class WebhooksCreate extends BaseCommand {
         this.log(formatWebhookDetail(data));
       }
     } catch (e) {
-      this.error(`Failed to create webhook: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }

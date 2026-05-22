@@ -1,4 +1,5 @@
 import { Args, Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
@@ -94,7 +95,7 @@ export default class MessagesSend extends BaseCommand {
       } else if (BUBBLE_EFFECTS.includes(flags.effect)) {
         effect = { type: 'bubble', name: flags.effect };
       } else {
-        this.error(`Invalid effect: ${flags.effect}. Valid effects: ${ALL_EFFECTS.join(', ')}`);
+        bail(this, flags.json, `Invalid effect: ${flags.effect}. Valid effects: ${ALL_EFFECTS.join(', ')}`);
       }
     }
 
@@ -115,7 +116,7 @@ export default class MessagesSend extends BaseCommand {
         this.log(formatMessageSent(data));
       }
     } catch (e) {
-      this.error(`Failed to send message: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }

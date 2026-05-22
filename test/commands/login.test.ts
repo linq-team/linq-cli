@@ -50,22 +50,19 @@ describe('login (token paste)', () => {
   }
 
   it('--token: validates, fetches account-info, saves full profile', async () => {
-    // Call order in login.ts:
-    //   1. client.phoneNumbers.list()  — synapse
-    //   2. fetch /cli/account-info     — zero-service (returns partnerId too)
-    mockFetch
-      .mockResolvedValueOnce(jsonResponse(200, {
-        phone_numbers: [{ id: 'pn-1', phone_number: '+18005551234' }],
-      }))
-      .mockResolvedValueOnce(jsonResponse(200, {
-        partnerId: 'partner-1',
-        orgId: '999',
-        name: 'Acme',
-        accountInfo: {
-          tier: 0,
-          phones: [{ phoneNumber: '+18005551234', tenantType: 'MULTI' }],
-        },
-      }));
+    // login.ts now makes a single call: /cli/account-info on zero-service.
+    // That endpoint validates the token (returns 401 if bad) AND returns
+    // partnerId, orgId, name, and the phone list — so the prior synapse
+    // phoneNumbers.list() round-trip is gone.
+    mockFetch.mockResolvedValueOnce(jsonResponse(200, {
+      partnerId: 'partner-1',
+      orgId: '999',
+      name: 'Acme',
+      accountInfo: {
+        tier: 0,
+        phones: [{ phoneNumber: '+18005551234', tenantType: 'MULTI' }],
+      },
+    }));
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new Login(['--token', 'linq_test_token', '--profile', 'default'], config);
@@ -75,8 +72,6 @@ describe('login (token paste)', () => {
     expect(saved.profiles.default.token).toBe('linq_test_token');
     expect(saved.profiles.default.fromPhone).toBe('+18005551234');
     expect(saved.profiles.default.orgId).toBe('999');
-    expect(saved.profiles.default.tier).toBe(0);
-    expect(saved.profiles.default.tenantType).toBe('MULTI');
     expect(saved.profiles.default.name).toBe('Acme');
     expect(saved.profile).toBe('default');
   });
@@ -87,29 +82,22 @@ describe('login (token paste)', () => {
     const config = await Config.load({ root: process.cwd() });
     const cmd = new Login(['--token', 'bad-token', '--profile', 'default'], config);
 
-    await expect(cmd.run()).rejects.toThrow(/Invalid token|API error/);
+    await expect(cmd.run()).rejects.toThrow(/Invalid or expired token/);
   });
 
   it('shared-line user with multiple phones auto-picks first (no prompt)', async () => {
-    mockFetch
-      .mockResolvedValueOnce(jsonResponse(200, {
-        phone_numbers: [
-          { id: 'pn-1', phone_number: '+18005551111' },
-          { id: 'pn-2', phone_number: '+18005552222' },
+    mockFetch.mockResolvedValueOnce(jsonResponse(200, {
+      partnerId: 'partner-1',
+      orgId: '999',
+      name: 'Acme',
+      accountInfo: {
+        tier: 0,
+        phones: [
+          { phoneNumber: '+18005551111', tenantType: 'MULTI' },
+          { phoneNumber: '+18005552222', tenantType: 'MULTI' },
         ],
-      }))
-      .mockResolvedValueOnce(jsonResponse(200, {
-        partnerId: 'partner-1',
-        orgId: '999',
-        name: 'Acme',
-        accountInfo: {
-          tier: 0,
-          phones: [
-            { phoneNumber: '+18005551111', tenantType: 'MULTI' },
-            { phoneNumber: '+18005552222', tenantType: 'MULTI' },
-          ],
-        },
-      }));
+      },
+    }));
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new Login(['--token', 'linq_test', '--profile', 'default'], config);
@@ -121,25 +109,18 @@ describe('login (token paste)', () => {
   });
 
   it('paid user with multiple phones is prompted', async () => {
-    mockFetch
-      .mockResolvedValueOnce(jsonResponse(200, {
-        phone_numbers: [
-          { id: 'pn-1', phone_number: '+18005551111' },
-          { id: 'pn-2', phone_number: '+18005552222' },
+    mockFetch.mockResolvedValueOnce(jsonResponse(200, {
+      partnerId: 'partner-1',
+      orgId: '999',
+      name: 'Acme',
+      accountInfo: {
+        accountLabel: 'Paid',
+        phones: [
+          { phoneNumber: '+18005551111' },
+          { phoneNumber: '+18005552222' },
         ],
-      }))
-      .mockResolvedValueOnce(jsonResponse(200, {
-        partnerId: 'partner-1',
-        orgId: '999',
-        name: 'Acme',
-        accountInfo: {
-          tier: 1,
-          phones: [
-            { phoneNumber: '+18005551111', tenantType: 'SINGLE' },
-            { phoneNumber: '+18005552222', tenantType: 'SINGLE' },
-          ],
-        },
-      }));
+      },
+    }));
 
     mockSelect.mockResolvedValueOnce('+18005552222');
 
@@ -150,6 +131,6 @@ describe('login (token paste)', () => {
     expect(mockSelect).toHaveBeenCalledTimes(1);
     const saved = JSON.parse(await fs.readFile(configPath(), 'utf-8'));
     expect(saved.profiles.default.fromPhone).toBe('+18005552222');
-    expect(saved.profiles.default.tier).toBe(1);
+    expect(saved.profiles.default.accountLabel).toBe('Paid');
   });
 });

@@ -1,4 +1,5 @@
 import { Args, Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
@@ -30,6 +31,7 @@ export default class ChatsVoicememo extends BaseCommand {
       char: 't',
       description: 'API token (overrides stored token)',
     }),
+    json: Flags.boolean({ description: 'Output as JSON', default: false }),
   };
 
   async run(): Promise<void> {
@@ -44,9 +46,15 @@ export default class ChatsVoicememo extends BaseCommand {
         voice_memo_url: flags.url,
       });
 
-      this.log(JSON.stringify(data, null, 2));
+      if (flags.json) {
+        this.log(JSON.stringify(data, null, 2));
+        return;
+      }
+
+      const messageId = (data as { message?: { id?: string } })?.message?.id;
+      this.log(`Voice memo sent to chat ${args.chatId}${messageId ? ` (message ${messageId})` : ''}.`);
     } catch (e) {
-      this.error(`Failed to send voice memo: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }

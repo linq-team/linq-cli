@@ -1,4 +1,5 @@
 import { Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
@@ -59,7 +60,7 @@ export default class AttachmentsUpload extends BaseCommand {
         this.log(formatUploadUrl(data));
       }
     } catch (e) {
-      this.error(`Failed to request upload: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }

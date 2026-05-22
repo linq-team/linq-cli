@@ -1,4 +1,5 @@
 import { Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
@@ -40,7 +41,7 @@ export default class WebhooksList extends BaseCommand {
         this.log(formatWebhooksList(data));
       }
     } catch (e) {
-      this.error(`Failed to list webhooks: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }

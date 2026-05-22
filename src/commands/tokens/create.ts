@@ -9,6 +9,7 @@ import {
   parseExpiresIn,
   formatExpiresAt,
 } from '../../lib/tokens-helpers.js';
+import { bail, throwHttpError } from '../../lib/errors.js';
 
 const EXPIRATION_CHOICES = [
   { name: '7 days', value: '7d' },
@@ -79,7 +80,7 @@ export default class TokensCreate extends BaseCommand {
       }
     } else {
       if (!name) {
-        this.error('Missing --name. Required when running non-interactively.');
+        bail(this, flags.json, 'Missing --name. Required when running non-interactively.');
       }
       // expiresIn defaults to undefined → no expiration
     }
@@ -88,7 +89,7 @@ export default class TokensCreate extends BaseCommand {
     try {
       expiresAt = parseExpiresIn(expiresIn);
     } catch (e) {
-      this.error(e instanceof Error ? e.message : String(e));
+      bail(this, flags.json, e);
     }
 
     const body: { name: string; expiresAt?: string } = { name };
@@ -104,14 +105,10 @@ export default class TokensCreate extends BaseCommand {
         },
         body: JSON.stringify(body),
       });
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { message?: string };
-        this.error(err.message || `Failed to create token (${res.status})`);
-      }
+      if (!res.ok) await throwHttpError(res);
       created = (await res.json()) as TokenSummaryWithSecret;
     } catch (e) {
-      if (e instanceof Error && 'oclif' in e) throw e;
-      this.error('Could not connect to Linq. Please try again later.');
+      bail(this, flags.json, e);
     }
 
     if (flags.json) {

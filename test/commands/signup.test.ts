@@ -68,8 +68,8 @@ describe('signup (email OTP flow)', () => {
           email: 'new@example.com',
           name: 'Test User',
           accountInfo: {
-            tier: 0,
-            phones: [{ phoneNumber: '+12025551234', tenantType: 'MULTI' }],
+            accountLabel: 'Shared',
+            phones: [{ phoneNumber: '+12025551234' }],
           },
         })
       );
@@ -89,8 +89,7 @@ describe('signup (email OTP flow)', () => {
     expect(saved.profiles.default.token).toBe('api-token-xyz');
     expect(saved.profiles.default.email).toBe('new@example.com');
     expect(saved.profiles.default.fromPhone).toBe('+12025551234');
-    expect(saved.profiles.default.tier).toBe(0);
-    expect(saved.profiles.default.tenantType).toBe('MULTI');
+    expect(saved.profiles.default.accountLabel).toBe('Shared');
   });
 
   it('refuses to run if already logged in', async () => {

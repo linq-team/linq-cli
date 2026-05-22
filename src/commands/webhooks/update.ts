@@ -1,4 +1,5 @@
 import { Args, Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
@@ -76,7 +77,7 @@ export default class WebhooksUpdate extends BaseCommand {
     const { args, flags } = await this.parse(WebhooksUpdate);
 
     if (!flags.url && !flags.events && !flags.activate && !flags.deactivate) {
-      this.error('At least one of --url, --events, --activate, or --deactivate is required');
+      bail(this, flags.json, 'At least one of --url, --events, --activate, or --deactivate is required');
     }
 
     // Validate events if provided
@@ -85,7 +86,7 @@ export default class WebhooksUpdate extends BaseCommand {
       const eventList = flags.events.split(',').map((e) => e.trim());
       for (const event of eventList) {
         if (!WEBHOOK_EVENTS.includes(event as WebhookEventType)) {
-          this.error(`Invalid event: ${event}. Valid events: ${WEBHOOK_EVENTS.join(', ')}`);
+          bail(this, flags.json, `Invalid event: ${event}. Valid events: ${WEBHOOK_EVENTS.join(', ')}`);
         }
       }
       subscribedEvents = eventList as WebhookEventType[];
@@ -116,7 +117,7 @@ export default class WebhooksUpdate extends BaseCommand {
         this.log(formatWebhookDetail(data));
       }
     } catch (e) {
-      this.error(`Failed to update webhook: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }

@@ -1,7 +1,8 @@
 import { Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import chalk from 'chalk';
 import { BaseCommand } from '../../lib/base-command.js';
-import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
+import { loadConfig, requireToken, requireFromPhone, isSharedLine } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatChatCreated } from '../../lib/format.js';
 import { addBreadcrumb } from '../../lib/telemetry.js';
@@ -97,7 +98,7 @@ export default class ChatsCreate extends BaseCommand {
       } else if (BUBBLE_EFFECTS.includes(flags.effect)) {
         effect = { type: 'bubble', name: flags.effect };
       } else {
-        this.error(`Invalid effect: ${flags.effect}. Valid effects: ${ALL_EFFECTS.join(', ')}`);
+        bail(this, flags.json, `Invalid effect: ${flags.effect}. Valid effects: ${ALL_EFFECTS.join(', ')}`);
       }
     }
 
@@ -120,9 +121,8 @@ export default class ChatsCreate extends BaseCommand {
       }
     } catch (e) {
       if (e instanceof Linq.PermissionDeniedError) {
-        const lineType = config.tier === 0 && config.tenantType === 'SINGLE' ? 'sandbox' : 'shared';
         this.log(chalk.yellow(`\n  Can't message this contact yet.\n`));
-        if (lineType === 'shared') {
+        if (isSharedLine(config)) {
           this.log(chalk.dim(`  On a shared line, you need to add the contact (${chalk.cyan('linq contacts add +1234567890')})`));
           this.log(chalk.dim(`  and they must text you (${chalk.bold(fromPhone)}) first before you can message them.\n`));
         } else {
@@ -130,7 +130,7 @@ export default class ChatsCreate extends BaseCommand {
         }
         this.exit(1);
       }
-      this.error(`Failed to create chat: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }

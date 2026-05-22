@@ -9,6 +9,7 @@ import {
   formatLastUsed,
   findActiveTokenId,
 } from '../../lib/tokens-helpers.js';
+import { bail, throwHttpError } from '../../lib/errors.js';
 
 export default class TokensList extends BaseCommand {
   static override description = 'List API tokens for your account';
@@ -34,14 +35,10 @@ export default class TokensList extends BaseCommand {
       const res = await fetch(`${BACKEND_URL}/v3/api-tokens`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { message?: string };
-        this.error(err.message || `Failed to list tokens (${res.status})`);
-      }
+      if (!res.ok) await throwHttpError(res);
       data = (await res.json()) as ListTokensResponse;
     } catch (e) {
-      if (e instanceof Error && 'oclif' in e) throw e;
-      this.error('Could not connect to Linq. Please try again later.');
+      bail(this, flags.json, e);
     }
 
     if (flags.json) {

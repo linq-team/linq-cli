@@ -87,9 +87,6 @@ export default class ProfileGet extends BaseCommand {
   }
 
   private maskToken(token: string): string {
-    if (token.length <= 8) {
-      return '****';
-    }
-    return token.slice(0, 4) + '****' + token.slice(-4);
+    return token.length > 12 ? `${token.slice(0, 12)}...` : token;
   }
 }

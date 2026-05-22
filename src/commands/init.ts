@@ -7,8 +7,9 @@ import {
   getCurrentProfile,
   listProfiles,
   SANDBOX_PROFILE,
+  type AccountLabel,
 } from '../lib/config.js';
-import { createApiClient, BACKEND_URL } from '../lib/api-client.js';
+import { BACKEND_URL } from '../lib/api-client.js';
 import { renderBanner } from '../lib/banner.js';
 
 export default class Init extends BaseCommand {
@@ -78,59 +79,54 @@ export default class Init extends BaseCommand {
       },
     });
 
-    // Validate token by calling the API
     this.log('\nValidating token...');
-    const client = createApiClient(token.trim());
-
-    let data;
-    try {
-      data = await client.phoneNumbers.list();
-    } catch {
-      this.error(
-        'Invalid token or API error. Please check your token and try again.'
-      );
-    }
-
-    this.log('\u2713 Token is valid!\n');
-
     let orgId: string | undefined;
-    let tier: number | undefined;
-    let tenantType: string | undefined;
     let name: string | undefined;
     let partnerId: string | undefined;
-    let accountPhones: { phoneNumber: string; tenantType: string }[] = [];
+    let accountPhones: { phoneNumber: string }[] = [];
+    let accountLabel: AccountLabel | undefined;
+
     try {
       const res = await fetch(`${BACKEND_URL}/cli/account-info`, {
         headers: { 'Authorization': `Bearer ${token.trim()}` },
       });
-      if (res.ok) {
-        const acc = await res.json() as {
-          partnerId?: string;
-          orgId?: string;
-          name?: string | null;
-          accountInfo?: { tier: number; phones: { phoneNumber: string; tenantType: string }[] } | null;
-        };
-        partnerId = acc.partnerId;
-        orgId = acc.orgId;
-        name = acc.name ?? undefined;
-        tier = acc.accountInfo?.tier;
-        accountPhones = acc.accountInfo?.phones ?? [];
+      if (res.status === 401) {
+        this.error('Invalid or expired token. Generate a fresh one in the Dashboard or contact support@linqapp.com');
       }
-    } catch {
-      // pass
+      if (!res.ok) {
+        this.error('Could not connect to Linq. Please try again later.');
+      }
+      const acc = await res.json() as {
+        partnerId?: string;
+        orgId?: string;
+        name?: string | null;
+        accountInfo?: {
+          phones: { phoneNumber: string }[];
+          accountLabel?: AccountLabel;
+        } | null;
+      };
+      partnerId = acc.partnerId;
+      orgId = acc.orgId;
+      name = acc.name ?? undefined;
+      accountPhones = acc.accountInfo?.phones ?? [];
+      accountLabel = acc.accountInfo?.accountLabel;
+    } catch (e) {
+      if (e instanceof Error && 'oclif' in e) throw e;
+      this.error('Could not connect to Linq. Please try again later.');
     }
 
+    this.log('\u2713 Token is valid!\n');
+
     let fromPhone: string | undefined;
-    const synapsePhones = (data.phone_numbers || []).map(p => ({ phoneNumber: p.phone_number }));
-    const phones = accountPhones.length > 0 ? accountPhones : synapsePhones;
+    const phones = accountPhones;
 
     if (phones.length === 1) {
       fromPhone = phones[0].phoneNumber;
-      this.log(`Default phone number set to ${fromPhone} (only number on account)\n`);
+      this.log(`Default Blue Number set to ${fromPhone} (only number on account)\n`);
     } else if (phones.length > 1) {
-      if ((tier ?? 0) >= 1) {
+      if (accountLabel === 'Paid') {
         fromPhone = await select({
-          message: 'Select a default phone number:',
+          message: 'Select a default Blue Number:',
           choices: phones.map((p) => ({
             name: p.phoneNumber,
             value: p.phoneNumber,
@@ -142,26 +138,19 @@ export default class Init extends BaseCommand {
       }
     }
 
-    if (accountPhones.length > 0) {
-      tenantType = (fromPhone && accountPhones.find(p => p.phoneNumber === fromPhone)?.tenantType)
-        ?? accountPhones[0].tenantType;
-    }
-
-    // Save to profile
     await saveProfile(profileName, {
       token: token.trim(),
       ...(fromPhone && { fromPhone }),
       ...(partnerId && { partnerId }),
       ...(orgId && { orgId }),
-      ...(tier !== undefined && { tier }),
-      ...(tenantType && { tenantType }),
       ...(name && { name }),
+      accountLabel,
     });
     await setCurrentProfile(profileName);
 
     this.log(`\n\u2713 Configuration saved to profile "${profileName}"\n`);
     this.log('Next steps:');
-    this.log('  linq phonenumbers                                     List your phone numbers');
+    this.log('  linq phonenumbers                                     List your Blue Numbers');
     this.log(
       '  linq chats create --to +1XXXXXXXXXX -m "Hello!"       Create a chat and send a message'
     );

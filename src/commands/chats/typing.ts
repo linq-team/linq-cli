@@ -1,4 +1,5 @@
 import { Args, Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
@@ -31,6 +32,7 @@ export default class ChatsTyping extends BaseCommand {
       char: 't',
       description: 'API token (overrides stored token)',
     }),
+    json: Flags.boolean({ description: 'Output as JSON', default: false }),
   };
 
   async run(): Promise<void> {
@@ -41,15 +43,19 @@ export default class ChatsTyping extends BaseCommand {
     const client = createApiClient(token);
 
     try {
+      const action = flags.stop ? 'stop' : 'start';
       if (flags.stop) {
         await client.chats.typing.stop(args.chatId);
-        this.log('Typing indicator stopped.');
       } else {
         await client.chats.typing.start(args.chatId);
-        this.log('Typing indicator started.');
       }
+      if (flags.json) {
+        this.log(JSON.stringify({ success: true, chatId: args.chatId, action: `typing.${action}` }, null, 2));
+        return;
+      }
+      this.log(flags.stop ? 'Typing indicator stopped.' : 'Typing indicator started.');
     } catch (e) {
-      this.error(`Failed to ${flags.stop ? 'stop' : 'start'} typing: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }
