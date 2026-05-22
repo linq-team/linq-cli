@@ -653,7 +653,7 @@ linq webhooks listen --json
 Events are displayed in a structured log format:
 
 ```
-2024-01-15T10:30:45.123Z [message.received] message.id=msg_123 message.body="Hello world" message.chat_id=chat_456
+2024-01-15T10:30:45.123Z [message.received] data.id=msg_123 data.chat.id=chat_456 data.body="Hello world"
 ```
 
 Press `Ctrl+C` to stop. The CLI automatically cleans up the webhook subscription.

@@ -87,9 +87,9 @@ interface PhoneNumberInfo {
 
 export function formatPhoneNumbers(data: { phone_numbers: PhoneNumberInfo[] | null }): string {
   const phones = data.phone_numbers || [];
-  if (phones.length === 0) return '\n  No phone numbers found.\n';
+  if (phones.length === 0) return '\n  No Blue Numbers found.\n';
 
-  const lines = ['\n  ' + chalk.bold('Your phone numbers') + '\n'];
+  const lines = ['\n  ' + chalk.bold('Your Blue Numbers') + '\n'];
   for (const p of phones) {
     lines.push(`  ${chalk.cyan(p.id)}  ${fmtPhone(p.phone_number)}`);
   }

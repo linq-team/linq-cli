@@ -1,4 +1,5 @@
 import { Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import chalk from 'chalk';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
@@ -55,7 +56,7 @@ export default class WebhooksEvents extends BaseCommand {
       }
       this.log('');
     } catch (e) {
-      this.error(`Failed to list webhook events: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }

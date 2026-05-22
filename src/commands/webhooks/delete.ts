@@ -1,4 +1,5 @@
 import { Args, Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
@@ -47,7 +48,7 @@ export default class WebhooksDelete extends BaseCommand {
         this.log(formatDeleted('Webhook', args.subscriptionId));
       }
     } catch (e) {
-      this.error(`Failed to delete webhook: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }

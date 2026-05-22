@@ -1,4 +1,5 @@
 import { Args, Flags } from '@oclif/core';
+import { bail } from '../lib/errors.js';
 import { select } from '@inquirer/prompts';
 import chalk from 'chalk';
 import { BaseCommand } from '../lib/base-command.js';
@@ -6,7 +7,7 @@ import { loadConfig, requireToken, saveProfile, saveSandboxProfile, getCurrentPr
 import { createApiClient } from '../lib/api-client.js';
 
 export default class PhoneNumbers extends BaseCommand {
-  static override description = 'List your phone numbers or set a default';
+  static override description = 'List your Blue Numbers or set a default';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -15,7 +16,7 @@ export default class PhoneNumbers extends BaseCommand {
 
   static override args = {
     action: Args.string({
-      description: 'Action: "set" to pick a default phone number',
+      description: 'Action: "set" to pick a default Blue Number',
       required: false,
     }),
   };
@@ -49,11 +50,11 @@ export default class PhoneNumbers extends BaseCommand {
       const data = await client.phoneNumbers.list();
       phones = (data as any).phone_numbers || [];
     } catch (e) {
-      this.error(`Failed to list phone numbers: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
 
     if (phones.length === 0) {
-      this.log('\n  No phone numbers found.\n');
+      this.log('\n  No Blue Numbers found.\n');
       return;
     }
 
@@ -67,7 +68,7 @@ export default class PhoneNumbers extends BaseCommand {
       return;
     }
 
-    this.log(`\n  ${chalk.bold('Your phone numbers')}\n`);
+    this.log(`\n  ${chalk.bold('Your Blue Numbers')}\n`);
     for (const p of phones) {
       const isDefault = p.phone_number === config.fromPhone;
       this.log(`  ${chalk.cyan(p.id)}  ${this.formatPhone(p.phone_number)}${isDefault ? chalk.green(' ← default') : ''}`);
@@ -88,7 +89,7 @@ export default class PhoneNumbers extends BaseCommand {
 
     try {
       const chosen = await select({
-        message: 'Select your default phone number:',
+        message: 'Select your default Blue Number:',
         choices: phones.map(p => ({
           name: p.phone_number === currentDefault
             ? `${this.formatPhone(p.phone_number)} (current default)`

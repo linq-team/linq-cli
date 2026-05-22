@@ -5,6 +5,7 @@ import {
   loadConfig,
   requireToken,
   isSessionExpired,
+  getAccountLabel,
 } from '../lib/config.js';
 
 export default class Whoami extends BaseCommand {
@@ -28,16 +29,16 @@ export default class Whoami extends BaseCommand {
       token = requireToken(flags.token, config);
     } catch {
       this.log(chalk.yellow(`\n  Not logged in. Run ${chalk.cyan('linq signup')} or ${chalk.cyan('linq login')}.\n`));
-      return;
+      this.exit(1);
     }
 
-    // Check session expiry (only for signup/login users who have sessionExpiresAt)
     if (config.sessionExpiresAt && isSessionExpired(config)) {
       this.log(chalk.yellow(`\n  Your session has expired. Run ${chalk.cyan('linq login')} to re-authenticate.\n`));
       return;
     }
 
     const maskedToken = token.length > 12 ? `${token.slice(0, 12)}...` : token;
+    const accountLabel = getAccountLabel(config);
 
     if (flags.json) {
       this.log(JSON.stringify({
@@ -45,34 +46,19 @@ export default class Whoami extends BaseCommand {
         name: config.name,
         phone: config.fromPhone,
         apiKey: maskedToken,
-        tier: config.tier,
-        tenantType: config.tenantType,
+        orgId: config.orgId,
+        partnerId: config.partnerId,
+        accountLabel,
       }, null, 2));
       return;
     }
 
     this.log('');
-
-    // Signup/login users have tier set
-    if (config.tier !== undefined) {
-      let accountLabel = '';
-      if (config.tier === 0 && config.tenantType === 'SINGLE') accountLabel = 'Sandbox Line';
-      else if (config.tier === 0 && config.tenantType === 'MULTI') accountLabel = 'Shared Line';
-      else if (config.tier >= 1) accountLabel = 'Paid';
-
-      if (accountLabel) this.log(`  ${chalk.dim('Account:')}    ${accountLabel}`);
-      if (config.name) this.log(`  ${chalk.dim('Name:')}       ${config.name}`);
-      if (config.email) this.log(`  ${chalk.dim('Email:')}      ${config.email}`);
-      if (config.fromPhone) this.log(`  ${chalk.dim('Phone:')}      ${config.fromPhone}`);
-      this.log(`  ${chalk.dim('API Key:')}    ${maskedToken}`);
-    } else {
-      // Token-only users (init / paid customers)
-      if (config.name) this.log(`  ${chalk.dim('Name:')}       ${config.name}`);
-      if (config.email) this.log(`  ${chalk.dim('Email:')}      ${config.email}`);
-      if (config.fromPhone) this.log(`  ${chalk.dim('Phone:')}      ${config.fromPhone}`);
-      this.log(`  ${chalk.dim('API Key:')}    ${maskedToken}`);
-    }
-
+    if (accountLabel) this.log(`  ${chalk.dim('Account:')}      ${accountLabel}`);
+    if (config.name) this.log(`  ${chalk.dim('Name:')}         ${config.name}`);
+    if (config.email) this.log(`  ${chalk.dim('Email:')}        ${config.email}  ${chalk.dim('(login)')}`);
+    if (config.fromPhone) this.log(`  ${chalk.dim('Blue Number:')}  ${config.fromPhone}  ${chalk.dim('(your Linq line)')}`);
+    this.log(`  ${chalk.dim('API Key:')}      ${maskedToken}`);
     this.log('');
   }
 }

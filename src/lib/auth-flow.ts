@@ -9,11 +9,16 @@ import {
 } from './config.js';
 import { BACKEND_URL } from './api-client.js';
 import { addBreadcrumb } from './telemetry.js';
+import { copyToClipboard } from './clipboard.js';
 
 const SESSION_DURATION_DAYS = 7;
 
 interface AuthFlowOptions {
   email: string;
+  // When `code` and `name` are provided we skip the interactive prompts
+  // so `linq signup` is fully scriptable / AI-agent driven.
+  code?: string;
+  name?: string;
   log: (msg: string) => void;
   exit: (code: number) => never;
   parseError: (res: Response) => Promise<string>;
@@ -34,45 +39,53 @@ export async function checkExistingSession(): Promise<string | null> {
   return null;
 }
 
-/**
- * Shared auth flow for both signup and login.
- *   1. send-otp        (public)
- *   2. verify-code     (public; server returns either auth token or a
- *                       one-time signupToken if the email is new)
- *   3. signup          (gated by signupToken; only fires for new users)
- */
 export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
-  const { email, log, exit, parseError } = opts;
+  const { email, code: codeFlag, name: nameFlag, log, exit, parseError } = opts;
 
-  // Step 1: Send OTP
-  ux.action.start('Sending verification code');
+  // Step 1: Send OTP.
+  // Skipped entirely when `--code` was passed — the caller already has a
+  // code from a prior `linq signup --email <e>` invocation. Re-sending
+  // here would mint a new OTP and invalidate the one the user is about
+  // to verify with.
+  let sessionId: string | undefined;
+  if (!codeFlag) {
+    ux.action.start('Sending verification code');
+    try {
+      const otpRes = await fetch(`${BACKEND_URL}/cli/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
 
-  let sessionId: string;
-  try {
-    const otpRes = await fetch(`${BACKEND_URL}/cli/send-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    });
+      if (!otpRes.ok) {
+        ux.action.stop('failed');
+        const err = await parseError(otpRes);
+        log(chalk.yellow(`\n  ${err}\n`));
+        exit(1);
+      }
 
-    if (!otpRes.ok) {
+      const data = (await otpRes.json()) as { sessionId: string };
+      sessionId = data.sessionId;
+    } catch (error) {
+      if (error instanceof Error && 'oclif' in error) throw error;
       ux.action.stop('failed');
-      const err = await parseError(otpRes);
-      log(chalk.yellow(`\n  ${err}\n`));
+      log(chalk.red('\n  Could not connect to Linq. Please try again later.\n'));
       exit(1);
+      return;
     }
+    ux.action.stop('sent!');
+    log(`  Check ${chalk.bold(email)} for your verification code.\n`);
 
-    const data = (await otpRes.json()) as { sessionId: string };
-    sessionId = data.sessionId;
-  } catch (error) {
-    if (error instanceof Error && 'oclif' in error) throw error;
-    ux.action.stop('failed');
-    log(chalk.red('\n  Could not connect to Linq. Please try again later.\n'));
-    exit(1);
-    return;
+    // Non-TTY (AI agent, CI, piped stdin) can't drive the interactive
+    // OTP prompt. Bail cleanly with the exact next command so the caller
+    // can re-run with --code (and --name) once the user supplies them.
+    // Skip the bail in test contexts where inquirer prompts are mocked.
+    if (!process.stdin.isTTY && !process.env.VITEST) {
+      log(`  To complete signup, run:`);
+      log(`    ${chalk.cyan(`linq signup --email ${email} --code <6-digit-code> --name "<your name>"`)}\n`);
+      exit(0);
+    }
   }
-  ux.action.stop('sent!');
-  log(`  Check ${chalk.bold(email)} for your verification code.\n`);
 
   // Step 2: Verify OTP. Reprompt on a bad code instead of exiting.
   type VerifyResult = {
@@ -84,41 +97,57 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     email: string;
     name?: string;
     accountInfo?: {
-      tier: number;
-      phones: { phoneNumber: string; tenantType: string }[];
+      phones: { phoneNumber: string }[];
+      accountLabel?: 'Shared' | 'Sandbox' | 'Paid';
     } | null;
   };
 
   let verifyResult: VerifyResult | undefined;
   while (!verifyResult) {
     let code: string;
-    try {
-      code = await input({
-        message: 'Verification code:',
-        validate: (v) => {
-          if (!/^\d{6}$/.test(v.trim())) return 'Enter the 6-digit code from your email';
-          return true;
-        },
-      });
-    } catch (error) {
-      if (error instanceof Error && error.name === 'ExitPromptError') {
-        exit(1);
+    if (codeFlag) {
+      code = codeFlag;
+    } else {
+      try {
+        code = await input({
+          message: 'Verification code:',
+          validate: (v) => {
+            if (!/^\d{6}$/.test(v.trim())) return 'Enter the 6-digit code from your email';
+            return true;
+          },
+        });
+      } catch (error) {
+        if (error instanceof Error && error.name === 'ExitPromptError') {
+          exit(1);
+        }
+        throw error;
       }
-      throw error;
     }
 
     ux.action.start('Verifying');
     try {
+      // sessionId path when send-otp ran in this process; email path
+      // when --code was supplied (multi-process / non-interactive flow).
+      const verifyBody = sessionId
+        ? { sessionId, code: code.trim() }
+        : { email, code: code.trim() };
       const verifyRes = await fetch(`${BACKEND_URL}/cli/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, code: code.trim() }),
+        body: JSON.stringify(verifyBody),
       });
 
       if (!verifyRes.ok) {
         ux.action.stop('failed');
         const err = await parseError(verifyRes);
         if (verifyRes.status === 400 || verifyRes.status === 401) {
+          // Don't loop in non-interactive mode — there's no one to
+          // re-prompt. Bail out so the caller sees the error and can
+          // run signup with a fresh --code.
+          if (codeFlag) {
+            log(chalk.red(`\n  ${err}\n`));
+            exit(1);
+          }
           log(chalk.yellow(`\n  ${err}\n`));
           continue;
         }
@@ -154,17 +183,21 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
   if (verifyResult.needsSignup) {
     isNewUser = true;
     let name: string;
-    try {
-      const entered = await input({
-        message: 'Your name:',
-        validate: (v) => (v.trim() ? true : 'Name is required'),
-      });
-      name = entered.trim();
-    } catch (error) {
-      if (error instanceof Error && error.name === 'ExitPromptError') {
-        exit(1);
+    if (nameFlag) {
+      name = nameFlag;
+    } else {
+      try {
+        const entered = await input({
+          message: 'Your name:',
+          validate: (v) => (v.trim() ? true : 'Name is required'),
+        });
+        name = entered.trim();
+      } catch (error) {
+        if (error instanceof Error && error.name === 'ExitPromptError') {
+          exit(1);
+        }
+        throw error;
       }
-      throw error;
     }
 
     ux.action.start('Creating your account');
@@ -206,18 +239,8 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
   }
 
   const phones = verifyResult.accountInfo?.phones || [];
-  const tier = verifyResult.accountInfo?.tier ?? 0;
-  let phoneNumber = '';
-  let accountLabel = '';
-
-  if (phones.length === 1) {
-    phoneNumber = phones[0].phoneNumber;
-    if (tier === 0 && phones[0].tenantType === 'SINGLE') accountLabel = 'Sandbox Line';
-    else if (tier === 0 && phones[0].tenantType === 'MULTI') accountLabel = 'Shared Line';
-    else if (tier >= 1) accountLabel = 'Paid';
-  } else if (phones.length > 1) {
-    accountLabel = tier >= 1 ? 'Paid' : 'Shared Line';
-  }
+  const phoneNumber = phones.length >= 1 ? phones[0].phoneNumber : '';
+  const accountLabel = verifyResult.accountInfo?.accountLabel;
 
   const sessionExpiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString();
   await saveProfile('default', {
@@ -227,8 +250,7 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     orgId: verifyResult.orgId,
     email: verifyResult.email,
     name: verifyResult.name,
-    tier,
-    tenantType: phones.length === 1 ? phones[0].tenantType : undefined,
+    accountLabel,
     sessionExpiresAt,
   });
   await setCurrentProfile('default');
@@ -237,16 +259,27 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     addBreadcrumb('Account created', { phone: phoneNumber });
     log('');
     log(chalk.green('  ✓ Account created!\n'));
-    if (accountLabel) log(`  ${chalk.dim('Account:')}  ${accountLabel}`);
-    log(`  ${chalk.dim('Phone:')}    ${chalk.bold(phoneNumber || 'pending')}`);
-    log(`  ${chalk.dim('Email:')}    ${verifyResult.email}`);
-    log(`  ${chalk.dim('API Key:')}  ${chalk.bold(verifyResult.token)}`);
+    if (accountLabel) log(`  ${chalk.dim('Account:')}      ${accountLabel}`);
+    log(`  ${chalk.dim('Blue Number:')}  ${chalk.bold(phoneNumber || 'pending')}`);
+    log(`  ${chalk.dim('Email:')}        ${verifyResult.email}`);
+    log(`  ${chalk.dim('API Key:')}      ${chalk.bold(verifyResult.token)}`);
     log('');
-    log(chalk.yellow('  ⚠  Save this token securely — it will not be shown again.'));
+
+    // Auto-copy on real terminals only — keeps AI-agent / CI logs clean
+    // and avoids spawning pbcopy/xclip in headless contexts.
+    const copied = process.stdout.isTTY && verifyResult.token
+      ? await copyToClipboard(verifyResult.token)
+      : false;
+
+    if (copied) {
+      log(chalk.green('  ✓ Copied to clipboard — save it somewhere secure. It will not be shown again.'));
+    } else {
+      log(chalk.yellow('  ⚠  Save this token securely — it will not be shown again.'));
+    }
     log('');
-    if (phoneNumber && accountLabel === 'Shared Line') {
-      log('  Your number is shared and allows a max of 20 contacts.');
-      log('  Start by adding a contact. Your number is inbound-first:');
+    if (phoneNumber && accountLabel === 'Shared') {
+      log('  Your Blue Number is shared and allows a max of 20 contacts.');
+      log('  Start by adding a contact. Your Blue Number is inbound-first:');
       log('  others text you first and then you can start the conversation.\n');
     }
     log('  Get started:\n');
@@ -259,15 +292,15 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     addBreadcrumb('Login successful', { accountType: accountLabel || 'unknown' });
     log('');
     log(chalk.green('  ✓ Welcome back!\n'));
-    if (accountLabel) log(`  ${chalk.dim('Account:')}  ${accountLabel}`);
+    if (accountLabel) log(`  ${chalk.dim('Account:')}      ${accountLabel}`);
     if (phones.length > 1) {
-      log(`  ${chalk.dim('Phone:')}    ${chalk.yellow(`${phones.length} phones available`)}`);
-      log(`             Run ${chalk.cyan('linq phonenumbers set')} to pick a default.`);
+      log(`  ${chalk.dim('Blue Number:')}  ${chalk.yellow(`${phones.length} Blue Numbers available`)}`);
+      log(`                 Run ${chalk.cyan('linq phonenumbers set')} to pick a default.`);
     } else {
-      log(`  ${chalk.dim('Phone:')}    ${chalk.bold(phoneNumber || 'none')}`);
+      log(`  ${chalk.dim('Blue Number:')}  ${chalk.bold(phoneNumber || 'none')}`);
     }
-    log(`  ${chalk.dim('Email:')}    ${verifyResult.email}`);
-    log(`  ${chalk.dim('API Key:')}  ${verifyResult.token}`);
+    log(`  ${chalk.dim('Email:')}        ${verifyResult.email}`);
+    log(`  ${chalk.dim('API Key:')}      ${verifyResult.token}`);
     log('');
   }
 }

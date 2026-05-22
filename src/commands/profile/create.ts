@@ -28,7 +28,7 @@ export default class ProfileCreate extends BaseCommand {
     }),
     'from-phone': Flags.string({
       char: 'f',
-      description: 'Default sender phone number',
+      description: 'Default sender Blue Number',
     }),
   };
 

@@ -1,4 +1,5 @@
 import { Args, Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
@@ -44,7 +45,7 @@ export default class ChatsUpdate extends BaseCommand {
     const { args, flags } = await this.parse(ChatsUpdate);
 
     if (!flags.name && !flags.icon) {
-      this.error('At least one of --name or --icon must be specified');
+      bail(this, flags.json, 'At least one of --name or --icon must be specified');
     }
 
     const config = await loadConfig(flags.profile);
@@ -65,7 +66,7 @@ export default class ChatsUpdate extends BaseCommand {
         this.log(formatChatDetail(chat));
       }
     } catch (e) {
-      this.error(`Failed to update chat: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }

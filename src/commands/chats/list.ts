@@ -1,11 +1,12 @@
 import { Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireFromPhone } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatChatsList } from '../../lib/format.js';
 
 export default class ChatsList extends BaseCommand {
-  static override description = 'List all chats for a phone number';
+  static override description = 'List all chats for a Blue Number';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -16,7 +17,7 @@ export default class ChatsList extends BaseCommand {
 
   static override flags = {
     from: Flags.string({
-      description: 'Phone number to list chats for (E.164 format). Uses config fromPhone if not specified.',
+      description: 'Blue Number to list chats for (E.164 format). Uses config fromPhone if not specified.',
     }),
     limit: Flags.integer({
       description: 'Maximum number of chats to return (default: 20, max: 100)',
@@ -60,7 +61,7 @@ export default class ChatsList extends BaseCommand {
         this.log(formatChatsList(data));
       }
     } catch (e) {
-      this.error(`Failed to list chats: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, flags.json, e);
     }
   }
 }

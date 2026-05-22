@@ -1,4 +1,5 @@
 import { Flags } from '@oclif/core';
+import { bail } from '../../lib/errors.js';
 import chalk from 'chalk';
 import WebSocket from 'ws';
 import { BaseCommand } from '../../lib/base-command.js';
@@ -40,13 +41,13 @@ const DEFAULT_RELAY_URL = 'https://webhook.linqapp.com';
 const MAX_RECONNECT_DELAY = 30_000;
 
 export default class WebhooksListen extends BaseCommand {
-  static override description = 'Listen for webhook events and optionally forward to a local server';
+  static override description =
+    'Stream live webhook events to your terminal. Use --forward-to to also relay them to a local HTTP server.';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --events message.received,message.sent',
     '<%= config.bin %> <%= command.id %> --forward-to http://localhost:3000/webhook',
-    '<%= config.bin %> <%= command.id %> --forward-to http://localhost:3000/webhook --events message.received',
     '<%= config.bin %> <%= command.id %> --json',
   ];
 
@@ -79,9 +80,13 @@ export default class WebhooksListen extends BaseCommand {
   private eventCount = 0;
   private forwardCount = 0;
   private startedAt = Date.now();
+  // Cached so private methods (which run outside the run() closure) can
+  // route errors through the right output mode.
+  private jsonMode = false;
 
   async run(): Promise<void> {
     const { flags } = await this.parse(WebhooksListen);
+    this.jsonMode = flags.json;
 
     const config = await loadConfig(flags.profile);
     const token = requireToken(flags.token, config);
@@ -373,7 +378,7 @@ export default class WebhooksListen extends BaseCommand {
         this.log(`Signing secret: ${chalk.dim(this.signingSecret)} ${chalk.dim('(this session only)')}`);
       }
     } catch (e) {
-      this.error(`Failed to create webhook: ${e instanceof Error ? e.message : String(e)}`);
+      bail(this, this.jsonMode, e);
     }
   }
 

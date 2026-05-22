@@ -4,6 +4,7 @@ import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken } from '../../lib/config.js';
 import { BACKEND_URL } from '../../lib/api-client.js';
 import { TokenSummary } from '../../lib/tokens-helpers.js';
+import { bail, throwHttpError } from '../../lib/errors.js';
 
 export default class TokensRename extends BaseCommand {
   static override description = 'Rename an API token';
@@ -29,7 +30,7 @@ export default class TokensRename extends BaseCommand {
     const callerToken = requireToken(flags.token, config);
 
     const newName = flags.name.trim();
-    if (!newName) this.error('Name cannot be empty');
+    if (!newName) bail(this, flags.json, 'Name cannot be empty');
 
     let updated: TokenSummary;
     try {
@@ -41,14 +42,10 @@ export default class TokensRename extends BaseCommand {
         },
         body: JSON.stringify({ name: newName }),
       });
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { message?: string };
-        this.error(err.message || `Failed to rename token (${res.status})`);
-      }
+      if (!res.ok) await throwHttpError(res);
       updated = (await res.json()) as TokenSummary;
     } catch (e) {
-      if (e instanceof Error && 'oclif' in e) throw e;
-      this.error('Could not connect to Linq. Please try again later.');
+      bail(this, flags.json, e);
     }
 
     if (flags.json) {

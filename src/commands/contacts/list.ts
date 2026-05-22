@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { BaseCommand } from '../../lib/base-command.js';
 import { loadConfig, requireToken, requireSharedLine } from '../../lib/config.js';
 import { BACKEND_URL } from '../../lib/api-client.js';
+import { bail, throwHttpError } from '../../lib/errors.js';
 
 export default class ContactsList extends BaseCommand {
   static override description = 'List contacts on your shared line';
@@ -26,8 +27,7 @@ export default class ContactsList extends BaseCommand {
 
     const orgId = config.orgId;
     if (!orgId) {
-      this.log(chalk.yellow(`\n  Not logged in. Run ${chalk.cyan('linq signup')} or ${chalk.cyan('linq login')}.\n`));
-      this.exit(1);
+      bail(this, flags.json, 'Not logged in. Run `linq signup` or `linq login`.');
     }
 
     try {
@@ -36,11 +36,7 @@ export default class ContactsList extends BaseCommand {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       });
 
-      if (!res.ok) {
-        const err = await res.json() as { message?: string };
-        this.log(chalk.red(`\n  ${err.message || 'Failed to list contacts'}\n`));
-        this.exit(1);
-      }
+      if (!res.ok) await throwHttpError(res);
 
       const data = await res.json() as {
         contacts: { contactPhone: string; createdAt: string }[];
@@ -59,14 +55,12 @@ export default class ContactsList extends BaseCommand {
 
       this.log(`\n  ${chalk.bold('Your contacts')} (${data.contacts.length})\n`);
       for (const contact of data.contacts) {
-        const added = new Date(contact.createdAt).toLocaleDateString();
+        const added = new Date(contact.createdAt).toISOString().slice(0, 10);
         this.log(`  ${contact.contactPhone}  ${chalk.dim(`added ${added}`)}`);
       }
       this.log('');
-    } catch (error) {
-      if (error instanceof Error && 'oclif' in error) throw error;
-      this.log(chalk.red('\n  Could not connect to Linq. Please try again later.\n'));
-      this.exit(1);
+    } catch (e) {
+      bail(this, flags.json, e);
     }
   }
 }

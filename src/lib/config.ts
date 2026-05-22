@@ -8,6 +8,8 @@ const CONFIG_FILE = 'config.json';
 
 export const SANDBOX_PROFILE = 'sandbox';
 
+export type AccountLabel = 'Shared' | 'Sandbox' | 'Paid';
+
 export interface Profile {
   token?: string;
   partnerId?: string;
@@ -15,11 +17,8 @@ export interface Profile {
   orgId?: string;
   email?: string;
   name?: string;
-  tier?: number;
-  tenantType?: string; // SINGLE or MULTI
-  // Session expiry (local only — NOT token expiry)
+  accountLabel?: AccountLabel;
   sessionExpiresAt?: string;
-  // Legacy fields (migration)
   expiresAt?: string;
   githubLogin?: string;
 }
@@ -259,7 +258,7 @@ export function requireToken(
 ): string {
   const token = flagToken || config.token;
   if (!token) {
-    throw new Errors.CLIError("Not logged in. Run linq signup or linq login first.");
+    throw new Errors.CLIError("Not logged in. Run linq signup or linq login first.", { exit: 1 });
   }
   return token;
 }
@@ -279,19 +278,19 @@ export function requireFromPhone(
 
 // ── Account type helpers ─────────────────────────────────────────
 
+export function getAccountLabel(config: Profile): AccountLabel | undefined {
+  return config.accountLabel;
+}
+
 export const isSandbox = (config: Profile): boolean =>
-  config.tier === 0 && config.tenantType === 'SINGLE';
+  getAccountLabel(config) === 'Sandbox';
 
 export const isSharedLine = (config: Profile): boolean =>
-  config.tier === 0 && config.tenantType === 'MULTI';
+  getAccountLabel(config) === 'Shared';
 
 export const isPaid = (config: Profile): boolean =>
-  (config.tier ?? 0) >= 1;
+  getAccountLabel(config) === 'Paid';
 
-/**
- * Throws if the account is not a shared line.
- * Used by contacts add/remove/list commands.
- */
 export function requireSharedLine(config: Profile): void {
   if (isSandbox(config)) {
     throw new Errors.CLIError(

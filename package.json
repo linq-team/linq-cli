@@ -77,6 +77,12 @@
       },
       "attachments": {
         "description": "Manage file attachments"
+      },
+      "tokens": {
+        "description": "Manage API tokens"
+      },
+      "contacts": {
+        "description": "Manage shared-line contacts"
       }
     }
   },

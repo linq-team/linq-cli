@@ -34,10 +34,12 @@ export abstract class BaseCommand extends Command {
       }
     }
 
-    // All other CLI errors — clean single-line output
+    // All other CLI errors — clean single-line output. Honor the error's
+    // own exit code when it specified one (e.g. requireToken uses 1).
     if (err instanceof Errors.CLIError) {
       this.log(chalk.red(`\n  Error: ${err.message}\n`));
-      this.exit(2);
+      const code = (err as Error & { oclif?: { exit?: number } }).oclif?.exit ?? 2;
+      this.exit(code);
       return;
     }
 

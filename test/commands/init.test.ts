@@ -54,8 +54,19 @@ describe('init', () => {
     mockSelect.mockResolvedValueOnce('default'); // profile selection
     mockPassword.mockResolvedValueOnce('test-token-123');
 
+    // init now makes a single /cli/account-info call (the prior synapse
+    // phoneNumbers.list round-trip was removed). The endpoint returns
+    // the phones plus tier/org info in one shot.
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { phone_numbers: [{ phone_number: '+12025551234' }] })
+      createMockResponse(200, {
+        partnerId: 'p1',
+        orgId: '1',
+        name: 'Acme',
+        accountInfo: {
+          tier: 0,
+          phones: [{ phoneNumber: '+12025551234', tenantType: 'MULTI' }],
+        },
+      })
     );
 
     const config = await Config.load({ root: process.cwd() });
@@ -72,26 +83,18 @@ describe('init', () => {
     mockPassword.mockResolvedValueOnce('test-token-123');
     mockSelect.mockResolvedValueOnce('+18005551234'); // phone selection
 
-    mockFetch
-      .mockResolvedValueOnce(createMockResponse(200, {
-        phone_numbers: [
-          { phone_number: '+12025551234' },
-          { phone_number: '+18005551234' },
+    mockFetch.mockResolvedValue(createMockResponse(200, {
+      partnerId: 'p1',
+      orgId: '1',
+      name: 'Acme',
+      accountInfo: {
+        accountLabel: 'Paid',
+        phones: [
+          { phoneNumber: '+12025551234' },
+          { phoneNumber: '+18005551234' },
         ],
-      }))
-      .mockResolvedValueOnce(createMockResponse(200, {
-        partnerId: 'p1',
-        orgId: '1',
-        name: 'Acme',
-        accountInfo: {
-          tier: 1,
-          phones: [
-            { phoneNumber: '+12025551234', tenantType: 'SINGLE' },
-            { phoneNumber: '+18005551234', tenantType: 'SINGLE' },
-          ],
-        },
-      }))
-      .mockResolvedValue(createMockResponse(200, { partnerId: 'p1' }));
+      },
+    }));
 
     const config = await Config.load({ root: process.cwd() });
     const cmd = new Init([], config);
@@ -121,7 +124,15 @@ describe('init', () => {
     mockPassword.mockResolvedValueOnce('work-token');
 
     mockFetch.mockResolvedValue(
-      createMockResponse(200, { phone_numbers: [{ phone_number: '+18005551234' }] })
+      createMockResponse(200, {
+        partnerId: 'p1',
+        orgId: '1',
+        name: 'Work',
+        accountInfo: {
+          tier: 0,
+          phones: [{ phoneNumber: '+18005551234', tenantType: 'MULTI' }],
+        },
+      })
     );
 
     const config = await Config.load({ root: process.cwd() });
