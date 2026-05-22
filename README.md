@@ -7,6 +7,14 @@ A command-line interface for the [Linq](https://linqapp.com) messaging API. Send
 
 ## Installation
 
+### npm (cross-platform)
+
+Requires Node.js >= 22.
+
+```bash
+npm install -g @linqapp/cli
+```
+
 ### Homebrew (macOS / Linux)
 
 ```bash
