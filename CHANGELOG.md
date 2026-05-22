@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/linq-team/linq-cli/compare/v2.2.0...v2.3.0) (2026-05-22)
+
+
+### Features
+
+* ai-agent quickstart and json-first output ([#36](https://github.com/linq-team/linq-cli/issues/36)) ([58edcc8](https://github.com/linq-team/linq-cli/commit/58edcc8a4e13dfa05bf100088d463fd81d2ec209))
+
 # [2.2.0](https://github.com/linq-team/linq-cli/compare/v2.1.0...v2.2.0) (2026-05-21)
 
 
