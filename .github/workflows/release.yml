@@ -8,6 +8,7 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+  id-token: write
 
 jobs:
   release:
@@ -25,6 +26,10 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
+      # Trusted publishing (OIDC) requires npm >= 11.5.1; runners ship npm 10.x
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+
       - name: Install dependencies
         run: npm ci
 
@@ -37,5 +42,4 @@ jobs:
       - name: Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
