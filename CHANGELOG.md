@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/linq-team/linq-cli/compare/v2.3.0...v2.4.0) (2026-05-26)
+
+
+### Features
+
+* linq number rename, tier+line model, upgrade command ([#37](https://github.com/linq-team/linq-cli/issues/37)) ([b9e0233](https://github.com/linq-team/linq-cli/commit/b9e0233ca33a79e63b26f193046f0427bab2825a))
+
 # [2.3.0](https://github.com/linq-team/linq-cli/compare/v2.2.0...v2.3.0) (2026-05-22)
 
 
