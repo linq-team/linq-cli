@@ -6,7 +6,7 @@ import { BACKEND_URL } from '../../lib/api-client.js';
 import { bail, throwHttpError } from '../../lib/errors.js';
 
 export default class ContactsList extends BaseCommand {
-  static override description = 'List contacts on your shared line';
+  static override description = 'List contacts on your Shared line';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',

@@ -6,6 +6,8 @@ import {
   setCurrentProfile,
   loadConfig,
   isSessionExpired,
+  getDisplayTier,
+  getLineType,
 } from './config.js';
 import { BACKEND_URL } from './api-client.js';
 import { addBreadcrumb } from './telemetry.js';
@@ -259,8 +261,11 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     addBreadcrumb('Account created', { phone: phoneNumber });
     log('');
     log(chalk.green('  ✓ Account created!\n'));
-    if (accountLabel) log(`  ${chalk.dim('Account:')}      ${accountLabel}`);
-    log(`  ${chalk.dim('Blue Number:')}  ${chalk.bold(phoneNumber || 'pending')}`);
+    const tier = getDisplayTier(accountLabel);
+    const line = getLineType(accountLabel);
+    if (tier) log(`  ${chalk.dim('Tier:')}         ${tier}`);
+    if (line) log(`  ${chalk.dim('Line:')}         ${line}`);
+    log(`  ${chalk.dim('Linq Number:')}  ${chalk.bold(phoneNumber || 'pending')}`);
     log(`  ${chalk.dim('Email:')}        ${verifyResult.email}`);
     log(`  ${chalk.dim('API Key:')}      ${chalk.bold(verifyResult.token)}`);
     log('');
@@ -277,14 +282,18 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
       log(chalk.yellow('  ⚠  Save this token securely — it will not be shown again.'));
     }
     log('');
-    if (phoneNumber && accountLabel === 'Shared') {
-      log('  Your Blue Number is shared and allows a max of 20 contacts.');
-      log('  Start by adding a contact. Your Blue Number is inbound-first:');
-      log('  others text you first and then you can start the conversation.\n');
+    if (line === 'Shared') {
+      log('  Your Shared line allows up to 20 contacts.');
+      log(`  Start by adding one with ${chalk.cyan('linq contacts add +1...')}.`);
+      log('  They must text your Linq Number first, then you can reply.\n');
+    } else if (tier === 'Free') {
+      log('  Your Free line is inbound-first.');
+      log('  Anyone can text your Linq Number first, then you can reply.\n');
     }
     log('  Get started:\n');
-    log(`    ${chalk.cyan('linq contacts add +1234567890')}  ${chalk.dim('# Add a contact')}`);
-    log(`    ${chalk.cyan('linq webhooks listen')}            ${chalk.dim('# Watch for incoming events')}`);
+    log(`    ${chalk.cyan('linq contacts add +1234567890')}                            ${chalk.dim('# Add a contact')}`);
+    log(`    ${chalk.cyan('linq webhooks listen')}                                     ${chalk.dim('# Watch for incoming events')}`);
+    log(`    ${chalk.cyan('linq chats create --to +1234567890 -m "Hi from CLI"')}      ${chalk.dim('# Send a message')}`);
     log('');
     log(`  ${chalk.dim('Full API docs:')} https://apidocs.linqapp.com`);
     log('');
@@ -292,15 +301,25 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
     addBreadcrumb('Login successful', { accountType: accountLabel || 'unknown' });
     log('');
     log(chalk.green('  ✓ Welcome back!\n'));
-    if (accountLabel) log(`  ${chalk.dim('Account:')}      ${accountLabel}`);
+    const tier = getDisplayTier(accountLabel);
+    const line = getLineType(accountLabel);
+    if (tier) log(`  ${chalk.dim('Tier:')}         ${tier}`);
+    if (line) log(`  ${chalk.dim('Line:')}         ${line}`);
     if (phones.length > 1) {
-      log(`  ${chalk.dim('Blue Number:')}  ${chalk.yellow(`${phones.length} Blue Numbers available`)}`);
+      log(`  ${chalk.dim('Linq Number:')}  ${chalk.yellow(`${phones.length} Linq Numbers available`)}`);
       log(`                 Run ${chalk.cyan('linq phonenumbers set')} to pick a default.`);
     } else {
-      log(`  ${chalk.dim('Blue Number:')}  ${chalk.bold(phoneNumber || 'none')}`);
+      log(`  ${chalk.dim('Linq Number:')}  ${chalk.bold(phoneNumber || 'none')}`);
     }
     log(`  ${chalk.dim('Email:')}        ${verifyResult.email}`);
     log(`  ${chalk.dim('API Key:')}      ${verifyResult.token}`);
+    if (line === 'Shared') {
+      log('');
+      log(`  Shared line: add contacts with ${chalk.cyan('linq contacts add +1...')}, have them text you first, then reply.`);
+    } else if (tier === 'Free') {
+      log('');
+      log('  Free line is inbound-first: have someone text your Linq Number first, then reply.');
+    }
     log('');
   }
 }

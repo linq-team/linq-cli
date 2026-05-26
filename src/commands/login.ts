@@ -8,6 +8,8 @@ import {
   getCurrentProfile,
   listProfiles,
   SANDBOX_PROFILE,
+  getDisplayTier,
+  getLineType,
   type AccountLabel,
 } from '../lib/config.js';
 import { BACKEND_URL } from '../lib/api-client.js';
@@ -40,6 +42,14 @@ export default class Login extends BaseCommand {
 
     if (profileName === SANDBOX_PROFILE) {
       this.error(`The "${SANDBOX_PROFILE}" profile is reserved for \`linq signup\`. Use --profile <name> to log in to a different profile.`);
+    }
+
+    // Show banner up front for interactive runs (skip when --token is
+    // passed — that path is for scripts / AI agents and shouldn't get
+    // animated decoration cluttering their logs).
+    if (!flags.token && process.stdout.isTTY) {
+      await renderBanner();
+      console.log('\n  Welcome back to Linq CLI\n');
     }
 
     if (!profileName) {
@@ -82,8 +92,6 @@ export default class Login extends BaseCommand {
       if (!process.stdin.isTTY) {
         this.error('linq login needs a terminal for the interactive token prompt. To run non-interactively, pass --token: linq login --token <your-token>');
       }
-      await renderBanner();
-      console.log('\n  Welcome back to Linq CLI\n');
       try {
         token = await password({
           message: 'Enter your API token:',
@@ -103,6 +111,7 @@ export default class Login extends BaseCommand {
     this.log('\nValidating token...');
     let orgId: string | undefined;
     let name: string | undefined;
+    let email: string | undefined;
     let partnerId: string | undefined;
     let accountPhones: { phoneNumber: string }[] = [];
     let accountLabel: AccountLabel | undefined;
@@ -121,6 +130,7 @@ export default class Login extends BaseCommand {
         partnerId?: string;
         orgId?: string;
         name?: string | null;
+        email?: string | null;
         accountInfo?: {
           phones: { phoneNumber: string }[];
           accountLabel?: AccountLabel;
@@ -129,6 +139,7 @@ export default class Login extends BaseCommand {
       partnerId = acc.partnerId;
       orgId = acc.orgId;
       name = acc.name ?? undefined;
+      email = acc.email ?? undefined;
       accountPhones = acc.accountInfo?.phones ?? [];
       accountLabel = acc.accountInfo?.accountLabel;
     } catch (e) {
@@ -147,7 +158,7 @@ export default class Login extends BaseCommand {
       if (accountLabel === 'Paid') {
         try {
           fromPhone = await select({
-            message: 'Select a default Blue Number:',
+            message: 'Select a default Linq Number:',
             choices: phones.map(p => ({ name: p.phoneNumber, value: p.phoneNumber })),
           });
         } catch (error) {
@@ -167,15 +178,26 @@ export default class Login extends BaseCommand {
       ...(partnerId && { partnerId }),
       ...(orgId && { orgId }),
       ...(name && { name }),
+      ...(email && { email }),
       accountLabel,
     });
     await setCurrentProfile(profileName);
 
+    const tier = getDisplayTier(accountLabel);
+    const line = getLineType(accountLabel);
+
     this.log(chalk.green('✓ Welcome back!\n'));
-    if (accountLabel) this.log(`  ${chalk.dim('Account:')}      ${accountLabel}`);
-    if (fromPhone) this.log(`  ${chalk.dim('Blue Number:')}  ${chalk.bold(fromPhone)}`);
+    if (tier) this.log(`  ${chalk.dim('Tier:')}         ${tier}`);
+    if (line) this.log(`  ${chalk.dim('Line:')}         ${line}`);
+    if (fromPhone) this.log(`  ${chalk.dim('Linq Number:')}  ${chalk.bold(fromPhone)}`);
     if (name) this.log(`  ${chalk.dim('Name:')}         ${name}`);
-    this.log(`  ${chalk.dim('Profile:')}      ${profileName}`);
+    if (line === 'Shared') {
+      this.log('');
+      this.log(`  Shared line: add contacts with ${chalk.cyan('linq contacts add +1...')}, have them text you first, then reply.`);
+    } else if (tier === 'Free') {
+      this.log('');
+      this.log('  Free line is inbound-first: have someone text your Linq Number first, then reply.');
+    }
     this.log('');
   }
 }

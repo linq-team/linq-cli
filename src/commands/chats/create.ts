@@ -123,10 +123,10 @@ export default class ChatsCreate extends BaseCommand {
       if (e instanceof Linq.PermissionDeniedError) {
         this.log(chalk.yellow(`\n  Can't message this contact yet.\n`));
         if (isSharedLine(config)) {
-          this.log(chalk.dim(`  On a shared line, you need to add the contact (${chalk.cyan('linq contacts add +1234567890')})`));
+          this.log(chalk.dim(`  On a Shared line, you need to add the contact (${chalk.cyan('linq contacts add +1234567890')})`));
           this.log(chalk.dim(`  and they must text you (${chalk.bold(fromPhone)}) first before you can message them.\n`));
         } else {
-          this.log(chalk.dim(`  On a sandbox line, the contact must text you (${chalk.bold(fromPhone)}) first before you can message them.\n`));
+          this.log(chalk.dim(`  On a Free line, the contact must text you (${chalk.bold(fromPhone)}) first before you can message them.\n`));
         }
         this.exit(1);
       }
