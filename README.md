@@ -146,6 +146,18 @@ linq tokens list
 linq tokens list --json
 ```
 
+#### `linq tokens show`
+
+Print the API token saved in your local config. Useful if you lost the token printed at signup and need to copy it elsewhere (password manager, CI env var, etc.).
+
+```bash
+linq tokens show
+linq tokens show --copy           # copy to clipboard instead of printing
+linq tokens show --json
+```
+
+> Reads from your local `~/.linq/config.json` — never from the server. For security, raw tokens are never stored server-side. If you don't have the token locally either, regenerate it with `linq tokens regenerate <id>` or create a new one.
+
 #### `linq tokens create`
 
 Create a new API token. Run bare for an interactive wizard (name + expiration preset/custom/never). With flags, runs non-interactively and defaults to no expiry.

@@ -6,7 +6,7 @@ import { createApiClient } from '../../lib/api-client.js';
 import { formatChatsList } from '../../lib/format.js';
 
 export default class ChatsList extends BaseCommand {
-  static override description = 'List all chats for a Blue Number';
+  static override description = 'List all chats for a Linq Number';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -17,7 +17,7 @@ export default class ChatsList extends BaseCommand {
 
   static override flags = {
     from: Flags.string({
-      description: 'Blue Number to list chats for (E.164 format). Uses config fromPhone if not specified.',
+      description: 'Linq Number to list chats for (E.164 format). Uses config fromPhone if not specified.',
     }),
     limit: Flags.integer({
       description: 'Maximum number of chats to return (default: 20, max: 100)',

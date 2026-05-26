@@ -7,7 +7,7 @@ import { addBreadcrumb } from '../../lib/telemetry.js';
 import { bail, throwHttpError } from '../../lib/errors.js';
 
 export default class ContactsRemove extends BaseCommand {
-  static override description = 'Remove a contact from your shared line';
+  static override description = 'Remove a contact from your Shared line';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> +12025551234',

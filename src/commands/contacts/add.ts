@@ -7,7 +7,7 @@ import { addBreadcrumb } from '../../lib/telemetry.js';
 import { bail, throwHttpError } from '../../lib/errors.js';
 
 export default class ContactsAdd extends BaseCommand {
-  static override description = 'Add a contact to your shared line';
+  static override description = 'Add a contact to your Shared line';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> +12025551234',
@@ -47,20 +47,20 @@ export default class ContactsAdd extends BaseCommand {
       const data = await res.json() as { contactPhone: string };
       addBreadcrumb('Contact added');
 
-      const blueNumber = config.fromPhone;
+      const linqNumber = config.fromPhone;
 
       if (flags.json) {
         this.log(JSON.stringify({
           contactPhone: data.contactPhone,
-          blueNumber: blueNumber ?? null,
+          linqNumber: linqNumber ?? null,
         }, null, 2));
         return;
       }
 
       this.log(chalk.green(`\n  ✓ Contact ${data.contactPhone} added.\n`));
-      this.log(chalk.yellow('  Inbound-first: this contact must text your Blue Number before you can text them.\n'));
-      if (blueNumber) {
-        this.log(`  Text ${chalk.cyan(blueNumber)} from ${chalk.cyan(data.contactPhone)} to start the conversation.\n`);
+      this.log(chalk.yellow('  Inbound-first: this contact must text your Linq Number before you can text them.\n'));
+      if (linqNumber) {
+        this.log(`  Text ${chalk.cyan(linqNumber)} from ${chalk.cyan(data.contactPhone)} to start the conversation.\n`);
       }
     } catch (e) {
       bail(this, flags.json, e);

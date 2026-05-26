@@ -6,6 +6,8 @@ import {
   requireToken,
   isSessionExpired,
   getAccountLabel,
+  getDisplayTier,
+  getLineType,
 } from '../lib/config.js';
 
 export default class Whoami extends BaseCommand {
@@ -39,6 +41,8 @@ export default class Whoami extends BaseCommand {
 
     const maskedToken = token.length > 12 ? `${token.slice(0, 12)}...` : token;
     const accountLabel = getAccountLabel(config);
+    const tier = getDisplayTier(accountLabel);
+    const line = getLineType(accountLabel);
 
     if (flags.json) {
       this.log(JSON.stringify({
@@ -48,16 +52,18 @@ export default class Whoami extends BaseCommand {
         apiKey: maskedToken,
         orgId: config.orgId,
         partnerId: config.partnerId,
-        accountLabel,
+        tier,
+        line,
       }, null, 2));
       return;
     }
 
     this.log('');
-    if (accountLabel) this.log(`  ${chalk.dim('Account:')}      ${accountLabel}`);
+    if (tier) this.log(`  ${chalk.dim('Tier:')}         ${tier}`);
+    if (line) this.log(`  ${chalk.dim('Line:')}         ${line}`);
     if (config.name) this.log(`  ${chalk.dim('Name:')}         ${config.name}`);
     if (config.email) this.log(`  ${chalk.dim('Email:')}        ${config.email}  ${chalk.dim('(login)')}`);
-    if (config.fromPhone) this.log(`  ${chalk.dim('Blue Number:')}  ${config.fromPhone}  ${chalk.dim('(your Linq line)')}`);
+    if (config.fromPhone) this.log(`  ${chalk.dim('Linq Number:')}  ${config.fromPhone}`);
     this.log(`  ${chalk.dim('API Key:')}      ${maskedToken}`);
     this.log('');
   }

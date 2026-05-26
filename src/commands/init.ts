@@ -1,5 +1,6 @@
 import { Flags } from '@oclif/core';
 import { password, select, input } from '@inquirer/prompts';
+import chalk from 'chalk';
 import { BaseCommand } from '../lib/base-command.js';
 import {
   saveProfile,
@@ -7,6 +8,8 @@ import {
   getCurrentProfile,
   listProfiles,
   SANDBOX_PROFILE,
+  getDisplayTier,
+  getLineType,
   type AccountLabel,
 } from '../lib/config.js';
 import { BACKEND_URL } from '../lib/api-client.js';
@@ -34,6 +37,11 @@ export default class Init extends BaseCommand {
 
     if (profileName === SANDBOX_PROFILE) {
       this.error(`The "${SANDBOX_PROFILE}" profile is reserved for \`linq signup\`. Use --profile <name> to init a different profile.`);
+    }
+
+    if (process.stdout.isTTY) {
+      await renderBanner();
+      console.log('\n  Welcome to Linq CLI Setup\n');
     }
 
     if (!profileName) {
@@ -64,9 +72,6 @@ export default class Init extends BaseCommand {
       }
     }
 
-    await renderBanner();
-    console.log('\n  Welcome to Linq CLI Setup\n');
-
     // Prompt for API token
     const token = await password({
       message: 'Enter your API token:',
@@ -82,6 +87,7 @@ export default class Init extends BaseCommand {
     this.log('\nValidating token...');
     let orgId: string | undefined;
     let name: string | undefined;
+    let email: string | undefined;
     let partnerId: string | undefined;
     let accountPhones: { phoneNumber: string }[] = [];
     let accountLabel: AccountLabel | undefined;
@@ -100,6 +106,7 @@ export default class Init extends BaseCommand {
         partnerId?: string;
         orgId?: string;
         name?: string | null;
+        email?: string | null;
         accountInfo?: {
           phones: { phoneNumber: string }[];
           accountLabel?: AccountLabel;
@@ -108,6 +115,7 @@ export default class Init extends BaseCommand {
       partnerId = acc.partnerId;
       orgId = acc.orgId;
       name = acc.name ?? undefined;
+      email = acc.email ?? undefined;
       accountPhones = acc.accountInfo?.phones ?? [];
       accountLabel = acc.accountInfo?.accountLabel;
     } catch (e) {
@@ -122,11 +130,11 @@ export default class Init extends BaseCommand {
 
     if (phones.length === 1) {
       fromPhone = phones[0].phoneNumber;
-      this.log(`Default Blue Number set to ${fromPhone} (only number on account)\n`);
+      this.log(`Default Linq Number set to ${fromPhone} (only number on account)\n`);
     } else if (phones.length > 1) {
       if (accountLabel === 'Paid') {
         fromPhone = await select({
-          message: 'Select a default Blue Number:',
+          message: 'Select a default Linq Number:',
           choices: phones.map((p) => ({
             name: p.phoneNumber,
             value: p.phoneNumber,
@@ -144,17 +152,29 @@ export default class Init extends BaseCommand {
       ...(partnerId && { partnerId }),
       ...(orgId && { orgId }),
       ...(name && { name }),
+      ...(email && { email }),
       accountLabel,
     });
     await setCurrentProfile(profileName);
 
-    this.log(`\n\u2713 Configuration saved to profile "${profileName}"\n`);
-    this.log('Next steps:');
-    this.log('  linq phonenumbers                                     List your Blue Numbers');
-    this.log(
-      '  linq chats create --to +1XXXXXXXXXX -m "Hello!"       Create a chat and send a message'
-    );
-    this.log('  linq webhooks listen                                  Listen for webhook events');
-    this.log('  linq doctor                                           Check your setup');
+    const tier = getDisplayTier(accountLabel);
+    const line = getLineType(accountLabel);
+
+    this.log(chalk.green('\n\u2713 You\'re set up!\n'));
+    if (tier) this.log(`  ${chalk.dim('Tier:')}         ${tier}`);
+    if (line) this.log(`  ${chalk.dim('Line:')}         ${line}`);
+    if (fromPhone) this.log(`  ${chalk.dim('Linq Number:')}  ${chalk.bold(fromPhone)}`);
+    if (name) this.log(`  ${chalk.dim('Name:')}         ${name}`);
+    if (line === 'Shared') {
+      this.log('');
+      this.log(`  Shared line: add contacts with ${chalk.cyan('linq contacts add +1...')}, have them text you first, then reply.`);
+    } else if (tier === 'Free') {
+      this.log('');
+      this.log('  Free line is inbound-first: have someone text your Linq Number first, then reply.');
+    }
+    this.log('\nNext steps:');
+    this.log(`  ${chalk.cyan('linq chats create --to +1XXXXXXXXXX -m "Hello!"')}  ${chalk.dim('# Send a message')}`);
+    this.log(`  ${chalk.cyan('linq webhooks listen')}${' '.repeat(33)}${chalk.dim('# Listen for events')}`);
+    this.log(`  ${chalk.cyan('linq doctor')}${' '.repeat(42)}${chalk.dim('# Health check')}`);
   }
 }

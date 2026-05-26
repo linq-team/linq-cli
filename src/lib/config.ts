@@ -278,8 +278,27 @@ export function requireFromPhone(
 
 // ── Account type helpers ─────────────────────────────────────────
 
+export type DisplayTier = 'Free' | 'Paid';
+export type LineType = 'Shared' | 'Dedicated';
+
 export function getAccountLabel(config: Profile): AccountLabel | undefined {
   return config.accountLabel;
+}
+
+// User-facing tier (Free or Paid). Collapses Shared/Sandbox into Free
+// so the CLI surfaces only Free vs Paid externally.
+export function getDisplayTier(label: AccountLabel | undefined): DisplayTier | undefined {
+  if (label === 'Paid') return 'Paid';
+  if (label === 'Shared' || label === 'Sandbox') return 'Free';
+  return undefined;
+}
+
+// User-facing line type (Shared or Dedicated). Shared lines route
+// many partners through the same number; Dedicated is one-owner.
+export function getLineType(label: AccountLabel | undefined): LineType | undefined {
+  if (label === 'Shared') return 'Shared';
+  if (label === 'Sandbox' || label === 'Paid') return 'Dedicated';
+  return undefined;
 }
 
 export const isSandbox = (config: Profile): boolean =>
@@ -294,12 +313,12 @@ export const isPaid = (config: Profile): boolean =>
 export function requireSharedLine(config: Profile): void {
   if (isSandbox(config)) {
     throw new Errors.CLIError(
-      'This command is for shared line accounts only.\nYour sandbox account can text any number directly (an inbound message is needed first).'
+      'This command is for Shared line accounts only.\nYour Free line can text any number directly once they text you first.'
     );
   }
   if (isPaid(config)) {
     throw new Errors.CLIError(
-      'This command is for shared line accounts only.\nYour account can text any number directly — no contacts needed.'
+      'This command is for Shared line accounts only.\nYour account can text any number directly — no contacts needed.'
     );
   }
 }

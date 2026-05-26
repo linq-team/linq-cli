@@ -86,7 +86,7 @@ describe('doctor', () => {
     const output = logs.join('\n');
     expect(output).toContain('\u2713 Config file found');
     expect(output).toContain('\u2713 API token configured');
-    expect(output).toContain('\u2713 Blue Number set');
+    expect(output).toContain('\u2713 Linq Number set');
     expect(output).toContain('\u2713 API connected');
     expect(output).toContain('passed');
   });
@@ -99,7 +99,7 @@ describe('doctor', () => {
 
     const output = logs.join('\n');
     expect(output).toContain('\u2717 API token not configured');
-    expect(output).toContain('\u2717 Blue Number not set');
+    expect(output).toContain('\u2717 Linq Number not set');
     expect(output).not.toContain('0 issues found');
   });
 

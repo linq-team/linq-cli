@@ -7,7 +7,7 @@ import { loadConfig, requireToken, saveProfile, saveSandboxProfile, getCurrentPr
 import { createApiClient } from '../lib/api-client.js';
 
 export default class PhoneNumbers extends BaseCommand {
-  static override description = 'List your Blue Numbers or set a default';
+  static override description = 'List your Linq Numbers or set a default';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -16,7 +16,7 @@ export default class PhoneNumbers extends BaseCommand {
 
   static override args = {
     action: Args.string({
-      description: 'Action: "set" to pick a default Blue Number',
+      description: 'Action: "set" to pick a default Linq Number',
       required: false,
     }),
   };
@@ -54,7 +54,7 @@ export default class PhoneNumbers extends BaseCommand {
     }
 
     if (phones.length === 0) {
-      this.log('\n  No Blue Numbers found.\n');
+      this.log('\n  No Linq Numbers found.\n');
       return;
     }
 
@@ -68,7 +68,7 @@ export default class PhoneNumbers extends BaseCommand {
       return;
     }
 
-    this.log(`\n  ${chalk.bold('Your Blue Numbers')}\n`);
+    this.log(`\n  ${chalk.bold('Your Linq Numbers')}\n`);
     for (const p of phones) {
       const isDefault = p.phone_number === config.fromPhone;
       this.log(`  ${chalk.cyan(p.id)}  ${this.formatPhone(p.phone_number)}${isDefault ? chalk.green(' ← default') : ''}`);
@@ -89,7 +89,7 @@ export default class PhoneNumbers extends BaseCommand {
 
     try {
       const chosen = await select({
-        message: 'Select your default Blue Number:',
+        message: 'Select your default Linq Number:',
         choices: phones.map(p => ({
           name: p.phone_number === currentDefault
             ? `${this.formatPhone(p.phone_number)} (current default)`

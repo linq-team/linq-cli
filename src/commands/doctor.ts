@@ -78,9 +78,9 @@ export default class Doctor extends BaseCommand {
     }
 
     if (config.fromPhone) {
-      ok('blue_number', `Blue Number set (${config.fromPhone})`);
+      ok('linq_number', `Linq Number set (${config.fromPhone})`);
     } else {
-      fail('blue_number', 'Blue Number not set — run `linq phonenumbers set` to pick a default');
+      fail('linq_number', 'Linq Number not set — run `linq phonenumbers set` to pick a default');
     }
 
     const sessionExpiry = config.sessionExpiresAt || config.expiresAt;

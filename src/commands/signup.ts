@@ -8,7 +8,7 @@ import { runAuthFlow, checkExistingSession } from '../lib/auth-flow.js';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default class Signup extends BaseCommand {
-  static override description = 'Create a Linq developer account and get a shared Blue Number';
+  static override description = 'Create a Linq developer account and get a Shared line';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
