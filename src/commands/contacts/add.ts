@@ -48,11 +48,15 @@ export default class ContactsAdd extends BaseCommand {
       addBreadcrumb('Contact added');
 
       const linqNumber = config.fromPhone;
+      const shareLink = linqNumber
+        ? `https://linqapp.com/s/text/${encodeURIComponent(linqNumber)}?from=${encodeURIComponent(data.contactPhone)}&msg=${encodeURIComponent('hi from linq')}`
+        : null;
 
       if (flags.json) {
         this.log(JSON.stringify({
           contactPhone: data.contactPhone,
           linqNumber: linqNumber ?? null,
+          shareLink,
         }, null, 2));
         return;
       }
@@ -60,7 +64,11 @@ export default class ContactsAdd extends BaseCommand {
       this.log(chalk.green(`\n  ✓ Contact ${data.contactPhone} added.\n`));
       this.log(chalk.yellow('  Inbound-first: this contact must text your Linq Number before you can text them.\n'));
       if (linqNumber) {
-        this.log(`  Text ${chalk.cyan(linqNumber)} from ${chalk.cyan(data.contactPhone)} to start the conversation.\n`);
+        this.log(`  Text your Linq Number (${chalk.cyan(linqNumber)}) from ${chalk.cyan(data.contactPhone)} to start the conversation.\n`);
+      }
+      if (shareLink) {
+        this.log(`  Or share this link — they tap it and send a text to talk to your Shared line (QR fallback on desktop):`);
+        this.log(`    ${chalk.cyan(shareLink)}\n`);
       }
     } catch (e) {
       bail(this, flags.json, e);
