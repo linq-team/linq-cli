@@ -1,3 +1,10 @@
+# [2.5.0](https://github.com/linq-team/linq-cli/compare/v2.4.0...v2.5.0) (2026-05-27)
+
+
+### Features
+
+* print shareable link after contacts add ([#38](https://github.com/linq-team/linq-cli/issues/38)) ([5b9de22](https://github.com/linq-team/linq-cli/commit/5b9de22d316042d71e9297cb9dc5b98e24ca8264))
+
 # [2.4.0](https://github.com/linq-team/linq-cli/compare/v2.3.0...v2.4.0) (2026-05-26)
 
 
