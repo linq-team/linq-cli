@@ -1,9 +1,16 @@
-# Linq CLI
+# Linq's iMessage CLI
 
 [![License](https://img.shields.io/github/license/linq-team/linq-cli.svg)](LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/linq-team/linq-cli/ci.yml?branch=main)](https://github.com/linq-team/linq-cli/actions/workflows/ci.yml)
 
-A command-line interface for the [Linq](https://linqapp.com) messaging API. Send and receive iMessages programmatically.
+Linq CLI is a command-line interface for the [Linq](https://linqapp.com) messaging API, built for sending and receiving iMessages programmatically. Install it via npm, Homebrew, or a curl install script, or download a platform-specific installer directly.
+
+With the Linq iMessage CLI you can:
+
+- Send iMessages from the command line, including group messages and iMessage effects like confetti or fireworks
+- Receive iMessages in real time by listening for webhook events with `linq webhooks listen`, so incoming messages can be forwarded to a local server or trigger your own scripts
+- Manage phone numbers, contacts, and API tokens without leaving the terminal
+- Switch between multiple accounts using named profiles, similar to how the AWS CLI handles multiple environments
 
 ## Installation
 
