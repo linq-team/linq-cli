@@ -1,3 +1,10 @@
+## [2.5.1](https://github.com/linq-team/linq-cli/compare/v2.5.0...v2.5.1) (2026-07-27)
+
+
+### Bug Fixes
+
+* **webhooks:** forward Standard Webhooks headers from listen --forward-to ([#41](https://github.com/linq-team/linq-cli/issues/41)) ([c827740](https://github.com/linq-team/linq-cli/commit/c8277406293846b8bd2b0282526ea0e102bd1e30))
+
 # [2.5.0](https://github.com/linq-team/linq-cli/compare/v2.4.0...v2.5.0) (2026-05-27)
 
 
