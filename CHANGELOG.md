@@ -1,3 +1,10 @@
+## [2.5.2](https://github.com/linq-team/linq-cli/compare/v2.5.1...v2.5.2) (2026-07-27)
+
+
+### Bug Fixes
+
+* **login:** do not prompt for a default number without a TTY ([#42](https://github.com/linq-team/linq-cli/issues/42)) ([7903eb9](https://github.com/linq-team/linq-cli/commit/7903eb94ef265df141b3e0b3c03f7bf981808d93))
+
 ## [2.5.1](https://github.com/linq-team/linq-cli/compare/v2.5.0...v2.5.1) (2026-07-27)
 
 
