@@ -155,7 +155,12 @@ export default class Login extends BaseCommand {
     if (phones.length === 1) {
       fromPhone = phones[0].phoneNumber;
     } else if (phones.length > 1) {
-      if (accountLabel === 'Paid') {
+      // The picker runs only when there is a terminal to drive it. `--token` is
+      // the non-interactive entry point, and it is reached from agent shells and
+      // CI where stdin is not a TTY — prompting there hung the process before it
+      // ever got to saveProfile(), so the token was never persisted and every
+      // later command failed as unauthenticated.
+      if (accountLabel === 'Paid' && process.stdin.isTTY) {
         try {
           fromPhone = await select({
             message: 'Select a default Linq Number:',
@@ -169,6 +174,13 @@ export default class Login extends BaseCommand {
         }
       } else {
         fromPhone = phones[0].phoneNumber;
+        if (accountLabel === 'Paid') {
+          this.log(
+            `Defaulted to ${chalk.cyan(fromPhone)} of ${phones.length} Linq Numbers ` +
+              `${chalk.dim('(no terminal for the picker)')}.`
+          );
+          this.log(`Change it with ${chalk.cyan('linq phonenumbers set')}.\n`);
+        }
       }
     }
 

@@ -108,8 +108,8 @@ describe('login (token paste)', () => {
     expect(saved.profiles.default.fromPhone).toBe('+18005551111');
   });
 
-  it('paid user with multiple phones is prompted', async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse(200, {
+  function paidMultiPhoneResponse() {
+    return jsonResponse(200, {
       partnerId: 'partner-1',
       orgId: '999',
       name: 'Acme',
@@ -120,17 +120,49 @@ describe('login (token paste)', () => {
           { phoneNumber: '+18005552222' },
         ],
       },
-    }));
+    });
+  }
 
+  it('paid user with multiple phones is prompted when stdin is a TTY', async () => {
+    mockFetch.mockResolvedValueOnce(paidMultiPhoneResponse());
     mockSelect.mockResolvedValueOnce('+18005552222');
 
-    const config = await Config.load({ root: process.cwd() });
-    const cmd = new Login(['--token', 'linq_test', '--profile', 'default'], config);
-    await cmd.run();
+    const originalIsTTY = process.stdin.isTTY;
+    Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+    try {
+      const config = await Config.load({ root: process.cwd() });
+      const cmd = new Login(['--token', 'linq_test', '--profile', 'default'], config);
+      await cmd.run();
+    } finally {
+      Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, configurable: true });
+    }
 
     expect(mockSelect).toHaveBeenCalledTimes(1);
     const saved = JSON.parse(await fs.readFile(configPath(), 'utf-8'));
     expect(saved.profiles.default.fromPhone).toBe('+18005552222');
+    expect(saved.profiles.default.accountLabel).toBe('Paid');
+  });
+
+  // Regression: the picker used to run unguarded, so `--token` from an agent
+  // shell or CI blocked on a prompt that could never be answered and exited
+  // before saveProfile() — leaving no credential behind at all.
+  it('paid user with multiple phones saves without prompting when stdin is not a TTY', async () => {
+    mockFetch.mockResolvedValueOnce(paidMultiPhoneResponse());
+
+    const originalIsTTY = process.stdin.isTTY;
+    Object.defineProperty(process.stdin, 'isTTY', { value: undefined, configurable: true });
+    try {
+      const config = await Config.load({ root: process.cwd() });
+      const cmd = new Login(['--token', 'linq_test', '--profile', 'default'], config);
+      await cmd.run();
+    } finally {
+      Object.defineProperty(process.stdin, 'isTTY', { value: originalIsTTY, configurable: true });
+    }
+
+    expect(mockSelect).not.toHaveBeenCalled();
+    const saved = JSON.parse(await fs.readFile(configPath(), 'utf-8'));
+    expect(saved.profiles.default.token).toBe('linq_test');
+    expect(saved.profiles.default.fromPhone).toBe('+18005551111');
     expect(saved.profiles.default.accountLabel).toBe('Paid');
   });
 });
