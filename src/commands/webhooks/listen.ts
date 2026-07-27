@@ -11,6 +11,27 @@ import type Linq from '@linqapp/sdk';
 
 type WebhookEventType = Linq.WebhookSubscriptions.WebhookSubscriptionCreateParams['subscribed_events'][number];
 
+/**
+ * Derive the HMAC key from a signing secret, matching the production dispatcher's
+ * decodeSigningSecret exactly (webhook-service/internal/dispatcher/dispatcher.go).
+ *
+ * New secrets are `whsec_<base64>`; legacy ones are bare URL-safe base64. Go's
+ * decoders reject invalid characters, while Node's are lenient and silently drop
+ * them — so the charset is checked explicitly to keep the two implementations in
+ * step. Anything that is not valid base64 falls back to its raw bytes.
+ */
+function decodeSigningSecret(secret: string): Buffer {
+  const raw = secret.startsWith('whsec_') ? secret.slice('whsec_'.length) : secret;
+  const body = raw.replace(/=+$/, '');
+  if (body.length > 0 && /^[A-Za-z0-9+/]+$/.test(body)) {
+    return Buffer.from(raw, 'base64');
+  }
+  if (body.length > 0 && /^[A-Za-z0-9\-_]+$/.test(body)) {
+    return Buffer.from(raw, 'base64url');
+  }
+  return Buffer.from(raw, 'utf8');
+}
+
 interface WebhookEvent {
   event_type?: string;
   [key: string]: unknown;
@@ -307,13 +328,30 @@ export default class WebhooksListen extends BaseCommand {
     const timestamp = String(Math.floor(Date.now() / 1000));
     const eventType = data.event_type || 'unknown';
 
-    // Compute signature if we have a signing secret
-    let signature = '';
+    // Mirror production exactly. The dispatcher signs every delivery two ways:
+    // Standard Webhooks (webhook-id / webhook-timestamp / webhook-signature) and
+    // the deprecated legacy hex header. Forwarding only the legacy one meant a
+    // handler written against `client.webhooks.unwrap()` — which requires the
+    // Standard Webhooks headers — failed locally while working in production,
+    // and the obvious fix for that is to delete the verification.
+    // webhook-id must be unique per delivery; it is part of the signed content
+    // and doubles as the idempotency key.
+    const webhookId = `msg_${crypto.randomUUID().replace(/-/g, '')}`;
+
+    let standardSignature = '';
+    let legacySignature = '';
     if (this.signingSecret) {
-      const signedData = `${timestamp}.${rawPayload}`;
-      signature = crypto
+      standardSignature =
+        'v1,' +
+        crypto
+          .createHmac('sha256', decodeSigningSecret(this.signingSecret))
+          .update(`${webhookId}.${timestamp}.${rawPayload}`)
+          .digest('base64');
+
+      // The legacy scheme keys on the printable secret, not the decoded bytes.
+      legacySignature = crypto
         .createHmac('sha256', this.signingSecret)
-        .update(signedData)
+        .update(`${timestamp}.${rawPayload}`)
         .digest('hex');
     }
 
@@ -324,8 +362,14 @@ export default class WebhooksListen extends BaseCommand {
         headers: {
           'Content-Type': 'application/json',
           'X-Webhook-Event': eventType,
+          ...(standardSignature && {
+            'webhook-id': webhookId,
+            'webhook-timestamp': timestamp,
+            'webhook-signature': standardSignature,
+          }),
+          // Deprecated, still emitted so existing handlers keep working.
           'X-Webhook-Timestamp': timestamp,
-          ...(signature && { 'X-Webhook-Signature': signature }),
+          ...(legacySignature && { 'X-Webhook-Signature': legacySignature }),
           ...(this.webhookId && { 'X-Webhook-Subscription-ID': this.webhookId }),
         },
         body: rawPayload,
