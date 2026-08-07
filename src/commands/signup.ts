@@ -29,6 +29,13 @@ export default class Signup extends BaseCommand {
       char: 'n',
       description: 'Your name (skips interactive prompt during signup)',
     }),
+    ref: Flags.string({
+      description:
+        'Referral token from linqapp.com, used to connect this signup to the site visit that led to it. Populated automatically when the quickstart is copied from https://linqapp.com/cli.',
+      // Not a user-facing knob — it only ever arrives pre-filled in a copied
+      // command, and surfacing it in `--help` invites confusion.
+      hidden: true,
+    }),
   };
 
   async run(): Promise<void> {
@@ -82,6 +89,7 @@ export default class Signup extends BaseCommand {
       email,
       code: flags.code?.trim(),
       name: flags.name?.trim(),
+      ref: flags.ref?.trim(),
       log: (msg) => this.log(msg),
       exit: (code) => this.exit(code),
       parseError: (res) => this.parseError(res),

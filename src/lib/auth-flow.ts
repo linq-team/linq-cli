@@ -21,6 +21,11 @@ interface AuthFlowOptions {
   // so `linq signup` is fully scriptable / AI-agent driven.
   code?: string;
   name?: string;
+  // Opaque referral token minted by linqapp.com and baked into the copied
+  // quickstart. Forwarded verbatim; the backend decides whether it is still
+  // valid. Nothing here depends on its format, so a stale or malformed value
+  // costs nothing beyond losing attribution for this signup.
+  ref?: string;
   log: (msg: string) => void;
   exit: (code: number) => never;
   parseError: (res: Response) => Promise<string>;
@@ -42,7 +47,15 @@ export async function checkExistingSession(): Promise<string | null> {
 }
 
 export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
-  const { email, code: codeFlag, name: nameFlag, log, exit, parseError } = opts;
+  const {
+    email,
+    code: codeFlag,
+    name: nameFlag,
+    ref: refFlag,
+    log,
+    exit,
+    parseError,
+  } = opts;
 
   // Step 1: Send OTP.
   // Skipped entirely when `--code` was passed — the caller already has a
@@ -207,7 +220,13 @@ export async function runAuthFlow(opts: AuthFlowOptions): Promise<void> {
       const signupRes = await fetch(`${BACKEND_URL}/cli/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signupToken: verifyResult.signupToken, name }),
+        body: JSON.stringify({
+          signupToken: verifyResult.signupToken,
+          name,
+          // Omitted entirely when absent so the payload is unchanged for
+          // anyone who did not arrive via a copied quickstart.
+          ...(refFlag ? { webDistinctId: refFlag } : {}),
+        }),
       });
 
       if (!signupRes.ok) {
