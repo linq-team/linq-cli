@@ -1,6 +1,6 @@
 {
   "name": "@linqapp/cli",
-  "version": "2.5.2",
+  "version": "2.6.0",
   "description": "CLI for Linq messaging API",
   "type": "module",
   "bin": {

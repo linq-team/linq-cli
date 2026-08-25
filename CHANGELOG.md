@@ -1,3 +1,10 @@
+# [2.6.0](https://github.com/linq-team/linq-cli/compare/v2.5.2...v2.6.0) (2026-08-25)
+
+
+### Features
+
+* **signup:** add --ref to attribute signups to the originating site visit ([833dc25](https://github.com/linq-team/linq-cli/commit/833dc253fa6de002d13328ef3f3c9fd007a7d502)), closes [skywalker-next#844](https://github.com/skywalker-next/issues/844)
+
 ## [2.5.2](https://github.com/linq-team/linq-cli/compare/v2.5.1...v2.5.2) (2026-07-27)
 
 
