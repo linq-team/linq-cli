@@ -131,4 +131,81 @@ describe('signup (email OTP flow)', () => {
     // Should never have prompted for a code
     expect(mockInput).not.toHaveBeenCalled();
   });
+
+  // --ref carries the visitor's linqapp.com PostHog id across the gap between
+  // the browser and the terminal. It arrives pre-filled in the quickstart
+  // copied from the CLI page and is forwarded verbatim to /cli/signup, where
+  // the backend aliases the anonymous site history onto the new account.
+  function signupBody() {
+    const call = mockFetch.mock.calls.find((c) =>
+      (c[0] as string).endsWith('/cli/signup')
+    );
+    return JSON.parse((call![1] as RequestInit).body as string);
+  }
+
+  // Both --ref tests run fully non-interactively (--email --code --name),
+  // which skips send-otp entirely: re-sending would mint a fresh OTP and
+  // invalidate the code being verified. So only verify-code and signup are
+  // mocked here.
+  function mockNonInteractiveSignupFlow() {
+    mockFetch
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          needsSignup: true,
+          signupToken: 'sgn-tok-1',
+          email: 'new@example.com',
+        })
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(201, {
+          token: 'api-token-xyz',
+          orgId: '1234',
+          email: 'new@example.com',
+          name: 'Test User',
+          accountInfo: {
+            accountLabel: 'Shared',
+            phones: [{ phoneNumber: '+12025551234' }],
+          },
+        })
+      );
+  }
+
+  it('forwards --ref to /cli/signup as webDistinctId', async () => {
+    mockNonInteractiveSignupFlow();
+
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new Signup(
+      [
+        '--email',
+        'new@example.com',
+        '--code',
+        '123456',
+        '--name',
+        'Test User',
+        '--ref',
+        '0198f2a1-dead-beef-cafe-000000000000~1780000000',
+      ],
+      config
+    );
+    await cmd.run();
+
+    expect(signupBody().webDistinctId).toBe(
+      '0198f2a1-dead-beef-cafe-000000000000~1780000000'
+    );
+  });
+
+  it('omits webDistinctId entirely when --ref is absent', async () => {
+    mockNonInteractiveSignupFlow();
+
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new Signup(
+      ['--email', 'new@example.com', '--code', '123456', '--name', 'Test User'],
+      config
+    );
+    await cmd.run();
+
+    // Absent, not null/empty — the payload must be byte-identical to what
+    // pre-2.6.0 clients send for anyone who did not arrive via the quickstart.
+    expect('webDistinctId' in signupBody()).toBe(false);
+  });
 });
