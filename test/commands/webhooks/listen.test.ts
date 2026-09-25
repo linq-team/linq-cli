@@ -3,6 +3,7 @@ import { Config } from '@oclif/core';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import * as crypto from 'node:crypto';
 
 // Mock 'ws' module before importing listen command — must be hoisted
 vi.mock('ws', () => {
@@ -30,6 +31,20 @@ interface MockWS {
 
 let lastMockWs: MockWS | null = null;
 let wsMessages: Record<string, unknown>[] = [];
+
+function signedRelayMessage(payload: string, secret = 'test-secret', timestamp = String(Math.floor(Date.now() / 1000))) {
+  const id = 'msg_test';
+  const signature = crypto.createHmac('sha256', Buffer.from(secret, 'base64url'))
+    .update(`${id}.${timestamp}.${payload}`).digest('base64');
+  return {
+    payload,
+    headers: {
+      'webhook-id': id,
+      'webhook-timestamp': timestamp,
+      'webhook-signature': `v1,${signature}`,
+    },
+  };
+}
 
 function createMockWS(url: string): MockWS {
   const listeners: Record<string, Array<{ handler: Function; once: boolean }>> = {};
@@ -171,8 +186,8 @@ describe('webhooks listen', { timeout: 15000 }, () => {
 
   it('connects via WebSocket, creates webhook, and receives events', async () => {
     wsMessages = [
-      { event_type: 'message.received', message: { id: 'msg_1', body: 'Hello' } },
-      { event_type: 'message.sent', message: { id: 'msg_2', body: 'World' } },
+      signedRelayMessage(JSON.stringify({ event_type: 'message.received', message: { id: 'msg_1', body: 'Hello' } })),
+      signedRelayMessage(JSON.stringify({ event_type: 'message.sent', message: { id: 'msg_2', body: 'World' } })),
     ];
     setupApiMocks();
 
@@ -267,9 +282,9 @@ describe('webhooks listen', { timeout: 15000 }, () => {
 
   it('filters events when --events flag is used', async () => {
     wsMessages = [
-      { event_type: 'message.received', message: { id: 'msg_1', body: 'Hello' } },
-      { event_type: 'message.sent', message: { id: 'msg_2', body: 'World' } },
-      { event_type: 'chat.created', chat: { id: 'chat_1' } },
+      signedRelayMessage(JSON.stringify({ event_type: 'message.received', message: { id: 'msg_1', body: 'Hello' } })),
+      signedRelayMessage(JSON.stringify({ event_type: 'message.sent', message: { id: 'msg_2', body: 'World' } })),
+      signedRelayMessage(JSON.stringify({ event_type: 'chat.created', chat: { id: 'chat_1' } })),
     ];
     setupApiMocks();
 
@@ -286,7 +301,7 @@ describe('webhooks listen', { timeout: 15000 }, () => {
 
   it('outputs raw JSON with --json flag', async () => {
     wsMessages = [
-      { event_type: 'message.received', message: { id: 'msg_1', body: 'Hello' } },
+      signedRelayMessage(JSON.stringify({ event_type: 'message.received', message: { id: 'msg_1', body: 'Hello' } })),
     ];
     setupApiMocks();
 
@@ -300,6 +315,41 @@ describe('webhooks listen', { timeout: 15000 }, () => {
     const parsed = JSON.parse(jsonLines[0]);
     expect(parsed.event_type).toBe('message.received');
     expect(parsed.message.id).toBe('msg_1');
+  });
+
+  it('ignores unsigned, forged, altered and stale relay input before local forwarding', async () => {
+    const payload = JSON.stringify({ event_type: 'message.received', message: { id: 'genuine' } });
+    wsMessages = [
+      JSON.parse(payload),
+      signedRelayMessage(payload, 'different-secret'),
+      { ...signedRelayMessage(payload), payload: JSON.stringify({ event_type: 'message.received', message: { id: 'forged' } }) },
+      signedRelayMessage(payload, 'test-secret', String(Math.floor(Date.now() / 1000) - 301)),
+    ];
+    setupApiMocks();
+
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new WebhooksListen(['--forward-to', 'http://localhost:3000/webhook'], config);
+    captureOutput(cmd);
+    await runAndShutdown(cmd);
+
+    expect(mockFetch.mock.calls.filter(([urlArg]: [string]) => urlArg === 'http://localhost:3000/webhook')).toHaveLength(0);
+    expect(logs.join('\n')).toContain('0 events received');
+  });
+
+  it('forwards the exact verified payload', async () => {
+    const payload = '{ "event_type": "message.received", "message": { "id": "genuine" } }';
+    wsMessages = [signedRelayMessage(payload)];
+    setupApiMocks();
+
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new WebhooksListen(['--forward-to', 'http://localhost:3000/webhook'], config);
+    captureOutput(cmd);
+    await runAndShutdown(cmd);
+
+    const forwardCalls = mockFetch.mock.calls.filter(([urlArg]: [string]) => urlArg === 'http://localhost:3000/webhook');
+    expect(forwardCalls).toHaveLength(1);
+    expect(forwardCalls[0][1].body).toBe(payload);
+    expect(forwardCalls[0][1].headers['webhook-signature']).toMatch(/^v1,/);
   });
 
   it('rejects invalid event names', async () => {

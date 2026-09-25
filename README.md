@@ -655,6 +655,7 @@ linq webhooks events
 #### `linq webhooks listen`
 
 Listen for webhook events in real time, optionally forwarding them to a local server. Creates a temporary webhook subscription that's automatically deleted when you stop.
+The relay must preserve the exact webhook body and the `webhook-id`, `webhook-timestamp`, and `webhook-signature` headers. Events without a valid signature are ignored.
 
 ```bash
 # Listen for all events (structured log output)
