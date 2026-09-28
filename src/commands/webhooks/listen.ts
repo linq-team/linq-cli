@@ -37,6 +37,12 @@ interface WebhookEvent {
   [key: string]: unknown;
 }
 
+// format=signed asks the relay to pass the original body and its signature
+// headers through, so events can be verified before they are trusted.
+function relayTarget(relayUrl: string, connectionId: string): string {
+  return `${relayUrl}/relay/${connectionId}?format=signed`;
+}
+
 function verifiedRelayPayload(message: unknown, secret: string | null): string | null {
   if (!secret || typeof message !== 'object' || message === null ||
       !('payload' in message) || typeof message.payload !== 'string' ||
@@ -205,7 +211,7 @@ export default class WebhooksListen extends BaseCommand {
       this.log('Connected to relay');
 
       // Create webhook subscription pointing to relay
-      const webhookTarget = `${relayUrl}/relay/${connectionId}`;
+      const webhookTarget = relayTarget(relayUrl, connectionId);
       await this.createWebhook(webhookTarget, subscribedEvents);
 
       this.log('');
@@ -303,7 +309,7 @@ export default class WebhooksListen extends BaseCommand {
         reconnectDelay = 1000;
 
         // Update webhook target with new connectionId
-        const webhookTarget = `${relayUrl}/relay/${connectionId}`;
+        const webhookTarget = relayTarget(relayUrl, connectionId);
         await this.updateWebhookTarget(webhookTarget);
 
         this.setupMessageHandler(eventFilter, jsonOutput, forwardTo);

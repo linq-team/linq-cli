@@ -244,7 +244,7 @@ describe('webhooks listen', { timeout: 15000 }, () => {
     const body = postCall![1] as RequestInit;
     const bodyText = body.body as string;
     expect(bodyText).toContain('test-conn-id');
-    expect(bodyText).toContain('https://test-relay.example.com/relay/test-conn-id');
+    expect(JSON.parse(bodyText).target_url).toBe('https://test-relay.example.com/relay/test-conn-id?format=signed');
   });
 
   // TODO: This test needs per-test ws module mocking which vi.mock doesn't support

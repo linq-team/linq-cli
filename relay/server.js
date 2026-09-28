@@ -21,14 +21,14 @@ app.get('/health', (_req, res) => res.sendStatus(200));
 app.post('/relay/:id', (req, res) => {
   const ws = connections.get(req.params.id);
   if (ws) {
-    ws.send(JSON.stringify({
+    ws.send(req.query.format === 'signed' ? JSON.stringify({
       payload: req.rawBody,
       headers: {
         'webhook-id': req.get('webhook-id'),
         'webhook-timestamp': req.get('webhook-timestamp'),
         'webhook-signature': req.get('webhook-signature'),
       },
-    }));
+    }) : JSON.stringify(req.body));
     console.log(`[relay]  Forwarded to ${req.params.id}`);
   } else {
     console.log(`[relay]  No connection for ${req.params.id}`);
