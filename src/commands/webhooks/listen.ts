@@ -37,6 +37,43 @@ interface WebhookEvent {
   [key: string]: unknown;
 }
 
+// format=signed asks the relay to pass the original body and its signature
+// headers through, so events can be verified before they are trusted.
+function relayTarget(relayUrl: string, connectionId: string): string {
+  return `${relayUrl}/relay/${connectionId}?format=signed`;
+}
+
+function verifiedRelayPayload(message: unknown, secret: string | null): string | null {
+  if (!secret || typeof message !== 'object' || message === null ||
+      !('payload' in message) || typeof message.payload !== 'string' ||
+      !('headers' in message) || typeof message.headers !== 'object' || message.headers === null) {
+    return null;
+  }
+
+  const headers = message.headers;
+  if (!('webhook-id' in headers) || typeof headers['webhook-id'] !== 'string' ||
+      !('webhook-timestamp' in headers) || typeof headers['webhook-timestamp'] !== 'string' ||
+      !('webhook-signature' in headers) || typeof headers['webhook-signature'] !== 'string') {
+    return null;
+  }
+
+  const id = headers['webhook-id'];
+  const timestamp = headers['webhook-timestamp'];
+  const age = Math.abs(Date.now() / 1000 - Number(timestamp));
+  if (!id || !/^\d+$/.test(timestamp) || !Number.isFinite(age) || age > 300) {
+    return null;
+  }
+
+  const expected = crypto.createHmac('sha256', decodeSigningSecret(secret))
+    .update(`${id}.${timestamp}.${message.payload}`).digest();
+  const valid = headers['webhook-signature'].split(' ').some((signature) => {
+    if (!signature.startsWith('v1,')) return false;
+    const actual = Buffer.from(signature.slice(3), 'base64');
+    return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
+  });
+  return valid ? message.payload : null;
+}
+
 const WEBHOOK_EVENTS: WebhookEventType[] = [
   'message.sent',
   'message.received',
@@ -174,7 +211,7 @@ export default class WebhooksListen extends BaseCommand {
       this.log('Connected to relay');
 
       // Create webhook subscription pointing to relay
-      const webhookTarget = `${relayUrl}/relay/${connectionId}`;
+      const webhookTarget = relayTarget(relayUrl, connectionId);
       await this.createWebhook(webhookTarget, subscribedEvents);
 
       this.log('');
@@ -272,7 +309,7 @@ export default class WebhooksListen extends BaseCommand {
         reconnectDelay = 1000;
 
         // Update webhook target with new connectionId
-        const webhookTarget = `${relayUrl}/relay/${connectionId}`;
+        const webhookTarget = relayTarget(relayUrl, connectionId);
         await this.updateWebhookTarget(webhookTarget);
 
         this.setupMessageHandler(eventFilter, jsonOutput, forwardTo);
@@ -293,10 +330,17 @@ export default class WebhooksListen extends BaseCommand {
     this.ws.addEventListener('message', (event) => {
       try {
         const raw = typeof event.data === 'string' ? event.data : '';
-        const data = JSON.parse(raw) as WebhookEvent;
+        const message = JSON.parse(raw) as WebhookEvent;
 
         // Skip init response
-        if ('connectionId' in data) return;
+        if ('connectionId' in message) return;
+
+        const rawPayload = verifiedRelayPayload(message, this.signingSecret);
+        if (rawPayload === null) {
+          this.logToStderr('Warning: ignored relay event without a valid webhook signature');
+          return;
+        }
+        const data = JSON.parse(rawPayload) as WebhookEvent;
 
         // Apply event filter
         if (eventFilter && data.event_type && !eventFilter.includes(data.event_type)) {
@@ -307,7 +351,7 @@ export default class WebhooksListen extends BaseCommand {
 
         // Forward to local server if configured
         if (forwardTo) {
-          this.forwardEvent(forwardTo, raw, data, jsonOutput);
+          this.forwardEvent(forwardTo, rawPayload, data, jsonOutput);
         } else if (jsonOutput) {
           this.log(JSON.stringify(data, null, 2));
         } else {
@@ -415,7 +459,7 @@ export default class WebhooksListen extends BaseCommand {
       });
 
       this.webhookId = data.id;
-      this.signingSecret = (data as any).signing_secret || null;
+      this.signingSecret = data.signing_secret || null;
       this.log(`Webhook created: ${data.id}`);
       this.log(`Events: ${data.subscribed_events.join(', ')}`);
       if (this.signingSecret) {

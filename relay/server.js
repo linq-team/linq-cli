@@ -3,7 +3,11 @@ import { WebSocketServer } from 'ws';
 import { createServer } from 'node:http';
 
 const app = express();
-app.use(express.json());
+app.use(express.json({
+  verify(req, _res, body) {
+    req.rawBody = body.toString('utf8');
+  },
+}));
 
 const server = createServer(app);
 
@@ -17,9 +21,15 @@ app.get('/health', (_req, res) => res.sendStatus(200));
 app.post('/relay/:id', (req, res) => {
   const ws = connections.get(req.params.id);
   if (ws) {
-    const data = JSON.stringify(req.body);
-    ws.send(data);
-    console.log(`[relay]  Forwarded to ${req.params.id}: ${data.slice(0, 100)}`);
+    ws.send(req.query.format === 'signed' ? JSON.stringify({
+      payload: req.rawBody,
+      headers: {
+        'webhook-id': req.get('webhook-id'),
+        'webhook-timestamp': req.get('webhook-timestamp'),
+        'webhook-signature': req.get('webhook-signature'),
+      },
+    }) : JSON.stringify(req.body));
+    console.log(`[relay]  Forwarded to ${req.params.id}`);
   } else {
     console.log(`[relay]  No connection for ${req.params.id}`);
   }
@@ -69,8 +79,5 @@ server.listen(PORT, () => {
   console.log('Test with:');
   console.log(`  LINQ_RELAY_WS_URL=ws://localhost:${PORT}/ws LINQ_RELAY_URL=http://localhost:${PORT} linq webhooks listen`);
   console.log('');
-  console.log('Simulate a webhook event:');
-  console.log(`  curl -X POST http://localhost:${PORT}/relay/<CONNECTION_ID> \\`);
-  console.log('    -H "Content-Type: application/json" \\');
-  console.log('    -d \'{"event_type":"message.received","message":{"id":"msg_123","body":"Hello!"}}\'');
+  console.log('Send a signed webhook delivery to /relay/<CONNECTION_ID> to test forwarding.');
 });
