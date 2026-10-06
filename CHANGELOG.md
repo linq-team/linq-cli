@@ -1,3 +1,10 @@
+# [2.7.0](https://github.com/linq-team/linq-cli/compare/v2.6.0...v2.7.0) (2026-10-06)
+
+
+### Features
+
+* **webhooks:** verify relay event signatures in `webhooks listen` ([#44](https://github.com/linq-team/linq-cli/issues/44)) ([118a568](https://github.com/linq-team/linq-cli/commit/118a5683b801cf43f56cb11722e021a719b0ea6e))
+
 # [2.6.0](https://github.com/linq-team/linq-cli/compare/v2.5.2...v2.6.0) (2026-08-25)
 
 
