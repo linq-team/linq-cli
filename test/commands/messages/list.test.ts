@@ -101,10 +101,29 @@ describe('messages list', () => {
     expect(url).toContain('cursor=prev-cursor');
   });
 
-  it('requires chat ID argument', async () => {
+  it.each(['--chat', '--chat-id'])('accepts the chat ID via %s', async (flag) => {
+    mockFetch.mockResolvedValue(createMockResponse(200, { messages: [] }));
+
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new MessagesList([flag, 'chat-123', '--json'], config);
+    await cmd.run();
+
+    const urls = mockFetch.mock.calls.map(([u]) => u.toString());
+    expect(urls.some((u) => u.includes('/v3/chats/chat-123/messages'))).toBe(true);
+  });
+
+  it('rejects a chat ID argument and flag that disagree', async () => {
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new MessagesList(['chat-123', '--chat', 'chat-456'], config);
+
+    await expect(cmd.run()).rejects.toThrow('Conflicting chat IDs');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('requires a chat ID', async () => {
     const config = await Config.load({ root: process.cwd() });
     const cmd = new MessagesList([], config);
 
-    await expect(cmd.run()).rejects.toThrow('Missing 1 required arg');
+    await expect(cmd.run()).rejects.toThrow('Missing chat ID');
   });
 });
