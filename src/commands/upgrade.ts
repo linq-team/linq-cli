@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import { BaseCommand } from '../lib/base-command.js';
 import { loadConfig, getAccountLabel, getDisplayTier } from '../lib/config.js';
 
-const UPGRADE_URL = 'https://linqapp.com/s/talk-to-an-expert';
+const UPGRADE_URL = 'https://dashboard.linqapp.com/sandbox?source=cli';
 const SUPPORT_EMAIL = 'support@linqapp.com';
 const PAID_MESSAGE =
   'Please contact your Linq Account Manager to add more lines or email support@linqapp.com.';

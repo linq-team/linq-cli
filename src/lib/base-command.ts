@@ -1,8 +1,24 @@
 import { Command, Errors } from '@oclif/core';
 import chalk from 'chalk';
+import updateNotifier from 'update-notifier';
 import { captureError, finishCommandSpan, shutdown } from './telemetry.js';
 
 export abstract class BaseCommand extends Command {
+  // Fire once per command: check npm for a newer @linqapp/cli, print a one-line
+  // notice to stderr if there is one. update-notifier caches the answer under
+  // ~/.config so the registry only gets hit once a day.
+  protected override async init(): Promise<void> {
+    await super.init();
+    try {
+      updateNotifier({
+        pkg: this.config.pjson as { name: string; version: string },
+        updateCheckInterval: 1000 * 60 * 60 * 24,
+      }).notify({ isGlobal: true, defer: false });
+    } catch {
+      // Never let a stale-version check break the real command.
+    }
+  }
+
   protected async catch(err: Error & { exitCode?: number }): Promise<void> {
     // Let exit errors pass through (from this.exit())
     if (err instanceof Errors.ExitError) {
