@@ -17,6 +17,21 @@ process.emit = function (name, data) {
 
 import { initTelemetry, captureError, shutdown } from '../dist/lib/telemetry.js';
 import { execute } from '@oclif/core';
+import updateNotifier from 'update-notifier';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+try {
+  const pkgUrl = new URL('../package.json', import.meta.url);
+  const pkg = JSON.parse(readFileSync(fileURLToPath(pkgUrl), 'utf8'));
+  updateNotifier({ pkg, updateCheckInterval: 1000 * 60 * 60 * 24 }).notify({
+    isGlobal: true,
+    defer: false,
+    message: 'A new version of {packageName} is available: {currentVersion} → {latestVersion}',
+  });
+} catch {
+  // Never let a stale-version check break the CLI.
+}
 
 await initTelemetry();
 
