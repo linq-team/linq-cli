@@ -494,13 +494,14 @@ List messages in a chat.
 ```bash
 linq messages list CHAT_ID
 linq messages list CHAT_ID --limit 50
-linq messages list CHAT_ID --order asc
+linq messages list --chat CHAT_ID
 ```
 
 **Flags:**
-- `--limit`: Maximum number of messages to return (default: 20, max: 100)
+- `--chat`, `--chat-id`: Chat ID (alternative to the `CHAT_ID` argument)
+- `--limit`: Maximum number of messages to return (default: 50, max: 100)
 - `--cursor`: Pagination cursor from previous response
-- `--order`: Sort order (asc or desc, default: desc)
+- `--json`: Output as JSON
 - `--profile`, `-p`: Config profile to use
 - `--token`, `-t`: Override stored API token
 
