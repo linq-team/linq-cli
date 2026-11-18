@@ -1,3 +1,10 @@
+# [2.8.0](https://github.com/linq-team/linq-cli/compare/v2.7.0...v2.8.0) (2026-11-18)
+
+
+### Features
+
+* **upgrade:** point to dashboard checkout + notify on stale CLI version ([#46](https://github.com/linq-team/linq-cli/issues/46)) ([0ad0a5d](https://github.com/linq-team/linq-cli/commit/0ad0a5d6d71d038fcaaa8969f8f7a4ecd047716d))
+
 # [2.7.0](https://github.com/linq-team/linq-cli/compare/v2.6.0...v2.7.0) (2026-10-06)
 
 
