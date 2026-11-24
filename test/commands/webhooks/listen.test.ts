@@ -112,6 +112,7 @@ describe('webhooks listen', { timeout: 15000 }, () => {
   let originalHome: string | undefined;
   let originalRelayUrl: string | undefined;
   let originalWsUrl: string | undefined;
+  let originalExitCode: typeof process.exitCode;
   let logs: string[];
 
   beforeEach(async () => {
@@ -119,6 +120,7 @@ describe('webhooks listen', { timeout: 15000 }, () => {
     originalHome = process.env.HOME;
     originalRelayUrl = process.env.LINQ_RELAY_URL;
     originalWsUrl = process.env.LINQ_RELAY_WS_URL;
+    originalExitCode = process.exitCode;
     process.env.HOME = tempDir;
     process.env.LINQ_RELAY_URL = 'https://test-relay.example.com';
     process.env.LINQ_RELAY_WS_URL = 'wss://test-ws.example.com';
@@ -139,6 +141,7 @@ describe('webhooks listen', { timeout: 15000 }, () => {
   });
 
   afterEach(async () => {
+    process.exitCode = originalExitCode;
     process.env.HOME = originalHome;
     if (originalRelayUrl === undefined) delete process.env.LINQ_RELAY_URL;
     else process.env.LINQ_RELAY_URL = originalRelayUrl;
@@ -151,12 +154,16 @@ describe('webhooks listen', { timeout: 15000 }, () => {
     cmd.log = (...args: string[]) => { logs.push(args.join(' ')); };
   }
 
-  function setupApiMocks() {
+  function setupApiMocks({
+    beforeCreate,
+    deleteStatuses = [204],
+  }: { beforeCreate?: () => Promise<void>; deleteStatuses?: number[] } = {}) {
     mockFetch.mockImplementation(async (urlArg: string, initArg?: RequestInit) => {
       const url = urlArg;
       const method = initArg?.method ?? 'GET';
 
       if (url.includes('/webhook-subscriptions') && !url.includes('/webhook-subscriptions/') && method === 'POST') {
+        if (beforeCreate) await beforeCreate();
         return createMockResponse(201, {
           id: 'wh_test123',
           created_at: '2024-01-15T10:00:00Z',
@@ -168,7 +175,8 @@ describe('webhooks listen', { timeout: 15000 }, () => {
         });
       }
       if (url.includes('/webhook-subscriptions/') && method === 'DELETE') {
-        return createMockResponse(200, {});
+        const status = deleteStatuses.shift() ?? 204;
+        return status === 204 ? new Response(null, { status }) : createMockResponse(status, {});
       }
       return createMockResponse(404, {});
     });
@@ -180,9 +188,87 @@ describe('webhooks listen', { timeout: 15000 }, () => {
     // Let microtasks (WS open -> init -> connectionId -> events) settle
     await new Promise((r) => setTimeout(r, 50));
     // Trigger graceful shutdown so listenLoop exits
-    await (cmd as unknown as { cleanup(): Promise<void> }).cleanup();
+    await (cmd as unknown as { cleanup(): Promise<boolean> }).cleanup();
     await promise;
   }
+
+  function startListener(cmd: WebhooksListen) {
+    const original = process.listeners('SIGTERM');
+    const done = cmd.run();
+    const listener = () => process.listeners('SIGTERM').find((handler) => !original.includes(handler));
+    return {
+      done,
+      stop: () => {
+        const handler = listener();
+        expect(handler).toBeDefined();
+        handler?.('SIGTERM');
+      },
+      listener,
+    };
+  }
+
+  function deletedSubscriptions() {
+    return mockFetch.mock.calls
+      .filter(([, init]) => init?.method === 'DELETE')
+      .map(([url]) => new URL(url).pathname.split('/').at(-1));
+  }
+
+  it('waits for subscription creation before deleting on SIGTERM', async () => {
+    const createStarted = Promise.withResolvers<void>();
+    const createResponse = Promise.withResolvers<void>();
+    setupApiMocks({
+      beforeCreate: () => {
+        createStarted.resolve();
+        return createResponse.promise;
+      },
+    });
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new WebhooksListen([], config);
+    captureOutput(cmd);
+    const listener = startListener(cmd);
+
+    await createStarted.promise;
+    try {
+      listener.stop();
+      listener.stop();
+      expect(deletedSubscriptions()).toEqual([]);
+      expect(lastMockWs?.close).toHaveBeenCalledOnce();
+    } finally {
+      createResponse.resolve();
+      await listener.done;
+    }
+
+    expect(deletedSubscriptions()).toEqual(['wh_test123']);
+    expect(logs.join('\n')).not.toContain('Listening for events');
+    expect(process.exitCode).toBe(originalExitCode);
+    expect(listener.listener()).toBeUndefined();
+  });
+
+  it.each([
+    { statuses: [503, 204], failed: false, label: 'retries a transient DELETE rejection' },
+    { statuses: [403], failed: true, label: 'reports the ID and fails on a permanent DELETE rejection' },
+    { statuses: [404], failed: false, label: 'accepts an already-deleted subscription' },
+  ])('$label', async ({ statuses, failed }) => {
+    setupApiMocks({ deleteStatuses: [...statuses] });
+    const config = await Config.load({ root: process.cwd() });
+    const cmd = new WebhooksListen([], config);
+    captureOutput(cmd);
+    const stderr = vi.spyOn(cmd, 'logToStderr').mockImplementation(() => {});
+    const listener = startListener(cmd);
+    await vi.waitFor(() => expect(logs.join('\n')).toContain('Listening for events'));
+    listener.stop();
+    await listener.done;
+
+    expect(deletedSubscriptions()).toEqual(statuses.map(() => 'wh_test123'));
+    expect(process.exitCode).toBe(failed ? 1 : originalExitCode);
+    if (failed) {
+      expect(stderr).toHaveBeenCalledWith(expect.stringContaining('linq webhooks delete wh_test123'));
+      expect(logs.join('\n')).not.toContain('Webhook wh_test123 deleted');
+    } else {
+      expect(stderr).not.toHaveBeenCalled();
+    }
+    expect(listener.listener()).toBeUndefined();
+  });
 
   it('connects via WebSocket, creates webhook, and receives events', async () => {
     wsMessages = [
