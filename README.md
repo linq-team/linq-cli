@@ -654,7 +654,7 @@ linq webhooks events
 
 #### `linq webhooks listen`
 
-Listen for webhook events in real time, optionally forwarding them to a local server. Creates a temporary webhook subscription that's automatically deleted when you stop.
+Listen for webhook events in real time, optionally forwarding them to a local server. Creates a temporary webhook subscription and deletes it on graceful shutdown.
 The relay must preserve the exact webhook body and the `webhook-id`, `webhook-timestamp`, and `webhook-signature` headers. Events without a valid signature are ignored.
 
 ```bash
@@ -684,7 +684,7 @@ Events are displayed in a structured log format:
 2024-01-15T10:30:45.123Z [message.received] data.id=msg_123 data.chat.id=chat_456 data.body="Hello world"
 ```
 
-Press `Ctrl+C` to stop. The CLI automatically cleans up the webhook subscription.
+Press `Ctrl+C` to stop. If the CLI cannot delete the subscription, it exits non-zero and prints its ID to stderr so you can retry with `linq webhooks delete SUBSCRIPTION_ID`. A forced kill (such as `SIGKILL`) cannot run cleanup.
 
 ## Shell Autocomplete
 

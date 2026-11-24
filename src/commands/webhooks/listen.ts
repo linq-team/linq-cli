@@ -7,7 +7,8 @@ import { loadConfig, requireToken } from '../../lib/config.js';
 import { createApiClient } from '../../lib/api-client.js';
 import { formatLogLine } from '../../lib/webhook-format.js';
 import * as crypto from 'node:crypto';
-import type Linq from '@linqapp/sdk';
+import { setTimeout as delay } from 'node:timers/promises';
+import { NotFoundError, type default as Linq } from '@linqapp/sdk';
 
 type WebhookEventType = Linq.WebhookSubscriptions.WebhookSubscriptionCreateParams['subscribed_events'][number];
 
@@ -134,13 +135,19 @@ export default class WebhooksListen extends BaseCommand {
   private signingSecret: string | null = null;
   private client: ReturnType<typeof createApiClient> | null = null;
   private ws: WebSocket | null = null;
-  private shuttingDown = false;
+  private readonly shutdownController = new AbortController();
+  private creatingWebhook?: Promise<void>;
+  private cleanupPromise?: Promise<boolean>;
   private eventCount = 0;
   private forwardCount = 0;
   private startedAt = Date.now();
   // Cached so private methods (which run outside the run() closure) can
   // route errors through the right output mode.
   private jsonMode = false;
+
+  private get shuttingDown(): boolean {
+    return this.shutdownController.signal.aborted;
+  }
 
   async run(): Promise<void> {
     const { flags } = await this.parse(WebhooksListen);
@@ -183,36 +190,41 @@ export default class WebhooksListen extends BaseCommand {
     const wsUrl = process.env.LINQ_RELAY_WS_URL || DEFAULT_WS_URL;
     const relayUrl = process.env.LINQ_RELAY_URL || DEFAULT_RELAY_URL;
 
-    // Handle shutdown on any exit signal
-    const shutdown = async () => {
+    let fatal = false;
+    const shutdown = () => {
+      if (this.shuttingDown) return;
       this.log('\nShutting down...');
-      await this.cleanup();
-      process.exit(0);
+      void this.cleanup();
+    };
+    const onException = (error: Error) => {
+      fatal = true;
+      this.logToStderr(`Fatal error: ${error.message}`);
+      shutdown();
+    };
+    const onRejection = (reason: unknown) => {
+      fatal = true;
+      this.logToStderr(`Unhandled rejection: ${reason}`);
+      shutdown();
     };
 
-    process.on('SIGINT', shutdown);
-    process.on('SIGTERM', shutdown);
-    process.on('SIGHUP', shutdown);
-    process.on('SIGQUIT', shutdown);
-    process.on('uncaughtException', async (error) => {
-      this.logToStderr(`Fatal error: ${error.message}`);
-      await this.cleanup();
-      process.exit(1);
-    });
-    process.on('unhandledRejection', async (reason) => {
-      this.logToStderr(`Unhandled rejection: ${reason}`);
-      await this.cleanup();
-      process.exit(1);
-    });
+    const signals = ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGQUIT'] as const;
+    for (const signal of signals) process.on(signal, shutdown);
+    process.on('uncaughtException', onException);
+    process.on('unhandledRejection', onRejection);
 
     try {
       this.log('Connecting to relay...');
-      const connectionId = await this.connectWebSocket(wsUrl, token);
+      const connectionId = await this.connectWebSocket(wsUrl, token).catch((error) => {
+        if (!this.shuttingDown) throw error;
+      });
+      if (this.shuttingDown || !connectionId) return;
       this.log('Connected to relay');
 
       // Create webhook subscription pointing to relay
       const webhookTarget = relayTarget(relayUrl, connectionId);
-      await this.createWebhook(webhookTarget, subscribedEvents);
+      this.creatingWebhook = this.createWebhook(webhookTarget, subscribedEvents);
+      await this.creatingWebhook;
+      if (this.shuttingDown) return;
 
       this.log('');
       this.log(`Listening for events... ${chalk.dim('(Ctrl+C to stop)')}`);
@@ -224,10 +236,12 @@ export default class WebhooksListen extends BaseCommand {
 
       // Listen for events with auto-reconnect
       await this.listenLoop(wsUrl, token, relayUrl, subscribedEvents, eventFilter, flags.json, forwardTo);
-    } catch (error) {
-      if (this.shuttingDown) return;
-      await this.cleanup();
-      throw error;
+    } finally {
+      const cleanedUp = await this.cleanup();
+      for (const signal of signals) process.off(signal, shutdown);
+      process.off('uncaughtException', onException);
+      process.off('unhandledRejection', onRejection);
+      if (!cleanedUp || fatal) process.exitCode = 1;
     }
   }
 
@@ -265,9 +279,9 @@ export default class WebhooksListen extends BaseCommand {
 
       ws.addEventListener('close', (event) => {
         clearTimeout(timeout);
-        if (event.code === 4001) {
-          reject(new Error('Authentication failed. Check your API token.'));
-        }
+        reject(new Error(event.code === 4001
+          ? 'Authentication failed. Check your API token.'
+          : 'Relay closed before initialization'));
       });
     });
   }
@@ -298,13 +312,19 @@ export default class WebhooksListen extends BaseCommand {
       if (this.shuttingDown) return;
 
       this.log(`Disconnected. Reconnecting in ${reconnectDelay / 1000}s...`);
-      await new Promise((r) => setTimeout(r, reconnectDelay));
+      try {
+        await delay(reconnectDelay, undefined, { signal: this.shutdownController.signal });
+      } catch (error) {
+        if (this.shuttingDown) return;
+        throw error;
+      }
       reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY);
 
       if (this.shuttingDown) return;
 
       try {
         const connectionId = await this.connectWebSocket(wsUrl, token);
+        if (this.shuttingDown) return;
         this.log('Reconnected to relay');
         reconnectDelay = 1000;
 
@@ -328,6 +348,7 @@ export default class WebhooksListen extends BaseCommand {
     if (!this.ws) return;
 
     this.ws.addEventListener('message', (event) => {
+      if (this.shuttingDown) return;
       try {
         const raw = typeof event.data === 'string' ? event.data : '';
         const message = JSON.parse(raw) as WebhookEvent;
@@ -417,6 +438,7 @@ export default class WebhooksListen extends BaseCommand {
           ...(this.webhookId && { 'X-Webhook-Subscription-ID': this.webhookId }),
         },
         body: rawPayload,
+        signal: this.shutdownController.signal,
       });
 
       const duration = Date.now() - start;
@@ -434,6 +456,7 @@ export default class WebhooksListen extends BaseCommand {
         );
       }
     } catch (error) {
+      if (this.shuttingDown) return;
       const duration = Date.now() - start;
       const errMsg = error instanceof Error ? error.message : String(error);
 
@@ -453,12 +476,14 @@ export default class WebhooksListen extends BaseCommand {
     subscribedEvents: WebhookEventType[]
   ): Promise<void> {
     try {
+      // Retrying a POST with a lost response could create a second subscription.
       const data = await this.client!.webhookSubscriptions.create({
         target_url: webhookUrl,
         subscribed_events: subscribedEvents,
-      });
+      }, { maxRetries: 0 });
 
       this.webhookId = data.id;
+      if (this.shuttingDown) return;
       this.signingSecret = data.signing_secret || null;
       this.log(`Webhook created: ${data.id}`);
       this.log(`Events: ${data.subscribed_events.join(', ')}`);
@@ -476,19 +501,19 @@ export default class WebhooksListen extends BaseCommand {
     try {
       await this.client.webhookSubscriptions.update(this.webhookId, {
         target_url: webhookUrl,
-      });
+      }, { signal: this.shutdownController.signal });
     } catch (e) {
+      if (this.shuttingDown) return;
       this.log(`Warning: Failed to update webhook target: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
-  private cleanupDone = false;
+  private cleanup(): Promise<boolean> {
+    return this.cleanupPromise ??= this.finishCleanup();
+  }
 
-  private async cleanup(): Promise<void> {
-    if (this.cleanupDone) return;
-    this.cleanupDone = true;
-    this.shuttingDown = true;
-
+  private async finishCleanup(): Promise<boolean> {
+    this.shutdownController.abort();
     // Close WebSocket
     if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
       this.ws.close();
@@ -504,14 +529,20 @@ export default class WebhooksListen extends BaseCommand {
     }
     this.log(`\n${chalk.dim(`Session: ${stats.join(', ')} in ${mins}m ${secs}s`)}`);
 
-    // Delete webhook subscription
-    if (this.webhookId && this.client) {
-      try {
-        await this.client.webhookSubscriptions.delete(this.webhookId);
-        this.log(`Webhook ${this.webhookId} deleted`);
-      } catch {
-        // Ignore cleanup errors
+    // The server may have created the subscription before the response arrives.
+    await this.creatingWebhook?.catch(() => {});
+    const id = this.webhookId;
+    if (!id || !this.client) return true;
+
+    try {
+      await this.client.webhookSubscriptions.delete(id);
+    } catch (error) {
+      if (!(error instanceof NotFoundError)) {
+        this.logToStderr(`Failed to delete webhook subscription ${id}. Retry with: linq webhooks delete ${id}`);
+        return false;
       }
     }
+    this.log(`Webhook ${id} deleted`);
+    return true;
   }
 }
